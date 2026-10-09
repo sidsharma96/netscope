@@ -1,0 +1,30 @@
+NETSCOPE / INSPECTOR                                                                                
+synthetic.har · 6 requests                                                                          
+Captured data · Up/Down scroll                                                                      
+┌ Request #0 · line 30 ────────────────────────────────────────────────────────────────────────────┐
+│  No captured cookies                                                                             │
+│Response body                                                                                     │
+│Exported text                                                                                     │
+│[]                                                                                                │
+│                                                                                                  │
+│TIMINGS · exporter-reported                                                                       │
+│Blocked: Not recorded                                                                             │
+│DNS: Not recorded                                                                                 │
+│Connect: Not recorded                                                                             │
+│  SSL (within connect): Not recorded                                                              │
+│Send: 1 ms                                                                                        │
+│Waiting for response: 8 ms                                                                        │
+│Receive: 1 ms                                                                                     │
+│WARNINGS                                                                                          │
+│No import consistency warnings                                                                    │
+│REDIRECT EVIDENCE                                                                                 │
+│Resolved Location (without fragment): https://example.test/new                                    │
+│Rule: same URL, compatible method, later start, 0..30 s after reported end                        │
+│Reported end = recorded start + total duration; early follow-ups may be missed                    │
+│Ambiguous: multiple candidates; no request chosen                                                 │
+│Candidate #1: GET 2026-10-09T12:00:00.020Z                                                        │
+│Candidate #2: GET 2026-10-09T12:00:00.030Z                                                        │
+│Esc returns to the list; candidate numbers are source IDs                                         │
+│From the list, a clears a host filter to show other hosts                                         │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                                               

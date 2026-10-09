@@ -1,0 +1,2 @@
+# Fixed terminal buffers intentionally retain spaces through the last column.
+tests/fixtures/terminal/*.txt whitespace=-blank-at-eol

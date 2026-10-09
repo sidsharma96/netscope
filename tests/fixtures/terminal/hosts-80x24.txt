@@ -1,0 +1,24 @@
+NETSCOPE / HOSTS                                                                
+synthetic.har · 6 requests                                                      
+Grouped by URL host · derived counts and duration sums                          
+┌ Hosts · alphabetical ────────────────────────────────────────────────────────┐
+│  HOST                                 Count   4xx   5xx No status   Sum (ms) │
+│                                                                              │
+│> api.example.test                         3     0     1         1     120.00 │
+│  assets.example.test                      2     0     0         0      25.00 │
+│  sub.api.example.test                     1     1     0         0      10.00 │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│Host 1 / 3                                                                    │
+│Host: api.example.test                                                        │
+│Statuses: 1xx 0 · 2xx 1 · 3xx 0                                               │
+│          4xx 0 · 5xx 1 · no status 1                                         │
+│Requests with import warnings: 1                                              │
+│Reported durations are summed; requests can overlap.                          │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k move · Enter filter · Esc back · a all · ? help · q quit                

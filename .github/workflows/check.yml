@@ -1,0 +1,17 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the repository toolchain
+        run: rustup show active-toolchain
+      - name: Fetch locked dependencies
+        run: cargo fetch --locked
+      - name: Check Rust and documentation
+        run: python3 scripts/check.py
+      - name: Check terminal restoration
+        run: python3 scripts/check_terminal.py

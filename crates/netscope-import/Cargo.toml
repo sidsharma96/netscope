@@ -1,0 +1,17 @@
+[package]
+name = "netscope-import"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+netscope-core.workspace = true
+serde = "1.0"
+serde_json = "1.0"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+url = "2.5"
+base64 = "0.22"

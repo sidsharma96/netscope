@@ -1,0 +1,9 @@
+/target/
+.DS_Store
+__pycache__/
+
+# Original local planning documents and mockups
+/netscope-concept-coverage.md
+/netscope-implementation-spec.md
+/netscope-tui-novice.html
+/netscope-views-redesign.html

@@ -1,0 +1,24 @@
+NETSCOPE / INSPECTOR                                                            
+synthetic.har · 1 requests                                                      
+Captured data · Up/Down scroll                                                  
+┌ Request #0 · line 1 ─────────────────────────────────────────────────────────┐
+│Request #0 · GET · 200 OK                                                     │
+│URL: https://example.test/api/books                                           │
+│Started: 2026-10-09T12:00:00Z                                                 │
+│Reported total: 45 ms                                                         │
+│                                                                              │
+│REQUEST · exporter-reported                                                   │
+│HTTP version: HTTP/1.1                                                        │
+│Header size: Unavailable (-1)                                                 │
+│Body size: 0 bytes                                                            │
+│Request headers                                                               │
+│  X-Example: one                                                              │
+│  X-Example: two                                                              │
+│Query fields                                                                  │
+│  No captured fields                                                          │
+│Request cookies                                                               │
+│  No captured cookies                                                         │
+│Request body                                                                  │
+│Request body not recorded                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                           

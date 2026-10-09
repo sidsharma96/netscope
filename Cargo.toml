@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/netscope-core", "crates/netscope-import", "crates/netscope-net", "crates/netscope-tui"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+publish = false
+
+[workspace.dependencies]
+netscope-core = { path = "crates/netscope-core" }
+netscope-import = { path = "crates/netscope-import" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"

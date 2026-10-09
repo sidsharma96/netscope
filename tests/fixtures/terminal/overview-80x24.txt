@@ -1,0 +1,24 @@
+NETSCOPE / CAPTURE                                                              
+synthetic.har · 1 requests                                                      
+Chronological order · Reported total (ms) and recorded start                    
+┌ Requests ────────────────────────────────────────────────────────────────────┐
+│  ID   METHOD   HOST / PATH            Status  Total (ms) Timeline            │
+│                                                                              │
+│> 0    GET      example.test/api/books 200       45.00 ms ━━━━━━━━━━━━━━━━    │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│Row 1 / 1                                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k move · Enter inspect · h hosts · a all · Esc back · ? help · q quit     
