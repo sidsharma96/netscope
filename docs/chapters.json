@@ -115,6 +115,11 @@
     "subtitle": "Compare recorded values without guessing intent"
   },
   {
+    "slug": "15-reading-protocol-labels",
+    "title": "Reading protocol labels",
+    "subtitle": "Separate protocol capabilities from recorded events"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

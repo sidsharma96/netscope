@@ -432,6 +432,7 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     for warning in &request.warnings {
         lines.push(terminal_text(warning));
     }
+    lines.extend(protocol_lines(request));
     lines
 }
 pub(super) fn wrap(text: &str, width: usize) -> Vec<String> {
@@ -822,5 +823,43 @@ pub fn retry_lines(session: &Session, id: RequestId) -> Vec<String> {
             lines.push("Esc returns to the list; candidate numbers are source IDs".into());
         }
     }
+    lines
+}
+
+/// Keep exporter labels separate from general protocol explanations.
+pub fn protocol_lines(request: &Request) -> Vec<String> {
+    use netscope_core::RecordedProtocol;
+    let sent = RecordedProtocol::from_label(&request.request_version);
+    let received = RecordedProtocol::from_label(&request.response_version);
+    let mut lines = vec![
+        "PROTOCOL NOTES · exporter labels".into(),
+        format!(
+            "Request label: {:?} -> {}",
+            terminal_text(&request.request_version),
+            sent.name()
+        ),
+        format!(
+            "Response label: {:?} -> {}",
+            terminal_text(&request.response_version),
+            received.name()
+        ),
+    ];
+    lines.push(
+        if sent == RecordedProtocol::Unrecognized || received == RecordedProtocol::Unrecognized {
+            "Comparison unavailable: at least one label is unrecognized"
+        } else if sent != received {
+            "Labels disagree; no upgrade, downgrade, or cause is inferred"
+        } else {
+            "Labels agree on a recognized version; this is exporter evidence"
+        }
+        .into(),
+    );
+    lines.push("General protocol behaviour, not observed messages:".into());
+    lines.push(sent.explanation().into());
+    if received != sent {
+        lines.push(received.explanation().into());
+    }
+    lines.push("These HAR fields provide no packet/frame trace or stream IDs".into());
+    lines.push("No compression savings or connection reuse are established".into());
     lines
 }

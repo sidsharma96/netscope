@@ -93,3 +93,10 @@ pub use retries::RetryEvidence;
 /// Equality and Boolean expressions in a beginner request-comparison example.
 #[doc = include_str!("../../../docs/chapters/14-recognizing-repeats.md")]
 pub mod retries_lesson {}
+
+mod protocol;
+pub use protocol::RecordedProtocol;
+
+/// Borrowed text and exact alternative patterns for recognizing a label.
+#[doc = include_str!("../../../docs/chapters/15-reading-protocol-labels.md")]
+pub mod protocol_lesson {}

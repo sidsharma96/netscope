@@ -28,8 +28,9 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 9. [Grouping requests](chapters/12-grouping-requests.md)
 10. [Following redirects](chapters/13-following-redirects.md)
 11. [Recognizing repeated requests](chapters/14-recognizing-repeats.md)
-12. [Checking our work](chapters/04-quality-and-tests.md)
-13. [Try the first version](chapters/06-first-milestone.md)
-14. [Writing this book](chapters/05-decisions.md)
+12. [Reading protocol labels](chapters/15-reading-protocol-labels.md)
+13. [Checking our work](chapters/04-quality-and-tests.md)
+14. [Try the first version](chapters/06-first-milestone.md)
+15. [Writing this book](chapters/05-decisions.md)
 
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.

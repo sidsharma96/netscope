@@ -1,12 +1,12 @@
 NETSCOPE / INSPECTOR                                                            
 synthetic.har · 8 requests                                                      
 Captured data · Up/Down scroll                                                  
-┌ Request #0 · line 40 ────────────────────────────────────────────────────────┐
-│Send: 1 ms                                                                    │
-│Waiting for response: 8 ms                                                    │
-│Receive: 1 ms                                                                 │
-│WARNINGS                                                                      │
-│No import consistency warnings                                                │
+┌ Request #0 · line 48 ────────────────────────────────────────────────────────┐
+│Labels agree on a recognized version; this is exporter evidence               │
+│General protocol behaviour, not observed messages:                            │
+│HTTP/1.1 uses textual start lines and headers; bodies can contain binary data │
+│These HAR fields provide no packet/frame trace or stream IDs                  │
+│No compression savings or connection reuse are established                    │
 │REDIRECT EVIDENCE                                                             │
 │Not analyzed: only statuses 301, 302, 303, 307, 308                           │
 │RETRY EVIDENCE                                                                │

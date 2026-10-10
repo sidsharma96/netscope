@@ -554,3 +554,85 @@ fn retry_evidence_shows_ambiguity_and_unknowns_without_losing_selection()
     }
     Ok(())
 }
+
+#[test]
+fn protocol_notes_preserve_labels_and_separate_unknown_from_disagreement()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/protocols.har"),
+        Limits::default(),
+    )?;
+    let labels = [
+        ("HTTP/2", "h2"),
+        ("HTTP/1.1", "HTTP/3"),
+        ("HTTP/4", "h3"),
+        ("HTTP/1.0", "HTTP/1.0"),
+        ("HTTP/3.0", "h3"),
+        ("unknown", "unknown"),
+    ];
+    for (r, (sent, received)) in session.requests().iter().zip(labels) {
+        assert_eq!(r.request_version, sent);
+        assert_eq!(r.response_version, received);
+        let lines = netscope_tui::protocol_lines(r).join("\n");
+        assert!(lines.contains(&format!("Request label: {sent:?}")));
+        assert!(lines.contains(&format!("Response label: {received:?}")));
+        assert!(lines.contains("not observed messages"));
+        assert!(lines.contains("No compression savings or connection reuse are established"));
+    }
+    for (id, expected) in [
+        (0, "Labels agree"),
+        (1, "Labels disagree"),
+        (2, "Comparison unavailable"),
+        (3, "Labels agree"),
+        (4, "Labels agree"),
+        (5, "Comparison unavailable"),
+    ] {
+        assert!(
+            netscope_tui::protocol_lines(&session.requests()[id])
+                .join("\n")
+                .contains(expected)
+        );
+    }
+    let mut hostile = session.requests()[0].clone();
+    hostile.request_version = "HTTP/2\x1b[2J\n".into();
+    let text = netscope_tui::protocol_lines(&hostile).join("\n");
+    assert!(!text.contains('\x1b'));
+    assert!(text.contains("Unrecognized label"));
+    assert_eq!(hostile.request_version, "HTTP/2\x1b[2J\n");
+    Ok(())
+}
+
+#[test]
+fn protocol_notes_are_reachable_in_fixed_terminal_buffers() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/protocols.har"),
+        Limits::default(),
+    )?;
+    for (width, height, expected) in [
+        (
+            80,
+            24,
+            include_str!("../../../tests/fixtures/terminal/protocols-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            include_str!("../../../tests/fixtures/terminal/protocols-100x30.txt"),
+        ),
+    ] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        for _ in 0..1000 {
+            app.apply(Action::Down, &session);
+        }
+        let screen = render(&session, &mut app, width, height)?;
+        assert_eq!(screen, expected.trim_end_matches('\n'));
+        assert!(screen.contains("PROTOCOL NOTES"));
+        assert!(screen.contains("Labels agree"));
+        app.apply(Action::Back, &session);
+        assert_eq!(app.selected, Some(0));
+    }
+    Ok(())
+}

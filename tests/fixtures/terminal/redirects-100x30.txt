@@ -1,15 +1,7 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 6 requests                                                                          
 Captured data · Up/Down scroll                                                                      
-┌ Request #0 · line 30 ────────────────────────────────────────────────────────────────────────────┐
-│  No captured cookies                                                                             │
-│Response body                                                                                     │
-│Exported text                                                                                     │
-│[]                                                                                                │
-│                                                                                                  │
-│TIMINGS · exporter-reported                                                                       │
-│Blocked: Not recorded                                                                             │
-│DNS: Not recorded                                                                                 │
+┌ Request #0 · line 38 ────────────────────────────────────────────────────────────────────────────┐
 │Connect: Not recorded                                                                             │
 │  SSL (within connect): Not recorded                                                              │
 │Send: 1 ms                                                                                        │
@@ -17,6 +9,14 @@ Captured data · Up/Down scroll
 │Receive: 1 ms                                                                                     │
 │WARNINGS                                                                                          │
 │No import consistency warnings                                                                    │
+│PROTOCOL NOTES · exporter labels                                                                  │
+│Request label: "HTTP/1.1" -> HTTP/1.1                                                             │
+│Response label: "HTTP/1.1" -> HTTP/1.1                                                            │
+│Labels agree on a recognized version; this is exporter evidence                                   │
+│General protocol behaviour, not observed messages:                                                │
+│HTTP/1.1 uses textual start lines and headers; bodies can contain binary data                     │
+│These HAR fields provide no packet/frame trace or stream IDs                                      │
+│No compression savings or connection reuse are established                                        │
 │REDIRECT EVIDENCE                                                                                 │
 │Resolved Location (without fragment): https://example.test/new                                    │
 │Rule: same URL, compatible method, later start, 0..30 s after reported end                        │

@@ -15,3 +15,5 @@ The core timing tests use direct numeric values. Importer tests deserialize thes
 The multi-host.har fixture contains six entries across three normalised URL hosts. API spelling, scheme, and port variants share a group; sub.api.example.test remains separate. Status zero, error statuses, equal starts, a timing warning, and overlapping durations exercise the host-summary contract.
 
 `retries.har` contains synthetic GET/HEAD repeats after selected errors, an excluded POST, missing status, and a source with no match. Its Retry-After value deliberately exceeds the matching window; the inspector does not interpret that header.
+
+`protocols.har` retains exact request/response labels for equivalent aliases, disagreement, and unknown spellings. Its invented entries are not packet or frame captures.

@@ -9,6 +9,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mode = args.get(1).map(String::as_str).unwrap_or("overview");
     let bytes: &[u8] = if matches!(mode, "hosts" | "filtered") {
         include_bytes!("../../../tests/fixtures/har/multi-host.har")
+    } else if mode == "protocols" {
+        include_bytes!("../../../tests/fixtures/har/protocols.har")
     } else if mode == "retries" {
         include_bytes!("../../../tests/fixtures/har/retries.har")
     } else if mode == "redirects" {
@@ -20,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new(&session);
     app.resize(width, height, &session);
     match mode {
-        "redirects" | "retries" => {
+        "redirects" | "retries" | "protocols" => {
             app.apply(Action::Open, &session);
             for _ in 0..1000 {
                 app.apply(Action::Down, &session);
