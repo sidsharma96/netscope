@@ -13,3 +13,5 @@ All timestamps and request data are invented. No real endpoints, cookies, or cre
 The core timing tests use direct numeric values. Importer tests deserialize these fixtures and mutate fixed JSON values to exercise body states, consumed-field failures, duplicate keys, limits, and warning rules. CLI tests consume the invalid-timing fixture and check contextual rejection. Interactive UI acceptance remains pending.
 
 The multi-host.har fixture contains six entries across three normalised URL hosts. API spelling, scheme, and port variants share a group; sub.api.example.test remains separate. Status zero, error statuses, equal starts, a timing warning, and overlapping durations exercise the host-summary contract.
+
+`retries.har` contains synthetic GET/HEAD repeats after selected errors, an excluded POST, missing status, and a source with no match. Its Retry-After value deliberately exceeds the matching window; the inspector does not interpret that header.

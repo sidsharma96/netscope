@@ -24,7 +24,7 @@ You can also use the Rust index to return to a concept. Source links appear afte
 
 ## What you can try today
 
-Netscope can open a local HAR, list its requests, and show a selected request's headers, body, and available timings. It also reports invalid input and inconsistent measurements. A host view groups requests by URL host and opens a filtered list without changing their IDs. The inspector also shows possible redirect follow-ups, with missing evidence and ambiguity labelled. It does not send the recorded requests again.
+Netscope can open a local HAR, list its requests, and show a selected request's headers, body, and available timings. It also reports invalid input and inconsistent measurements. A host view groups requests by URL host and opens a filtered list without changing their IDs. The inspector also shows possible redirect follow-ups and repeated attempts, with missing evidence and ambiguity labelled. It does not send the recorded requests again.
 
 The [first version walkthrough](06-first-milestone.md) uses the supplied synthetic capture. Replay and deeper network analysis belong to later work. The [verification record](../VERIFICATION.md) keeps track of what has been checked.
 

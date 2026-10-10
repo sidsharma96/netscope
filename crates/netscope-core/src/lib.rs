@@ -85,3 +85,11 @@ pub use redirects::RedirectEvidence;
 /// Preserve the difference between an unavailable search and an empty result.
 #[doc = include_str!("../../../docs/chapters/13-following-redirects.md")]
 pub mod redirects_lesson {}
+
+mod comparison;
+mod retries;
+pub use retries::RetryEvidence;
+
+/// Equality and Boolean expressions in a beginner request-comparison example.
+#[doc = include_str!("../../../docs/chapters/14-recognizing-repeats.md")]
+pub mod retries_lesson {}

@@ -110,6 +110,11 @@
     "subtitle": "Keep an instruction separate from a possible explanation"
   },
   {
+    "slug": "14-recognizing-repeats",
+    "title": "Recognizing repeated requests",
+    "subtitle": "Compare recorded values without guessing intent"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

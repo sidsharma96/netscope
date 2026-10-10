@@ -2,6 +2,6 @@
 /// Real-terminal setup, input, and restoration.
 pub mod terminal;
 mod view;
-pub use view::{Action, App, Screen, draw, inspector_lines, redirect_lines};
+pub use view::{Action, App, Screen, draw, inspector_lines, redirect_lines, retry_lines};
 
 mod host_view;

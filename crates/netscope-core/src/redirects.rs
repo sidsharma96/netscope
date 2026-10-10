@@ -1,6 +1,6 @@
+use crate::comparison::{elapsed_ms, request_url};
 use crate::{Request, RequestId};
 use std::collections::BTreeMap;
-use url::Url;
 
 /// Evidence for a possible follow-up, never proof that a client followed a redirect.
 #[derive(Debug, PartialEq, Eq)]
@@ -20,19 +20,6 @@ pub enum RedirectEvidence {
     },
 }
 
-fn request_url(raw: &str) -> Option<Url> {
-    // Do not silently repair whitespace or backslashes in captured addresses.
-    if raw.chars().any(|c| c.is_whitespace() || c.is_control()) || raw.contains('\\') {
-        return None;
-    }
-    let mut url = Url::parse(raw).ok()?;
-    if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
-        return None;
-    }
-    url.set_fragment(None);
-    Some(url)
-}
-
 fn method_matches(source: &Request, candidate: &Request) -> bool {
     match source.status {
         303 => matches!(candidate.method.as_str(), "GET" | "HEAD"),
@@ -42,14 +29,6 @@ fn method_matches(source: &Request, candidate: &Request) -> bool {
         }
         _ => candidate.method == source.method,
     }
-}
-
-fn elapsed_ms(source: &Request, candidate: &Request) -> f64 {
-    // Subtract integer timestamps before conversion, preserving small intervals.
-    let seconds = i128::from(candidate.instant.0) - i128::from(source.instant.0);
-    let nanos =
-        seconds * 1_000_000_000 + i128::from(candidate.instant.1) - i128::from(source.instant.1);
-    nanos as f64 / 1_000_000.0
 }
 
 pub(crate) fn analyze(requests: &[Request], chronological: &[RequestId]) -> Vec<RedirectEvidence> {

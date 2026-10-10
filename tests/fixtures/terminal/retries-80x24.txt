@@ -1,0 +1,24 @@
+NETSCOPE / INSPECTOR                                                            
+synthetic.har · 8 requests                                                      
+Captured data · Up/Down scroll                                                  
+┌ Request #0 · line 40 ────────────────────────────────────────────────────────┐
+│Send: 1 ms                                                                    │
+│Waiting for response: 8 ms                                                    │
+│Receive: 1 ms                                                                 │
+│WARNINGS                                                                      │
+│No import consistency warnings                                                │
+│REDIRECT EVIDENCE                                                             │
+│Not analyzed: only statuses 301, 302, 303, 307, 308                           │
+│RETRY EVIDENCE                                                                │
+│Recorded source: GET · status 503                                             │
+│Rule: same URL/method and exact captured headers, query fields, cookies       │
+│Both report body size 0 with no captured request body                         │
+│Later start, 0..30 s after reported end (start + total duration)              │
+│Retry-After is not interpreted; longer delays may be missed                   │
+│Ambiguous: multiple possible retries; no request chosen                       │
+│Polling, a refresh, or another tab can produce the same evidence              │
+│Candidate #1: GET 2026-10-09T12:00:00.020Z                                    │
+│Candidate #2: GET 2026-10-09T12:00:00.030Z                                    │
+│Esc returns to the list; candidate numbers are source IDs                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                           

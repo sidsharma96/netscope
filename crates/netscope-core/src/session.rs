@@ -192,6 +192,7 @@ pub struct Session {
     host_order: Vec<HostId>,
     host_summaries: Vec<HostSummary>,
     redirects: Vec<crate::RedirectEvidence>,
+    retries: Vec<crate::RetryEvidence>,
 }
 impl Session {
     /// Build view orders without moving requests from their source positions.
@@ -222,15 +223,21 @@ impl Session {
         }
         let mut host_order: Vec<_> = hosts.iter().map(|host| host.id).collect();
         host_order.sort_by(|left, right| hosts[left.0].name.cmp(&hosts[right.0].name));
+        let retries = crate::retries::analyze(&requests, &chronological);
         let redirects = crate::redirects::analyze(&requests, &chronological);
         Self {
             redirects,
+            retries,
             requests,
             chronological,
             hosts,
             host_order,
             host_summaries,
         }
+    }
+    /// Borrow possible retry evidence without asserting client intent.
+    pub fn retry(&self, id: RequestId) -> Option<&crate::RetryEvidence> {
+        self.retries.get(id.0)
     }
     /// Borrow redirect evidence derived from this complete capture.
     pub fn redirect(&self, id: RequestId) -> Option<&crate::RedirectEvidence> {

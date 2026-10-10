@@ -1,6 +1,6 @@
 # M2, first step: host summaries and request filtering
 
-This step adds a host view to offline inspection. Redirect suggestions are defined separately in the [redirect contract](m2-redirect-suggestions.md). Retry suggestions and protocol lessons remain later M2 work and require their own evidence rules.
+This step adds a host view to offline inspection. Redirect suggestions are defined separately in the [redirect contract](m2-redirect-suggestions.md). Retry suggestions have their own [evidence contract](m2-retry-suggestions.md). Recorded protocol lessons remain later M2 work.
 
 ## Meaning of a group
 

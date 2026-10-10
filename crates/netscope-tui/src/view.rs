@@ -459,6 +459,7 @@ fn wrapped_inspector(
 ) -> Vec<String> {
     let mut lines = inspector_lines(request, id);
     lines.extend(redirect_lines(session, id));
+    lines.extend(retry_lines(session, id));
     lines
         .iter()
         .flat_map(|line| wrap(line, usize::from(width).max(2)))
@@ -764,6 +765,61 @@ pub fn redirect_lines(session: &Session, id: RequestId) -> Vec<String> {
             }
             lines.push("Esc returns to the list; candidate numbers are source IDs".into());
             lines.push("From the list, a clears a host filter to show other hosts".into());
+        }
+    }
+    lines
+}
+
+/// Explain repeated-request evidence without recommending a new request.
+pub fn retry_lines(session: &Session, id: RequestId) -> Vec<String> {
+    use netscope_core::RetryEvidence;
+    let (Some(evidence), Some(source)) = (session.retry(id), session.request(id)) else {
+        return vec![];
+    };
+    if matches!(evidence, RetryEvidence::NotApplicable) {
+        return vec![];
+    }
+    let mut lines = vec![
+        "RETRY EVIDENCE".into(),
+        format!(
+            "Recorded source: {} · status {}",
+            terminal_text(&source.method),
+            source.status
+        ),
+    ];
+    match evidence {
+        RetryEvidence::NotApplicable => {}
+        RetryEvidence::Unavailable(reason) => lines.push((*reason).into()),
+        RetryEvidence::Candidates { ids, more } => {
+            lines.push(
+                "Rule: same URL/method and exact captured headers, query fields, cookies".into(),
+            );
+            lines.push("Both report body size 0 with no captured request body".into());
+            lines.push("Later start, 0..30 s after reported end (start + total duration)".into());
+            lines.push("Retry-After is not interpreted; longer delays may be missed".into());
+            lines.push(
+                match ids.len() {
+                    0 => "No candidate under this rule; this does not prove there was no retry",
+                    1 => "One possible retry; repetition does not prove intent or success",
+                    _ => "Ambiguous: multiple possible retries; no request chosen",
+                }
+                .into(),
+            );
+            lines.push("Polling, a refresh, or another tab can produce the same evidence".into());
+            for candidate in ids {
+                if let Some(request) = session.request(*candidate) {
+                    lines.push(format!(
+                        "Candidate #{}: {} {}",
+                        candidate.0,
+                        terminal_text(&request.method),
+                        terminal_text(&request.started_at)
+                    ));
+                }
+            }
+            if *more {
+                lines.push("More candidates exist; showing the first 20".into());
+            }
+            lines.push("Esc returns to the list; candidate numbers are source IDs".into());
         }
     }
     lines

@@ -505,3 +505,52 @@ fn redirect_evidence_is_visible_after_scrolling_and_preserves_selection()
     }
     Ok(())
 }
+
+#[test]
+fn retry_evidence_shows_ambiguity_and_unknowns_without_losing_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/retries.har"),
+        Limits::default(),
+    )?;
+    for (id, phrase) in [
+        (0, "Ambiguous:"),
+        (3, "One possible retry"),
+        (5, "Requires GET or HEAD"),
+        (6, "No status recorded"),
+        (7, "No candidate under this rule"),
+    ] {
+        assert!(
+            netscope_tui::retry_lines(&session, RequestId(id))
+                .join("\n")
+                .contains(phrase)
+        );
+    }
+    assert!(netscope_tui::retry_lines(&session, RequestId(1)).is_empty());
+    for (width, height, expected) in [
+        (
+            80,
+            24,
+            include_str!("../../../tests/fixtures/terminal/retries-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            include_str!("../../../tests/fixtures/terminal/retries-100x30.txt"),
+        ),
+    ] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        for _ in 0..1000 {
+            app.apply(Action::Down, &session);
+        }
+        let screen = render(&session, &mut app, width, height)?;
+        assert_eq!(screen, expected.trim_end_matches('\n'));
+        assert!(screen.contains("RETRY EVIDENCE"));
+        assert!(screen.contains("Candidate #2"));
+        app.apply(Action::Back, &session);
+        assert_eq!(app.selected, Some(0));
+    }
+    Ok(())
+}
