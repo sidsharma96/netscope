@@ -27,4 +27,4 @@ Captured data · Up/Down scroll
 │Candidate #2: GET 2026-10-09T12:00:00.030Z                                                        │
 │Esc returns to the list; candidate numbers are source IDs                                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                                               
+↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    

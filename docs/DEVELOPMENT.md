@@ -34,7 +34,7 @@ Edit the Markdown chapters, run `python3 scripts/build_docs.py`, and check the r
 
 ## CI and evidence
 
-The GitHub workflow runs the same check script on Linux. It is configured but has not been executed by GitHub. This directory has no Git history yet; no commit or push was performed. Record actual local outcomes and limitations in VERIFICATION.md. M1 remains incomplete until the contract's full acceptance cases and learning explanation are satisfied.
+The GitHub workflow is configured to run the same check script on Linux. The repository is on GitHub and has committed history; consult the verification record for dated local checks rather than assuming a hosted run passed. Record actual local outcomes and limitations in VERIFICATION.md. M1 remains incomplete until the contract's full acceptance cases and learning explanation are satisfied.
 
 ## Terminal verification
 
@@ -45,3 +45,7 @@ The GitHub workflow runs the same check script on Linux. It is configured but ha
 The multi-host sample is tests/fixtures/har/multi-host.har. The [M2 host-summary contract](contracts/m2-host-summaries.md) defines grouping, count meanings, duration overflow, and navigation. Redirect suggestions are defined by the [redirect contract](contracts/m2-redirect-suggestions.md). Open tests/fixtures/har/redirects.har and scroll to REDIRECT EVIDENCE in request #0 for ambiguity, #3 for a single cross-host candidate, and #5 for a missing target. Candidates are source IDs; return to the list to inspect them. Core now uses the existing locked url crate for pure URL resolution, with no network operations. Conservative retry suggestions are now defined by the [retry contract](contracts/m2-retry-suggestions.md). Open tests/fixtures/har/retries.har and inspect #0 for ambiguity, #3 for a single candidate, #5 for an excluded method, #6 for unknown status, and #7 for no match. Suggestions are offline comparisons, not instructions to repeat a request.
 
 The [protocol contract](contracts/m2-recorded-protocols.md) defines exact exporter-label recognition and evidence limits. Open tests/fixtures/har/protocols.har: #0 has equivalent aliases, #1 disagrees, and #2 has an unrecognized request label. Protocol notes describe general behaviour without reconstructing frames or connections.
+
+## Next milestone
+
+The agreed [M3 replay contract](contracts/m3-single-request-replay.md) defines an editable GET draft, explicit header selection, review before sending, response limits, cancellation, and controlled local tests. The pure draft model and terminal draft/review editor are implemented. Press r from an eligible inspector; sending remains disabled. Select and document the network stack before adding I/O.

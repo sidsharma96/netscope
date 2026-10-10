@@ -120,6 +120,11 @@
     "subtitle": "Separate protocol capabilities from recorded events"
   },
   {
+    "slug": "16-preparing-a-request",
+    "title": "Preparing a request",
+    "subtitle": "Own an editable draft without changing the recording"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

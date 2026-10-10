@@ -21,4 +21,4 @@ Captured data · Up/Down scroll
 │REDIRECT EVIDENCE                                                             │
 │Not analyzed: only statuses 301, 302, 303, 307, 308                           │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                           
+↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                

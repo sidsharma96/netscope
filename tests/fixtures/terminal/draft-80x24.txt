@@ -1,0 +1,24 @@
+NETSCOPE / REPLAY DRAFT                                                         
+synthetic.har · 1 requests                                                      
+Local draft only · no network traffic                                           
+┌ Draft · Enter chooses · v reveals · Esc returns ─────────────────────────────┐
+│Source #0 · GET · HTTP/1.1 planned · no body                                  │
+│Send disabled: network replay is not implemented                              │
+│> Edit URL: https://example.test/api/books                                    │
+│  [ ] X-Example: [hidden; v reveals all values]                               │
+│  [ ] X-Example: [hidden; v reveals all values]                               │
+│  Add a header                                                                │
+│  Review request (Send remains disabled)                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit                           

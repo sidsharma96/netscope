@@ -100,3 +100,10 @@ pub use protocol::RecordedProtocol;
 /// Borrowed text and exact alternative patterns for recognizing a label.
 #[doc = include_str!("../../../docs/chapters/15-reading-protocol-labels.md")]
 pub mod protocol_lesson {}
+
+mod replay;
+pub use replay::{ReplayDraft, ReplayReview, validate_replay_header};
+
+/// Independent owned text for an editable request draft.
+#[doc = include_str!("../../../docs/chapters/16-preparing-a-request.md")]
+pub mod draft_lesson {}

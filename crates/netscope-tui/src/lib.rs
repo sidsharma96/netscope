@@ -7,3 +7,6 @@ pub use view::{
 };
 
 mod host_view;
+
+mod replay_view;
+pub use replay_view::ReplayEditor;

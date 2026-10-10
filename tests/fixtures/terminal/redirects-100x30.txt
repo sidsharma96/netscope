@@ -27,4 +27,4 @@ Captured data · Up/Down scroll
 │Esc returns to the list; candidate numbers are source IDs                                         │
 │From the list, a clears a host filter to show other hosts                                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                                               
+↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    

@@ -71,6 +71,7 @@ pub fn key_action(key: KeyEvent) -> Option<Action> {
         KeyCode::Char('h') => Some(Action::Hosts),
         KeyCode::Char('a') => Some(Action::AllRequests),
         KeyCode::Char('q') => Some(Action::Quit),
+        KeyCode::Char('r') => Some(Action::Replay),
         _ => None,
     }
 }
@@ -104,9 +105,7 @@ pub fn run_with_renderer(
             rendered?;
             match event::read()? {
                 Event::Key(key) => {
-                    if let Some(action) = key_action(key) {
-                        app.apply(action, session);
-                    }
+                    app.handle_key(key, session);
                 }
                 Event::Resize(width, height) => app.resize(width, height, session),
                 _ => {}

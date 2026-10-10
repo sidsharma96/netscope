@@ -21,4 +21,4 @@ Captured data · Up/Down scroll
 │Request body                                                                  │
 │Request body not recorded                                                     │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit                           
+↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                

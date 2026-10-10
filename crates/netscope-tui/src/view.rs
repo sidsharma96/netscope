@@ -29,6 +29,8 @@ pub enum Action {
     Hosts,
     /// Restore the unfiltered request list.
     AllRequests,
+    /// Open a separate GET replay draft.
+    Replay,
     /// End the application.
     Quit,
 }
@@ -41,6 +43,8 @@ pub enum Screen {
     Inspector(RequestId),
     /// Alphabetical host summaries.
     Hosts,
+    /// Local replay draft and review for a captured request.
+    Replay(RequestId),
 }
 /// Small mutable view state. The session remains separately owned.
 #[derive(Debug)]
@@ -63,6 +67,9 @@ pub struct App {
     pub host_selected: Option<usize>,
     /// First visible host row.
     pub host_offset: usize,
+    /// Local editor, present only while a replay draft is open.
+    pub replay: Option<crate::replay_view::ReplayEditor>,
+    notice: String,
     all_requests_position: Option<(Option<usize>, usize)>,
     host_return: Screen,
     width: u16,
@@ -81,6 +88,8 @@ impl App {
             host_filter: None,
             host_selected: (!session.hosts().is_empty()).then_some(0),
             host_offset: 0,
+            replay: None,
+            notice: String::new(),
             all_requests_position: None,
             host_return: Screen::Overview,
             width: 100,
@@ -146,10 +155,43 @@ impl App {
         }
         self.screen = Screen::Overview;
     }
+    /// Route text editing before global shortcuts; Ctrl+C always quits.
+    pub fn handle_key(&mut self, key: crossterm::event::KeyEvent, session: &Session) {
+        use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
+        if key.kind == KeyEventKind::Release {
+            return;
+        }
+        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+            self.quit = true;
+            return;
+        }
+        if let Screen::Replay(id) = self.screen {
+            if let Some(editor) = self.replay.as_mut() {
+                if !editor.editing() && key.code == KeyCode::Char('q') && key.modifiers.is_empty() {
+                    self.quit = true;
+                    return;
+                }
+                if self.width < 80 || self.height < 24 {
+                    return;
+                }
+                if editor.key(key) {
+                    self.replay = None;
+                    self.screen = Screen::Inspector(id);
+                }
+            }
+            return;
+        }
+        if let Some(action) = crate::terminal::key_action(key) {
+            self.apply(action, session);
+        }
+    }
     /// Apply a key action without I/O or clock reads.
     pub fn apply(&mut self, action: Action, session: &Session) {
         if action == Action::Quit {
             self.quit = true;
+            return;
+        }
+        if matches!(self.screen, Screen::Replay(_)) {
             return;
         }
         if !self.usable() {
@@ -166,6 +208,18 @@ impl App {
             return;
         }
         match (self.screen, action) {
+            (Screen::Inspector(id), Action::Replay) => {
+                if let Some(request) = session.request(id) {
+                    match netscope_core::ReplayDraft::from_request(id, request) {
+                        Ok(draft) => {
+                            self.replay = Some(crate::replay_view::ReplayEditor::new(draft));
+                            self.screen = Screen::Replay(id);
+                            self.notice.clear();
+                        }
+                        Err(reason) => self.notice = reason.into(),
+                    }
+                }
+            }
             (Screen::Hosts, Action::Hosts | Action::Back) => self.screen = self.host_return,
             (_, Action::Hosts) => self.show_hosts(session),
             (Screen::Overview | Screen::Hosts, Action::AllRequests) => self.show_all(),
@@ -510,7 +564,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
     frame.render_widget(Block::default().style(base), area);
     if !app.usable() {
         frame.render_widget(
-            Paragraph::new("Terminal too small: use at least 80 columns × 24 rows\nq quit")
+            Paragraph::new("Terminal too small: use at least 80 columns × 24 rows\nCtrl+c quits; q quits outside text editing")
                 .wrap(ratatui::widgets::Wrap { trim: false }),
             area,
         );
@@ -530,6 +584,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             match app.screen {
                 Screen::Overview => "CAPTURE",
                 Screen::Inspector(_) => "INSPECTOR",
+                Screen::Replay(_) => "REPLAY DRAFT",
                 Screen::Hosts => "HOSTS",
             },
             clip(
@@ -550,7 +605,13 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                     ),
                     None => "Chronological order · Reported total (ms) and recorded start".into(),
                 },
-                Screen::Inspector(_) => "Captured data · Up/Down scroll".into(),
+                Screen::Inspector(_) =>
+                    if app.notice.is_empty() {
+                        "Captured data · Up/Down scroll".into()
+                    } else {
+                        app.notice.clone()
+                    },
+                Screen::Replay(_) => "Local draft only · no network traffic".into(),
                 Screen::Hosts => "Grouped by URL host · derived counts and duration sums".into(),
             }
         ),
@@ -564,16 +625,24 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             Screen::Overview => {
                 "↑/↓ j/k move · Enter inspect · h hosts · a all · Esc back · ? help · q quit"
             }
-            Screen::Inspector(_) => "↑/↓ j/k scroll · h hosts · Esc back · ? help · q quit",
+            Screen::Inspector(_) => {
+                "↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit"
+            }
+            Screen::Replay(_) => "↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit",
         }
         .into(),
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\na           all requests (from lists)\nEsc         return to previous view / close help\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\na           all requests (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {
+        Screen::Replay(_) => {
+            if let Some(editor) = app.replay.as_mut() {
+                editor.draw(frame, body);
+            }
+        }
         Screen::Hosts => crate::host_view::draw_hosts(frame, body, session, app),
         Screen::Overview => {
             let block = Block::default().borders(Borders::ALL).title(" Requests ");

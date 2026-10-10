@@ -22,6 +22,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new(&session);
     app.resize(width, height, &session);
     match mode {
+        "draft" | "review" | "draft-invalid" => {
+            use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+            app.apply(Action::Open, &session);
+            app.apply(Action::Replay, &session);
+            if mode == "review" {
+                for _ in 0..4 {
+                    app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &session);
+                }
+                app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+            } else if mode == "draft-invalid" {
+                app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+                app.handle_key(
+                    KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+                    &session,
+                );
+                app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+            }
+        }
         "redirects" | "retries" | "protocols" => {
             app.apply(Action::Open, &session);
             for _ in 0..1000 {

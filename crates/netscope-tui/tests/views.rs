@@ -636,3 +636,275 @@ fn protocol_notes_are_reachable_in_fixed_terminal_buffers() -> Result<(), Box<dy
     }
     Ok(())
 }
+
+fn press(app: &mut App, session: &Session, code: KeyCode) {
+    app.handle_key(KeyEvent::new(code, KeyModifiers::NONE), session);
+}
+#[test]
+fn replay_edits_are_local_and_text_keys_do_not_quit() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let original = session.requests()[0].clone();
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Down, &session);
+    let offset = app.inspector_offset;
+    press(&mut app, &session, KeyCode::Char('r'));
+    assert_eq!(app.screen, Screen::Replay(RequestId(0)));
+    press(&mut app, &session, KeyCode::Down);
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(
+        app.replay
+            .as_ref()
+            .ok_or("missing draft")?
+            .draft()
+            .selected(0)
+    );
+    press(&mut app, &session, KeyCode::Up);
+    press(&mut app, &session, KeyCode::Enter);
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    for c in "http://localhost:8080/q?x=é".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    assert!(!app.quit);
+    press(&mut app, &session, KeyCode::Backspace);
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(
+        !app.replay
+            .as_ref()
+            .ok_or("missing draft")?
+            .draft()
+            .selected(0)
+    );
+    assert_eq!(
+        app.replay.as_ref().ok_or("missing draft")?.draft().url(),
+        "http://localhost:8080/q?x="
+    );
+    assert_eq!(session.requests()[0], original);
+    press(&mut app, &session, KeyCode::Esc);
+    assert_eq!(app.screen, Screen::Inspector(RequestId(0)));
+    assert_eq!(app.inspector_offset, offset);
+    assert!(app.replay.is_none());
+    Ok(())
+}
+#[test]
+fn replay_review_is_masked_disabled_and_invalidated_by_editing()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    press(&mut app, &session, KeyCode::Down);
+    press(&mut app, &session, KeyCode::Enter);
+    for _ in 0..3 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    let review = render(&session, &mut app, 100, 30)?;
+    assert!(review.contains("Effective destination:"));
+    assert!(review.contains("[hidden; v reveals all values]"));
+    assert!(review.contains("Send disabled"));
+    press(&mut app, &session, KeyCode::Char('s'));
+    assert!(!app.quit);
+    assert_eq!(app.screen, Screen::Replay(RequestId(0)));
+    press(&mut app, &session, KeyCode::Char('v'));
+    assert!(render(&session, &mut app, 100, 30)?.contains("X-Example: one"));
+    press(&mut app, &session, KeyCode::Esc);
+    for _ in 0..4 {
+        press(&mut app, &session, KeyCode::Up);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    press(&mut app, &session, KeyCode::Enter);
+    for _ in 0..4 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    let invalid = render(&session, &mut app, 80, 24)?;
+    assert!(!invalid.contains("Effective destination:"));
+    assert!(invalid.contains("Use an absolute HTTP(S)"));
+    Ok(())
+}
+#[test]
+fn replay_manual_headers_cancel_resize_and_ineligible_source()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    for _ in 0..3 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "X-New".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "q?hajk".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(!app.quit);
+    assert_eq!(
+        app.replay.as_ref().ok_or("missing draft")?.draft().added()[0].value,
+        "q?hajk"
+    );
+    app.resize(50, 10, &session);
+    press(&mut app, &session, KeyCode::Esc);
+    assert!(app.replay.is_some());
+    app.resize(80, 24, &session);
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(
+        app.replay
+            .as_ref()
+            .ok_or("missing draft")?
+            .draft()
+            .added()
+            .is_empty()
+    );
+    press(&mut app, &session, KeyCode::Esc);
+    let mut post = session.requests()[0].clone();
+    post.method = "POST".into();
+    let session = Session::new(vec![post]);
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    assert!(app.replay.is_none());
+    assert!(render(&session, &mut app, 100, 30)?.contains("require a GET"));
+    Ok(())
+}
+
+#[test]
+fn replay_draft_and_review_buffers_match_at_both_sizes() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for (width, height, review, expected) in [
+        (
+            80,
+            24,
+            false,
+            include_str!("../../../tests/fixtures/terminal/draft-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            false,
+            include_str!("../../../tests/fixtures/terminal/draft-100x30.txt"),
+        ),
+        (
+            80,
+            24,
+            true,
+            include_str!("../../../tests/fixtures/terminal/review-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            true,
+            include_str!("../../../tests/fixtures/terminal/review-100x30.txt"),
+        ),
+    ] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Replay, &session);
+        if review {
+            for _ in 0..4 {
+                press(&mut app, &session, KeyCode::Down);
+            }
+            press(&mut app, &session, KeyCode::Enter);
+        }
+        assert_eq!(
+            render(&session, &mut app, width, height)?,
+            expected.trim_end_matches('\n')
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn replay_invalid_buffers_and_edit_cancellation_are_stable()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for (width, height, expected) in [
+        (
+            80,
+            24,
+            include_str!("../../../tests/fixtures/terminal/draft-invalid-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            include_str!("../../../tests/fixtures/terminal/draft-invalid-100x30.txt"),
+        ),
+    ] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Replay, &session);
+        press(&mut app, &session, KeyCode::Enter);
+        press(&mut app, &session, KeyCode::Char('q'));
+        press(&mut app, &session, KeyCode::Esc);
+        assert_eq!(
+            app.replay.as_ref().ok_or("missing draft")?.draft().url(),
+            session.requests()[0].url
+        );
+        press(&mut app, &session, KeyCode::Enter);
+        app.handle_key(
+            KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+            &session,
+        );
+        press(&mut app, &session, KeyCode::Enter);
+        assert_eq!(
+            render(&session, &mut app, width, height)?,
+            expected.trim_end_matches('\n')
+        );
+        press(&mut app, &session, KeyCode::Enter);
+        app.resize(50, 10, &session);
+        press(&mut app, &session, KeyCode::Char('q'));
+        assert!(!app.quit);
+        app.handle_key(
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+            &session,
+        );
+        assert!(app.quit);
+    }
+    Ok(())
+}
+
+#[test]
+fn invalid_manual_header_name_remains_editable() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    for _ in 0..3 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "bad name".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    let screen = render(&session, &mut app, 80, 24)?;
+    assert!(screen.contains("NEW HEADER NAME"));
+    assert!(screen.contains("bad name"));
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    for c in "X-Fixed".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Enter);
+    assert_eq!(
+        app.replay.as_ref().ok_or("missing draft")?.draft().added()[0].name,
+        "X-Fixed"
+    );
+    Ok(())
+}
