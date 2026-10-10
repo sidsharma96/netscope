@@ -22,11 +22,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new(&session);
     app.resize(width, height, &session);
     match mode {
-        "draft" | "review" | "draft-invalid" => {
+        "draft" | "review" | "draft-invalid" | "running" | "complete" | "cancelled" | "timeout"
+        | "limited" | "failed" => {
             use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
             app.apply(Action::Open, &session);
             app.apply(Action::Replay, &session);
-            if mode == "review" {
+            if mode != "draft" && mode != "draft-invalid" {
                 for _ in 0..4 {
                     app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &session);
                 }
@@ -38,6 +39,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     &session,
                 );
                 app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+            }
+            if matches!(
+                mode,
+                "running" | "complete" | "cancelled" | "timeout" | "limited" | "failed"
+            ) {
+                app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+                let editor = app.replay.as_mut().ok_or("missing editor")?;
+                let (id, review) = editor.take_send().ok_or("missing send")?;
+                if mode != "running" {
+                    use netscope_net::{Outcome, ReplayResult};
+                    let outcome = match mode {
+                        "complete" => Outcome::Complete,
+                        "cancelled" => Outcome::Cancelled,
+                        "timeout" => Outcome::TimedOut,
+                        "limited" => Outcome::SizeLimited,
+                        _ => Outcome::Failed("Response body ended with a read error"),
+                    };
+                    editor.complete(
+                        id,
+                        ReplayResult {
+                            source: review.source,
+                            destination: review.destination,
+                            outcome,
+                            status: Some(200),
+                            version: Some("HTTP/1.1".into()),
+                            headers: vec![("content-type".into(), b"text/plain".to_vec())],
+                            body: b"hello".to_vec(),
+                            elapsed: std::time::Duration::from_millis(25),
+                        },
+                    );
+                }
             }
         }
         "redirects" | "retries" | "protocols" => {

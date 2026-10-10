@@ -10,7 +10,7 @@ This checks rustfmt, every workspace target, Clippy, Rust tests and rustdoc exam
 
 ## Current implementation
 
-The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate remains reserved.
+The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
 
 Core timing tests exercise timing distinctions, valid precision, and invalid numbers. Rustdoc also checks chapter examples, including an intentional compiler rejection. The pure tests do not depend on elapsed time, network, random input, or terminal state; the separate pseudo-terminal check is described below. Importer tests consume the synthetic fixtures and mutate fixed values to cover malformed input, body states, warnings, identity, and limits. Binary integration tests verify exit codes and escaped output.
 
@@ -48,4 +48,31 @@ The [protocol contract](contracts/m2-recorded-protocols.md) defines exact export
 
 ## Next milestone
 
-The agreed [M3 replay contract](contracts/m3-single-request-replay.md) defines an editable GET draft, explicit header selection, review before sending, response limits, cancellation, and controlled local tests. The pure draft model and terminal draft/review editor are implemented. Press r from an eligible inspector; sending remains disabled. Select and document the network stack before adding I/O.
+The agreed [M3 replay contract](contracts/m3-single-request-replay.md) defines an editable GET draft, explicit header selection, review before sending, response limits, cancellation, and controlled local tests. The pure draft model and terminal draft/review editor are implemented. Press r from an eligible inspector; Review the destination, then Enter or s sends. The result stays separate from the capture. Esc during sending cancels and returns to the draft after cleanup; o reopens the retained result.
+
+
+## Try a local send
+
+In a separate terminal, create a small temporary response and start a server:
+
+```sh
+mkdir -p /tmp/netscope-local
+printf 'hello from a local server\n' > /tmp/netscope-local/hello.txt
+python3 -m http.server 8080 --bind 127.0.0.1 --directory /tmp/netscope-local
+```
+
+In the Netscope terminal, run:
+
+```sh
+cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
+```
+
+Enter opens the inspector; r opens a draft. On Edit URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Esc returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
+
+## Network verification
+
+`cargo test -p netscope-net --locked --offline` includes two kinds of checks: paused-clock/scripted-body tests for deadline and retention rules, and loopback socket tests for actual HTTP/TLS behaviour. Socket tests use ephemeral ports and explicit synchronization, with wall-clock watchdogs. Local certificates are generated for tests; production code still verifies bundled roots and the destination hostname. No captured external destination is used.
+
+`python3 scripts/check_replay_terminal.py` exercises a live local GET, cancellation while a response stalls, repeated Send keys, q, and Ctrl+C in pseudo-terminals. It checks socket disposal and restored terminal attributes. Run it alongside `python3 scripts/check_terminal.py` to cover the existing navigation and rendering-error paths. Fixed screen buffers test every terminal outcome at both supported minimum/review sizes. The CI workflow runs both process scripts after the workspace checks.
+
+The worker emits one result through a capacity-one channel. Socket and TLS futures are disposed before delivery. An OS DNS lookup may outlive cancellation; runtime shutdown does not wait indefinitely for it, and it cannot update the UI. Body retention is capped at 2 MiB; HTTP parser buffers, TLS buffers, and stored headers are additional bounded memory, as described in the transport decision.

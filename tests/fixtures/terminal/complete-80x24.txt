@@ -1,0 +1,24 @@
+NETSCOPE / NEW RESULT                                                           
+synthetic.har · 1 requests                                                      
+Capture unchanged · only Review → Send starts network traffic                   
+┌ New result · ↑/↓ scroll · v reveals · Esc edits ─────────────────────────────┐
+│Source #0 · GET · HTTP/1.1 · no body                                          │
+│Only Enter or s from Review sends a request                                   │
+│New request: https://example.test/api/books                                   │
+│Outcome: Complete                                                             │
+│Elapsed: 0.025s · retained 5 bytes                                            │
+│Response: HTTP/1.1 · 200                                                      │
+│Response headers (v reveals values):                                          │
+│  content-type: [hidden; v reveals all values]                                │
+│Body preview (content encoding is not decoded):                               │
+│hello                                                                         │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ scroll · v reveal headers · Esc edit draft · q quit                         

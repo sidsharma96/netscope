@@ -171,7 +171,7 @@ impl App {
                     self.quit = true;
                     return;
                 }
-                if self.width < 80 || self.height < 24 {
+                if (self.width < 80 || self.height < 24) && !editor.waiting() {
                     return;
                 }
                 if editor.key(key) {
@@ -584,7 +584,10 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             match app.screen {
                 Screen::Overview => "CAPTURE",
                 Screen::Inspector(_) => "INSPECTOR",
-                Screen::Replay(_) => "REPLAY DRAFT",
+                Screen::Replay(_) => app
+                    .replay
+                    .as_ref()
+                    .map_or("REPLAY", |editor| editor.title()),
                 Screen::Hosts => "HOSTS",
             },
             clip(
@@ -611,7 +614,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                     } else {
                         app.notice.clone()
                     },
-                Screen::Replay(_) => "Local draft only · no network traffic".into(),
+                Screen::Replay(_) =>
+                    "Capture unchanged · only Review → Send starts network traffic".into(),
                 Screen::Hosts => "Grouped by URL host · derived counts and duration sums".into(),
             }
         ),
@@ -628,7 +632,10 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             Screen::Inspector(_) => {
                 "↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit"
             }
-            Screen::Replay(_) => "↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit",
+            Screen::Replay(_) => app
+                .replay
+                .as_ref()
+                .map_or("Ctrl+c quit", |editor| editor.footer()),
         }
         .into(),
         Style::default().fg(Color::Gray),

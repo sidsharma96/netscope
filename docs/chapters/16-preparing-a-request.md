@@ -4,7 +4,7 @@ You find a GET request for a list of books and want to try it against a server o
 
 We need two things to exist at once: the original request and a separate draft we can change. Before sending anything, we also need a way to examine what those changes mean. A mistyped address should remain editable, and a header chosen for one destination should not quietly travel to another.
 
-The current editor stops at that review. Send is visibly disabled because the network part has not been implemented. This lets us work through ownership, editing, and validation without confusing a preview with an action that has already happened.
+Opening a review prepares a possible action. It does not perform that action. Only an explicit Send starts the new request. This chapter follows the data up to that boundary; the next chapter explains what happens while we wait for an answer.
 
 ## Give the draft its own text
 
@@ -57,7 +57,7 @@ These are validation rules for this editor. They are not evidence that the serve
 
 Suppose you explicitly select an Authorization header for one destination, then change the URL to a local server. Keeping that header selected would carry a choice into a different context. Netscope therefore clears selected and manually added headers whenever the saved URL text changes, and immediately explains the reset.
 
-Every draft starts with no captured headers selected. Repeated captured headers remain separate choices. Fields managed by the future HTTP client, such as Host and Content-Length, cannot be copied as ordinary user headers. A blocked entry includes its reason, so a disabled choice does not look like a broken key.
+Every draft starts with no captured headers selected. Repeated captured headers remain separate choices. Fields managed by the HTTP client, such as Host and Content-Length, cannot be copied as ordinary user headers. A blocked entry includes its reason, so a disabled choice does not look like a broken key.
 
 All header values are hidden in the draft list and review until you explicitly reveal them. Masking every value avoids guessing which custom header might contain private information. Names remain visible so you can navigate. When you enter a new value, the editing field shows what you type; leaving that field restores masking.
 
@@ -65,11 +65,11 @@ These choices describe the request we intend to prepare. They do not recreate a 
 
 ## Review the current draft, not an earlier one
 
-A review is a freshly validated view of the current draft. It names the source request, shows the effective destination and selected headers, and distinguishes fields managed by the client. It also states the planned timeout and response-size limit.
+A review is a freshly validated view of the current draft. It names the source request, shows the effective destination and selected headers, and distinguishes fields managed by the client. It also states the timeout and response-size limit.
 
-Returning to edit leaves the review. You must review again after changing the draft; there is no old approval carried into a new destination. In this version, even a valid review cannot send: the editor owns data and draws a preview, but there is no network operation to call.
+Returning to edit leaves the review. You must review again after changing the draft; there is no old approval carried into a new destination. Only Enter or s from a valid review starts sending. Opening the review itself does no network work.
 
-This separation will matter when sending is added. A draft can change while someone is preparing it. An accepted operation needs a definite set of values to work with. We will study waiting and cancellation when that operation exists, rather than introducing async syntax before it has a job to do.
+This separation matters during sending. A draft can change while someone is preparing it. An accepted operation needs a definite set of values to work with. The next chapter follows that operation through waiting and cancellation.
 
 ## Try the boundary yourself
 
@@ -77,6 +77,6 @@ Open the single-request sample from the [walkthrough](06-first-milestone.md), in
 
 Text editing currently happens at the end of the field. Backspace removes the last displayed character group; Ctrl+u clears the field. Enter saves, and Esc cancels that edit. Ordinary characters such as q, h, and j become text while editing. Outside text fields, q quits; Ctrl+c quits from anywhere. The editor labels the insertion point rather than pretending to offer a movable cursor.
 
-Select one header, change the URL, and confirm that the header selection is cleared. Review the valid draft and press Enter: Send remains disabled. Return with Esc, then leave the draft with Esc again. The inspector should have its previous scroll position, and the captured URL should still be the original one.
+Select one header, change the URL, and confirm that the header selection is cleared. Review the valid draft without sending. Return with Esc, then leave the draft with Esc again. The inspector should have its previous scroll position, and the captured URL should still be the original one.
 
-Explain why borrowing the original String for mutation would not give us the two independent values shown in the diagram. Then read the [draft model](../../crates/netscope-core/src/replay.rs) and [editor](../../crates/netscope-tui/src/replay_view.rs). The [replay contract](../contracts/m3-single-request-replay.md) separates the implemented editor from the network behaviour still to come.
+Explain why borrowing the original String for mutation would not give us the two independent values shown in the diagram. Then read the [draft model](../../crates/netscope-core/src/replay.rs) and [editor](../../crates/netscope-tui/src/replay_view.rs). The [next chapter](17-waiting-for-a-response.md) explains how an accepted send keeps the interface responsive.

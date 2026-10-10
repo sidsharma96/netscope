@@ -125,6 +125,11 @@
     "subtitle": "Own an editable draft without changing the recording"
   },
   {
+    "slug": "17-waiting-for-a-response",
+    "title": "Waiting for a response",
+    "subtitle": "Keep input responsive and retain unfinished results"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

@@ -97,14 +97,49 @@ pub fn run_with_renderer(
         let mut terminal: Terminal<CrosstermBackend<Stdout>> =
             Terminal::new(CrosstermBackend::new(io::stdout()))?;
         let mut app = App::new(session);
+        let mut worker: Option<(u64, netscope_net::Worker)> = None;
         while !app.quit {
+            if let Some(editor) = &mut app.replay {
+                if let Some((id, active)) = &mut worker {
+                    // Accept completed work before handling a later cancellation key.
+                    if let Some(result) = active.poll() {
+                        editor.complete(*id, result);
+                        worker = None;
+                    } else if editor.cancellation_requested() {
+                        active.cancel();
+                    }
+                }
+                if worker.is_none()
+                    && let Some((id, review)) = editor.take_send()
+                {
+                    match netscope_net::Worker::start_at(
+                        review,
+                        editor
+                            .started_at()
+                            .ok_or_else(|| io::Error::other("Missing Send time"))?,
+                    ) {
+                        Ok(active) => worker = Some((id, active)),
+                        Err(_) => editor.start_failed(id),
+                    }
+                }
+            }
+
             let mut rendered = Ok(());
             terminal.draw(|frame| {
                 rendered = render(frame, session, &mut app, filename);
             })?;
             rendered?;
+            if !event::poll(std::time::Duration::from_millis(50))? {
+                continue;
+            }
             match event::read()? {
                 Event::Key(key) => {
+                    if let (Some(editor), Some((id, active))) = (&mut app.replay, &mut worker)
+                        && let Some(result) = active.poll()
+                    {
+                        editor.complete(*id, result);
+                        worker = None;
+                    }
                     app.handle_key(key, session);
                 }
                 Event::Resize(width, height) => app.resize(width, height, session),

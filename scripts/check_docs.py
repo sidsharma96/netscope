@@ -33,7 +33,14 @@ for href in reader.links:
         assert slug in reader.pages, f'Unknown chapter: {href}'
         if section: assert f'{slug}--{section}' in reader.ids, f'Unknown section: {href}'
     elif '://' not in href:
-        assert (DOCS / href).resolve().exists(), f'Missing local link: {href}'
+        path, _, fragment = href.partition('#')
+        target = (DOCS / path).resolve()
+        assert target.is_relative_to(ROOT), f'Link leaves repository: {href}'
+        assert target.is_file(), f'Missing local link: {href}'
+        if fragment and target.suffix == '.md':
+            headings = re.findall(r'^#+ (.+)$', target.read_text(), re.MULTILINE)
+            anchors = {re.sub(r'[^a-z0-9]+', '-', h.lower()).strip('-') for h in headings}
+            assert fragment in anchors, f'Missing Markdown heading: {href}'
 for path in ['assets/book.css', 'assets/book.js']:
     assert (DOCS / path).is_file()
 print(f'PASS: reproducible reader, {len(chapters)} chapters, unique anchors, and local links')

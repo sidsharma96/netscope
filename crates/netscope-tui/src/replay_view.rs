@@ -1,6 +1,6 @@
-//! Draft editing stays separate from the capture and has no send operation.
+//! Drafts, pending sends, and new results stay separate from the capture.
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use netscope_core::{NameValue, ReplayDraft, terminal_text};
+use netscope_core::{NameValue, ReplayDraft, ReplayReview, terminal_text};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -15,6 +15,8 @@ enum Mode {
     Name(String),
     Value(String, String),
     Review,
+    Running(u64),
+    Result,
 }
 /// UI state for a local draft. Every header value is masked until explicitly revealed.
 #[derive(Debug)]
@@ -25,6 +27,10 @@ pub struct ReplayEditor {
     offset: usize,
     reveal: bool,
     message: String,
+    pending: Option<(u64, ReplayReview)>,
+    cancel: bool,
+    started: Option<std::time::Instant>,
+    result: Option<netscope_net::ReplayResult>,
 }
 impl ReplayEditor {
     pub(crate) fn new(draft: ReplayDraft) -> Self {
@@ -35,17 +41,101 @@ impl ReplayEditor {
             offset: 0,
             reveal: false,
             message: String::new(),
+            pending: None,
+            cancel: false,
+            started: None,
+            result: None,
         }
     }
     /// Whether ordinary characters belong to a text field.
     pub fn editing(&self) -> bool {
         matches!(self.mode, Mode::Url(_) | Mode::Name(_) | Mode::Value(_, _))
     }
+    pub(crate) fn waiting(&self) -> bool {
+        matches!(self.mode, Mode::Running(_))
+    }
+    pub(crate) fn title(&self) -> &'static str {
+        match self.mode {
+            Mode::Running(_) => "SENDING",
+            Mode::Result => "NEW RESULT",
+            Mode::Review => "REVIEW",
+            _ => "REPLAY DRAFT",
+        }
+    }
+    pub(crate) fn footer(&self) -> &'static str {
+        match self.mode {
+            Mode::Running(_) => "Esc cancel · q / Ctrl+c quit and cancel",
+            Mode::Result => "↑/↓ scroll · v reveal headers · Esc edit draft · q quit",
+            Mode::Review => "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit",
+            _ => "↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit",
+        }
+    }
     /// Borrow the current draft for inspection and tests.
     pub fn draft(&self) -> &ReplayDraft {
         &self.draft
     }
+    /// Take a queued explicit Send. Drawing and editing never start I/O.
+    pub fn take_send(&mut self) -> Option<(u64, ReplayReview)> {
+        self.pending.take()
+    }
+    /// Instant at which the current Send was accepted, before worker dispatch.
+    pub fn started_at(&self) -> Option<std::time::Instant> {
+        self.started
+    }
+    /// Whether Esc requested cancellation of the active operation.
+    pub fn cancellation_requested(&self) -> bool {
+        self.cancel
+    }
+    /// Accept a matching terminal result once; stale results cannot replace it.
+    pub fn complete(&mut self, id: u64, result: netscope_net::ReplayResult) {
+        if !matches!(self.mode, Mode::Running(active) if active == id) {
+            return;
+        }
+        self.result = Some(result);
+        self.pending = None;
+        self.mode = if self.cancel {
+            Mode::Draft
+        } else {
+            Mode::Result
+        };
+        self.message = if self.cancel {
+            "Operation stopped; o opens its retained result".into()
+        } else {
+            String::new()
+        };
+        self.cancel = false;
+        self.offset = 0;
+        self.reveal = false;
+    }
+    /// Report a failure to start, retaining the review for correction.
+    pub fn start_failed(&mut self, id: u64) {
+        if matches!(self.mode, Mode::Running(active) if active == id) {
+            self.mode = Mode::Review;
+            self.pending = None;
+            self.message = "Could not start replay worker".into();
+        }
+    }
     pub(crate) fn key(&mut self, key: KeyEvent) -> bool {
+        if matches!(self.mode, Mode::Running(_)) {
+            if key.code == KeyCode::Esc {
+                self.cancel = true;
+            }
+            return false;
+        }
+        if matches!(self.mode, Mode::Result) {
+            match key.code {
+                KeyCode::Esc => {
+                    self.mode = Mode::Draft;
+                    self.offset = 0;
+                    self.reveal = false;
+                }
+                KeyCode::Up | KeyCode::Char('k') => self.offset = self.offset.saturating_sub(1),
+                KeyCode::Down | KeyCode::Char('j') => self.offset = self.offset.saturating_add(1),
+                KeyCode::Char('v') => self.reveal = !self.reveal,
+                _ => {}
+            }
+            return false;
+        }
         if self.editing() {
             if key.code == KeyCode::Esc {
                 self.mode = Mode::Draft;
@@ -145,7 +235,23 @@ impl ReplayEditor {
                 KeyCode::Up | KeyCode::Char('k') => self.offset = self.offset.saturating_sub(1),
                 KeyCode::Down | KeyCode::Char('j') => self.offset = self.offset.saturating_add(1),
                 KeyCode::Enter | KeyCode::Char('s') => {
-                    self.message = "Send disabled: network replay is not implemented".into()
+                    match self.draft.review().and_then(|r| {
+                        netscope_net::validate(&r)?;
+                        Ok(r)
+                    }) {
+                        Ok(review) => {
+                            static NEXT: std::sync::atomic::AtomicU64 =
+                                std::sync::atomic::AtomicU64::new(1);
+                            let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            self.started = Some(std::time::Instant::now());
+                            self.pending = Some((id, review));
+                            self.mode = Mode::Running(id);
+                            self.message.clear();
+                            self.offset = 0;
+                            self.reveal = false;
+                        }
+                        Err(reason) => self.message = reason.into(),
+                    }
                 }
                 _ => {}
             }
@@ -155,6 +261,11 @@ impl ReplayEditor {
         let added = self.draft.added().len();
         match key.code {
             KeyCode::Esc => return true,
+            KeyCode::Char('o') if self.result.is_some() => {
+                self.mode = Mode::Result;
+                self.offset = 0;
+                self.reveal = false;
+            }
             KeyCode::Up | KeyCode::Char('k') => self.row = self.row.saturating_sub(1),
             KeyCode::Down | KeyCode::Char('j') => {
                 self.row = (self.row + 1).min(captured + added + 2)
@@ -173,7 +284,10 @@ impl ReplayEditor {
                 } else if self.row == captured + added + 1 {
                     self.mode = Mode::Name(String::new());
                 } else {
-                    match self.draft.review() {
+                    match self.draft.review().and_then(|r| {
+                        netscope_net::validate(&r)?;
+                        Ok(r)
+                    }) {
                         Ok(_) => {
                             self.mode = Mode::Review;
                             self.offset = 0;
@@ -215,16 +329,16 @@ impl ReplayEditor {
             ));
         }
         rows.push("Add a header".into());
-        rows.push("Review request (Send remains disabled)".into());
+        rows.push("Review request".into());
         rows
     }
     fn content(&self) -> Vec<String> {
         let mut lines = vec![
             format!(
-                "Source #{} · GET · HTTP/1.1 planned · no body",
+                "Source #{} · GET · HTTP/1.1 · no body",
                 self.draft.source().0
             ),
-            "Send disabled: network replay is not implemented".into(),
+            "Only Enter or s from Review sends a request".into(),
         ];
         if !self.message.is_empty() {
             lines.push(self.message.clone());
@@ -254,6 +368,97 @@ impl ReplayEditor {
                 lines.push(terminal_text(s));
                 lines.push("[insertion point at end]".into());
             }
+            Mode::Running(_) => {
+                if let Ok(review) = self.draft.review() {
+                    lines.push(format!(
+                        "Destination: {}",
+                        terminal_text(&review.destination)
+                    ));
+                }
+                lines.push(
+                    if self.cancel {
+                        "Cancelling; waiting for connection cleanup"
+                    } else {
+                        "Sending a new request · Esc cancels"
+                    }
+                    .into(),
+                );
+                lines.push("10 seconds total · 2 MiB body limit · no redirects or retries".into());
+                lines.push(
+                    "Cancellation stops local I/O; the server may already have acted.".into(),
+                );
+            }
+            Mode::Result => {
+                if let Some(result) = &self.result {
+                    lines.push(format!(
+                        "New request: {}",
+                        terminal_text(&result.destination)
+                    ));
+                    let outcome = match result.outcome {
+                        netscope_net::Outcome::Complete => "Complete",
+                        netscope_net::Outcome::Cancelled => {
+                            "Cancelled; server work cannot be undone"
+                        }
+                        netscope_net::Outcome::TimedOut => "Timed out; partial response retained",
+                        netscope_net::Outcome::SizeLimited => {
+                            "Size limited; partial response retained"
+                        }
+                        netscope_net::Outcome::Failed(reason) => reason,
+                    };
+                    lines.push(format!(
+                        "Outcome: {}{outcome}",
+                        if matches!(result.outcome, netscope_net::Outcome::Failed(_)) {
+                            "Failed: "
+                        } else {
+                            ""
+                        }
+                    ));
+                    lines.push(format!(
+                        "Elapsed: {:.3}s · retained {} bytes",
+                        result.elapsed.as_secs_f64(),
+                        result.body.len()
+                    ));
+                    if let Some(status) = result.status {
+                        lines.push(format!(
+                            "Response: {} · {status}",
+                            result.version.as_deref().unwrap_or("unknown version")
+                        ));
+                        lines.push("Response headers (v reveals values):".into());
+                        for (name, value) in &result.headers {
+                            lines.push(format!(
+                                "  {}: {}",
+                                terminal_text(name),
+                                self.value(&String::from_utf8_lossy(value))
+                            ));
+                        }
+                        lines.push("Body preview (content encoding is not decoded):".into());
+                        if let Ok(text) = std::str::from_utf8(&result.body) {
+                            let mut end = text.len().min(16_384);
+                            while !text.is_char_boundary(end) {
+                                end -= 1;
+                            }
+                            lines.push(terminal_text(&text[..end]));
+                            if end < text.len() {
+                                lines.push("[preview truncated]".into());
+                            }
+                        } else {
+                            lines.push(
+                                result
+                                    .body
+                                    .iter()
+                                    .take(256)
+                                    .map(|b| format!("{b:02x} "))
+                                    .collect(),
+                            );
+                            if result.body.len() > 256 {
+                                lines.push("[binary preview truncated]".into());
+                            }
+                        }
+                    } else {
+                        lines.push("No response headers received".into());
+                    }
+                }
+            }
             Mode::Review => {
                 if let Ok(r) = self.draft.review() {
                     lines.push(format!(
@@ -266,7 +471,7 @@ impl ReplayEditor {
                             terminal_text(&fragment)
                         ));
                     }
-                    lines.push("Limits: 10 seconds total · 2 MiB response body (planned)".into());
+                    lines.push("Limits: 10 seconds total · 2 MiB response body".into());
                     lines.push("Explicit headers:".into());
                     if r.headers.is_empty() {
                         lines.push("  None selected".into());
@@ -286,9 +491,7 @@ impl ReplayEditor {
                     lines.push(
                         "No body framing, cookies, auth, or User-Agent added implicitly".into(),
                     );
-                    lines.push(
-                        "Semantic preview; wire spelling/order awaits the HTTP client".into(),
-                    );
+                    lines.push("Semantic preview; header spelling/order may differ".into());
                     lines.push("Captured headers left out:".into());
                     for (i, h) in self.draft.captured().iter().enumerate() {
                         if !self.draft.selected(i) {
@@ -309,9 +512,13 @@ impl ReplayEditor {
     }
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) {
         let title = if matches!(self.mode, Mode::Review) {
-            " Review · Esc edits · Enter cannot send "
+            " Review · Esc edits · Enter or s sends "
+        } else if matches!(self.mode, Mode::Running(_)) {
+            " Sending · Esc cancels "
+        } else if matches!(self.mode, Mode::Result) {
+            " New result · ↑/↓ scroll · v reveals · Esc edits "
         } else {
-            " Draft · Enter chooses · v reveals · Esc returns "
+            " Draft · Enter chooses · o last result · Esc returns "
         };
         let block = Block::default().borders(Borders::ALL).title(title);
         let inner = block.inner(area);

@@ -40,7 +40,7 @@ The viewer needs at least 80 columns and 24 rows. A smaller window shows a size 
 
 Open `tests/fixtures/har/missing-body.har` and inspect its response body. The label says `Response body not recorded`. Explain why it would be misleading to replace that label with `Captured body is empty`.
 
-The application reads local capture data. It does not replay the requests or recover network messages omitted from the file. Keeping those limits visible makes the first version useful without implying that the recording contains more than it does.
+Inspecting a capture reads local data. It does not initiate replay or recover network messages omitted from the file. Sending is a separate, explicit action from a reviewed draft. Keeping those limits visible makes the first version useful without implying that the recording contains more than it does.
 
 ## Explain what the behaviour requires
 
@@ -52,4 +52,4 @@ Then explain how missing timing information can survive the journey from file to
 
 The [M1 contract](../contracts/m1-har-inspection.md) records accepted input, size limits, screen behaviour, and acceptance cases. M1 means the first milestone. The [verification record](../VERIFICATION.md) distinguishes checks that have run from work still awaiting review.
 
-The older HTML mockups remain design history. The written contract describes the current application. Future replay and protocol analysis require their own decisions about what can be observed and claimed.
+The older HTML mockups remain design history. The written contract describes the current application. The [replay chapters](16-preparing-a-request.md) explain the separate decision to send a new request.

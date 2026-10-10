@@ -690,8 +690,7 @@ fn replay_edits_are_local_and_text_keys_do_not_quit() -> Result<(), Box<dyn std:
     Ok(())
 }
 #[test]
-fn replay_review_is_masked_disabled_and_invalidated_by_editing()
--> Result<(), Box<dyn std::error::Error>> {
+fn replay_review_is_masked_and_invalidated_by_editing() -> Result<(), Box<dyn std::error::Error>> {
     let session = session()?;
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
@@ -705,8 +704,7 @@ fn replay_review_is_masked_disabled_and_invalidated_by_editing()
     let review = render(&session, &mut app, 100, 30)?;
     assert!(review.contains("Effective destination:"));
     assert!(review.contains("[hidden; v reveals all values]"));
-    assert!(review.contains("Send disabled"));
-    press(&mut app, &session, KeyCode::Char('s'));
+    assert!(review.contains("Enter or s sends"));
     assert!(!app.quit);
     assert_eq!(app.screen, Screen::Replay(RequestId(0)));
     press(&mut app, &session, KeyCode::Char('v'));
@@ -906,5 +904,147 @@ fn invalid_manual_header_name_remains_editable() -> Result<(), Box<dyn std::erro
         app.replay.as_ref().ok_or("missing draft")?.draft().added()[0].name,
         "X-Fixed"
     );
+    Ok(())
+}
+
+fn new_replay_result(outcome: netscope_net::Outcome) -> netscope_net::ReplayResult {
+    netscope_net::ReplayResult {
+        source: RequestId(0),
+        destination: "http://localhost/example".into(),
+        outcome,
+        status: Some(200),
+        version: Some("HTTP/1.1".into()),
+        headers: vec![("x-example".into(), b"secret\x1b[31m".to_vec())],
+        body: b"hello\x1b[31m".to_vec(),
+        elapsed: std::time::Duration::from_millis(25),
+    }
+}
+fn reviewed_app(session: &Session) -> App {
+    let mut app = App::new(session);
+    app.apply(Action::Open, session);
+    app.apply(Action::Replay, session);
+    for _ in 0..4 {
+        press(&mut app, session, KeyCode::Down);
+    }
+    press(&mut app, session, KeyCode::Enter);
+    app
+}
+#[test]
+fn send_is_explicit_unique_and_accepts_only_one_matching_result()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    press(&mut app, &session, KeyCode::Char('s'));
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    press(&mut app, &session, KeyCode::Char('s'));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id + 1, new_replay_result(netscope_net::Outcome::Complete));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Sending a new request"));
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Complete));
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Cancelled));
+    let result = render(&session, &mut app, 100, 30)?;
+    assert!(result.contains("Outcome: Complete"));
+    assert!(!result.contains("secret"));
+    assert!(!result.contains('\x1b'));
+    press(&mut app, &session, KeyCode::Esc);
+    press(&mut app, &session, KeyCode::Char('o'));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Outcome: Complete"));
+    Ok(())
+}
+#[test]
+fn cancel_waits_for_cleanup_and_preserves_a_separate_result()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Enter);
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    press(&mut app, &session, KeyCode::Esc);
+    assert!(
+        app.replay
+            .as_ref()
+            .ok_or("editor")?
+            .cancellation_requested()
+    );
+    assert!(render(&session, &mut app, 100, 30)?.contains("Cancelling"));
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Cancelled));
+    assert!(render(&session, &mut app, 100, 30)?.contains("o opens its retained result"));
+    press(&mut app, &session, KeyCode::Char('o'));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Outcome: Cancelled"));
+    assert_eq!(session.requests()[0].url, "https://example.test/api/books");
+    Ok(())
+}
+
+#[test]
+fn running_and_each_result_match_fixed_buffers() -> Result<(), Box<dyn std::error::Error>> {
+    use netscope_net::{Outcome, ReplayResult};
+    let session = session()?;
+    for mode in [
+        "running",
+        "complete",
+        "cancelled",
+        "timeout",
+        "limited",
+        "failed",
+    ] {
+        for (width, height) in [(80, 24), (100, 30)] {
+            let mut app = reviewed_app(&session);
+            press(&mut app, &session, KeyCode::Enter);
+            let editor = app.replay.as_mut().ok_or("editor")?;
+            let (id, review) = editor.take_send().ok_or("send")?;
+            if mode != "running" {
+                let outcome = match mode {
+                    "complete" => Outcome::Complete,
+                    "cancelled" => Outcome::Cancelled,
+                    "timeout" => Outcome::TimedOut,
+                    "limited" => Outcome::SizeLimited,
+                    _ => Outcome::Failed("Response body ended with a read error"),
+                };
+                editor.complete(
+                    id,
+                    ReplayResult {
+                        source: review.source,
+                        destination: review.destination,
+                        outcome,
+                        status: Some(200),
+                        version: Some("HTTP/1.1".into()),
+                        headers: vec![("content-type".into(), b"text/plain".to_vec())],
+                        body: b"hello".to_vec(),
+                        elapsed: std::time::Duration::from_millis(25),
+                    },
+                );
+            }
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+                "../../tests/fixtures/terminal/{mode}-{width}x{height}.txt"
+            ));
+            assert_eq!(
+                render(&session, &mut app, width, height)?,
+                std::fs::read_to_string(path)?.trim_end_matches('\n'),
+                "{mode} at {width}"
+            );
+        }
+    }
     Ok(())
 }

@@ -9,4 +9,16 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+bytes = "1.12.1"
+http-body-util = "0.1.5"
+hyper = { version = "1.12", default-features = false, features = ["client", "http1"] }
+hyper-util = { version = "0.1.21", default-features = false, features = ["tokio"] }
 netscope-core.workspace = true
+tokio = { version = "1.53.2", features = ["rt", "net", "time", "sync", "macros", "io-util"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
+url = "2.5.8"
+webpki-roots = "1.0.9"
+
+[dev-dependencies]
+rcgen = "0.14.10"
+tokio = { version = "1.53.2", features = ["test-util"] }
