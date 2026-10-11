@@ -17,6 +17,7 @@ enum Mode {
     Review,
     Running(u64),
     Result,
+    Compare,
 }
 /// UI state for a local draft. Every header value is masked until explicitly revealed.
 #[derive(Debug)]
@@ -58,6 +59,7 @@ impl ReplayEditor {
         match self.mode {
             Mode::Running(_) => "SENDING",
             Mode::Result => "NEW RESULT",
+            Mode::Compare => "RESPONSE COMPARISON",
             Mode::Review => "REVIEW",
             _ => "REPLAY DRAFT",
         }
@@ -65,7 +67,8 @@ impl ReplayEditor {
     pub(crate) fn footer(&self) -> &'static str {
         match self.mode {
             Mode::Running(_) => "Esc cancel · q / Ctrl+c quit and cancel",
-            Mode::Result => "↑/↓ scroll · v reveal headers · Esc edit draft · q quit",
+            Mode::Result => "↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit",
+            Mode::Compare => "↑/↓ scroll both · v reveal headers · c / Esc result · q quit",
             Mode::Review => "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit",
             _ => "↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit",
         }
@@ -122,8 +125,27 @@ impl ReplayEditor {
             }
             return false;
         }
+        if matches!(self.mode, Mode::Compare) {
+            match key.code {
+                KeyCode::Esc | KeyCode::Char('c') => {
+                    self.mode = Mode::Result;
+                    self.offset = 0;
+                    self.reveal = false;
+                }
+                KeyCode::Up | KeyCode::Char('k') => self.offset = self.offset.saturating_sub(1),
+                KeyCode::Down | KeyCode::Char('j') => self.offset = self.offset.saturating_add(1),
+                KeyCode::Char('v') => self.reveal = !self.reveal,
+                _ => {}
+            }
+            return false;
+        }
         if matches!(self.mode, Mode::Result) {
             match key.code {
+                KeyCode::Char('c') => {
+                    self.mode = Mode::Compare;
+                    self.offset = 0;
+                    self.reveal = false;
+                }
                 KeyCode::Esc => {
                     self.mode = Mode::Draft;
                     self.offset = 0;
@@ -388,6 +410,7 @@ impl ReplayEditor {
                     "Cancellation stops local I/O; the server may already have acted.".into(),
                 );
             }
+            Mode::Compare => {}
             Mode::Result => {
                 if let Some(result) = &self.result {
                     lines.push(format!(
@@ -510,7 +533,22 @@ impl ReplayEditor {
         }
         lines
     }
-    pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) {
+    pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
+        if matches!(self.mode, Mode::Compare) {
+            if let Some(result) = &self.result
+                && let Some(captured) = session.request(result.source)
+            {
+                crate::comparison_view::draw(
+                    frame,
+                    area,
+                    captured,
+                    result,
+                    self.reveal,
+                    &mut self.offset,
+                );
+            }
+            return;
+        }
         let title = if matches!(self.mode, Mode::Review) {
             " Review · Esc edits · Enter or s sends "
         } else if matches!(self.mode, Mode::Running(_)) {

@@ -1,0 +1,30 @@
+NETSCOPE / RESPONSE COMPARISON                                                                      
+synthetic.har · 1 requests                                                                          
+Capture unchanged · only Review → Send starts network traffic                                       
+┌ Captured response ─────────────────────────────┐┌ Replay response ───────────────────────────────┐
+│Source #0                                       ││New request; capture unchanged                  │
+│https://example.test/api/books                  ││https://example.test/api/books                  │
+│Destinations                                    ││Same stored URL text                            │
+│Status: 200                                     ││Status: 200                                     │
+│Status comparison                               ││Same status                                     │
+│Reported: HTTP/1.1                              ││Received: HTTP/1.1                              │
+│Reported total: 45 ms                           ││New elapsed: 0.025 s                            │
+│Different conditions may apply                  ││No speed comparison inferred                    │
+│2 stored bytes; completeness unproven           ││Complete; 5 retained bytes                      │
+│Body bytes (positions start at 0)               ││Stored bytes differ at byte 0                   │
+│BODY PREVIEW (bounded)                          ││BODY PREVIEW (bounded)                          │
+│[]                                              ││hello                                           │
+│RESPONSE HEADERS                                ││Names ignore case; values/order exact           │
+│content-type                                    ││Stored values differ                            │
+│[hidden; v reveals values]                      ││[hidden; v reveals values]                      │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+└────────────────────────────────────────────────┘└────────────────────────────────────────────────┘
+↑/↓ scroll both · v reveal headers · c / Esc result · q quit                                        

@@ -130,6 +130,11 @@
     "subtitle": "Keep input responsive and retain unfinished results"
   },
   {
+    "slug": "18-comparing-responses",
+    "title": "Comparing responses",
+    "subtitle": "Separate matching bytes from missing evidence"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

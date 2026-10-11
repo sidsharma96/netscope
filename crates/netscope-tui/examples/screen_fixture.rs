@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.resize(width, height, &session);
     match mode {
         "draft" | "review" | "draft-invalid" | "running" | "complete" | "cancelled" | "timeout"
-        | "limited" | "failed" => {
+        | "limited" | "failed" | "comparison" => {
             use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
             app.apply(Action::Open, &session);
             app.apply(Action::Replay, &session);
@@ -42,7 +42,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if matches!(
                 mode,
-                "running" | "complete" | "cancelled" | "timeout" | "limited" | "failed"
+                "running"
+                    | "complete"
+                    | "cancelled"
+                    | "timeout"
+                    | "limited"
+                    | "failed"
+                    | "comparison"
             ) {
                 app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
                 let editor = app.replay.as_mut().ok_or("missing editor")?;
@@ -50,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if mode != "running" {
                     use netscope_net::{Outcome, ReplayResult};
                     let outcome = match mode {
-                        "complete" => Outcome::Complete,
+                        "complete" | "comparison" => Outcome::Complete,
                         "cancelled" => Outcome::Cancelled,
                         "timeout" => Outcome::TimedOut,
                         "limited" => Outcome::SizeLimited,
@@ -70,6 +76,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         },
                     );
                 }
+            }
+            if mode == "comparison" {
+                app.handle_key(
+                    KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+                    &session,
+                );
             }
         }
         "redirects" | "retries" | "protocols" => {

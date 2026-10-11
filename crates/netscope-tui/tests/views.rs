@@ -1048,3 +1048,186 @@ fn running_and_each_result_match_fixed_buffers() -> Result<(), Box<dyn std::erro
     }
     Ok(())
 }
+
+#[test]
+fn comparison_navigation_preserves_result_capture_and_masking()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let original = session.requests()[0].clone();
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Enter);
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Complete));
+    press(&mut app, &session, KeyCode::Char('v'));
+    press(&mut app, &session, KeyCode::Char('c'));
+    let first = render(&session, &mut app, 80, 24)?;
+    assert!(first.contains("RESPONSE COMPARISON"));
+    assert!(first.contains("Different stored URL text"));
+    for _ in 0..100 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    let bottom = render(&session, &mut app, 80, 24)?;
+    assert!(bottom.contains("[hidden; v reveals values]"));
+    assert!(!bottom.contains("secret"));
+    press(&mut app, &session, KeyCode::Char('v'));
+    assert!(render(&session, &mut app, 100, 30)?.contains("secret"));
+    assert!(!render(&session, &mut app, 100, 30)?.contains('\x1b'));
+    app.resize(40, 10, &session);
+    assert!(render(&session, &mut app, 40, 10)?.contains("80"));
+    app.resize(100, 30, &session);
+    press(&mut app, &session, KeyCode::Esc);
+    let returned = render(&session, &mut app, 100, 30)?;
+    assert!(returned.contains("NEW RESULT"));
+    assert!(!returned.contains("secret"));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    assert_eq!(session.requests()[0], original);
+    Ok(())
+}
+#[test]
+fn comparison_buffers_match_at_both_sizes() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for (width, height) in [(80, 24), (100, 30)] {
+        let mut app = reviewed_app(&session);
+        press(&mut app, &session, KeyCode::Enter);
+        let editor = app.replay.as_mut().ok_or("editor")?;
+        let (id, review) = editor.take_send().ok_or("send")?;
+        editor.complete(
+            id,
+            netscope_net::ReplayResult {
+                source: review.source,
+                destination: review.destination,
+                outcome: netscope_net::Outcome::Complete,
+                status: Some(200),
+                version: Some("HTTP/1.1".into()),
+                headers: vec![("content-type".into(), b"text/plain".to_vec())],
+                body: b"hello".to_vec(),
+                elapsed: std::time::Duration::from_millis(25),
+            },
+        );
+        press(&mut app, &session, KeyCode::Char('c'));
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../tests/fixtures/terminal/comparison-{width}x{height}.txt"
+        ));
+        assert_eq!(
+            render(&session, &mut app, width, height)?,
+            std::fs::read_to_string(path)?.trim_end_matches('\n')
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn comparison_keeps_the_sent_destination_after_later_draft_edits()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Enter);
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Complete));
+    press(&mut app, &session, KeyCode::Esc);
+    for _ in 0..4 {
+        press(&mut app, &session, KeyCode::Up);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    for c in "http://localhost/unsent-edit".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('o'));
+    press(&mut app, &session, KeyCode::Char('c'));
+    let screen = render(&session, &mut app, 100, 30)?;
+    assert!(screen.contains("http://localhost/example"));
+    assert!(!screen.contains("unsent-edit"));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    Ok(())
+}
+#[test]
+fn comparison_preserves_unknown_status_partial_data_and_unicode_limits()
+-> Result<(), Box<dyn std::error::Error>> {
+    let one = session()?;
+    let mut captured = one.requests()[0].clone();
+    captured.status = 0;
+    captured.body = Body::Text("界🙂".repeat(300));
+    let session = Session::new(vec![captured]);
+    for status in [None, Some(200)] {
+        let mut app = reviewed_app(&session);
+        press(&mut app, &session, KeyCode::Enter);
+        let (id, _) = app
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .ok_or("send")?;
+        let mut result = new_replay_result(netscope_net::Outcome::TimedOut);
+        result.status = status;
+        result.body = "界🙂".repeat(250).into_bytes();
+        if status.is_none() {
+            result.version = None;
+            result.headers.clear();
+            result.body.clear();
+        }
+        app.replay.as_mut().ok_or("editor")?.complete(id, result);
+        press(&mut app, &session, KeyCode::Char('c'));
+        let first = render(&session, &mut app, 100, 30)?;
+        assert!(first.contains("Status: unavailable"));
+        assert!(first.contains(if status.is_some() {
+            "Partial replay:"
+        } else {
+            "Status: no response headers"
+        }));
+        for _ in 0..1000 {
+            press(&mut app, &session, KeyCode::Down);
+        }
+        let bottom = render(&session, &mut app, 80, 24)?;
+        assert!(bottom.contains("preview shortened"));
+        assert!(!bottom.contains('\x1b'));
+        assert!(!bottom.contains('�'));
+    }
+    Ok(())
+}
+
+#[test]
+fn comparison_reveals_non_utf8_header_bytes_as_hex() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Enter);
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    let mut result = new_replay_result(netscope_net::Outcome::Complete);
+    result.headers = vec![("x-raw".into(), vec![0xff, 0x1b])];
+    app.replay.as_mut().ok_or("editor")?.complete(id, result);
+    press(&mut app, &session, KeyCode::Char('c'));
+    press(&mut app, &session, KeyCode::Char('v'));
+    for _ in 0..100 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    let screen = render(&session, &mut app, 100, 30)?;
+    assert!(screen.contains("ff 1b [hex bytes]"));
+    assert!(!screen.contains('�'));
+    assert!(!screen.contains('\x1b'));
+    Ok(())
+}

@@ -647,7 +647,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
     match app.screen {
         Screen::Replay(_) => {
             if let Some(editor) = app.replay.as_mut() {
-                editor.draw(frame, body);
+                editor.draw(frame, body, session);
             }
         }
         Screen::Hosts => crate::host_view::draw_hosts(frame, body, session, app),

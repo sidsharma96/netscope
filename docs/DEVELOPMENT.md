@@ -67,7 +67,7 @@ In the Netscope terminal, run:
 cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
 ```
 
-Enter opens the inspector; r opens a draft. On Edit URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Esc returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
+Enter opens the inspector; r opens a draft. On Edit URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Press c to compare the captured and replayed responses side by side. Up/Down scroll both columns, v reveals header values, and Esc returns to the result. The [comparison contract](contracts/m3-response-comparison.md) distinguishes stored-byte equality from incomplete or unavailable data. Esc from the result returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
 
 ## Network verification
 

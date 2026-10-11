@@ -116,12 +116,20 @@ def check(mode):
                     if mode == 'complete':
                         if 'Outcome: Complete' not in visible or 'local response' not in visible:
                             continue
-                        os.write(master, b'q')
+                        os.write(master, b'c')
                     elif mode == 'cancel':
                         os.write(master, b'sssss\x1b')
                     else:
                         os.write(master, b'q' if mode == 'quit' else b'\x03')
                     stage = 2
+                if mode == 'complete' and stage == 2 and 'RESPONSE COMPARISON' in visible and 'Stored bytes differ' in visible:
+                    assert 'Captured response' in visible and 'Replay response' in visible
+                    assert 'Stored bytes differ' in visible
+                    os.write(master, b'\x1b')
+                    stage = 3
+                if mode == 'complete' and stage == 3 and 'NEW RESULT' in visible:
+                    os.write(master, b'q')
+                    stage = 4
                 if mode == 'cancel' and stage == 2 and 'Operation stopped' in visible:
                     os.write(master, b'o')
                     stage = 3
@@ -136,6 +144,7 @@ def check(mode):
                 Path('/tmp/netscope-replay-pty.log').write_bytes(output)
             assert process.poll() == 0, f'{mode}: process did not exit cleanly (stage {stage})'
             assert stage >= 2, 'live send was not reached'
+            if mode == 'complete': assert stage == 4, 'comparison return was not exercised'
             thread.join(2)
             assert not thread.is_alive(), 'server did not observe socket disposal'
             assert not errors, errors

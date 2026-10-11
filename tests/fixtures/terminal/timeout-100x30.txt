@@ -27,4 +27,4 @@ Capture unchanged · only Review → Send starts network traffic
 │                                                                                                  │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ scroll · v reveal headers · Esc edit draft · q quit                                             
+↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit                                 

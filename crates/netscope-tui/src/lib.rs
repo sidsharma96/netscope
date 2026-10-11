@@ -10,3 +10,5 @@ mod host_view;
 
 mod replay_view;
 pub use replay_view::ReplayEditor;
+
+mod comparison_view;
