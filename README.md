@@ -13,3 +13,5 @@ Single-request replay is defined in the [single-request replay contract](docs/co
 Run `python3 scripts/check.py` for formatting, compiler, Clippy, tests, build, and reader checks. The pinned Rust toolchain may require an initial download. Rust checks run with the lockfile and offline mode; run cargo fetch --locked once to download the locked dependencies before offline checks.
 
 Read [the development guide](docs/DEVELOPMENT.md) for lint rules, fixtures, and test scope.
+
+Save a reviewed, valid draft with **w**, choose a name and path, and confirm the file preview. Reopen it independently with `netscope --draft request.json`. Files preserve body text and selected non-credential headers; known authorization, cookie, and API-key headers are excluded. Opening never sends. See the [save/open walkthrough](docs/DEVELOPMENT.md#save-and-reopen-a-draft).

@@ -92,3 +92,17 @@ The editor limits bodies to 16,384 UTF-8 bytes. JSON must contain one complete v
 `python3 scripts/check_replay_terminal.py` exercises live local GET and JSON POST requests, cancellation while a response stalls, repeated Send keys, q, and Ctrl+C in pseudo-terminals. It checks socket disposal and restored terminal attributes. Run it alongside `python3 scripts/check_terminal.py` to cover the existing navigation and rendering-error paths. Fixed screen buffers test every terminal outcome at both supported minimum/review sizes. The CI workflow runs both process scripts after the workspace checks.
 
 The worker emits one result through a capacity-one channel. Socket and TLS futures are disposed before delivery. An OS DNS lookup may outlive cancellation; runtime shutdown does not wait indefinitely for it, and it cannot update the UI. Body retention is capped at 2 MiB; HTTP parser buffers, TLS buffers, and stored headers are additional bounded memory, as described in the transport decision.
+
+## Save and reopen a draft
+
+From a valid replay draft, press w. Enter a name, then a file path such as `/tmp/book.json`. Relative paths use the working directory; `~` is not expanded. The parent directory must exist. Scroll through the save preview: it shows the exact JSON file and states that Enter replaces the chosen destination. Esc cancels. The preview excludes known authorization, cookie, and API-key headers; other headers, URLs, and bodies can still contain secrets. Enter confirms the local write without sending a request.
+
+Close Netscope and reopen the file:
+
+```sh
+cargo run -p netscope-tui --locked --offline -- --draft /tmp/book.json
+```
+
+The saved name identifies the screen. The request opens for editing, with no captured response or comparison. Review and explicitly Send only when ready. Esc from the draft exits. The supplied `tests/fixtures/drafts/book.json` is a local POST example you can open with the same command and use with the echo server above.
+
+Files contain versioned JSON, without response history or capture identity. Known credential headers cannot be persisted in this version; enter them explicitly after opening when needed. [The contract](contracts/m3-saved-drafts.md) lists the exact exclusions and limits. A failed write leaves an existing destination intact. A crash may leave `<filename>.netscope-tmp`; inspect that file before removing it or save to a different path. Unix saves use owner-only permissions. The writer does not promise survival across every power-loss or network-filesystem scenario.

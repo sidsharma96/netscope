@@ -94,6 +94,32 @@ pub struct ReplayReview {
     pub headers: Vec<NameValue>,
 }
 impl ReplayDraft {
+    pub(crate) fn from_saved_parts(
+        url: String,
+        method: ReplayMethod,
+        format: BodyFormat,
+        body: String,
+        added: Vec<NameValue>,
+    ) -> Result<Self, &'static str> {
+        let draft = Self {
+            source: crate::saved::SAVED_SOURCE,
+            url,
+            method,
+            format,
+            body,
+            captured: vec![],
+            selected: vec![],
+            added,
+            connection_fields: vec![],
+        };
+        draft.review()?;
+        Ok(draft)
+    }
+    /// Whether this draft has an original captured request available for comparison.
+    pub fn has_capture(&self) -> bool {
+        self.source != crate::saved::SAVED_SOURCE
+    }
+
     /// Copy eligible request data into an independent draft.
     /// # Errors
     /// Rejects unsupported methods and missing or unsupported body representations.

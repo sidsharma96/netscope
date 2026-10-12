@@ -1,7 +1,7 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-┌ Draft · Enter chooses · o last result · Esc returns ─────────────────────────────────────────────┐
+┌ Draft · w save file · Enter chooses · o last result · Esc returns ───────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                                              │
 │Only Enter or s from Review sends a request                                                       │
 │URL changed; all header choices cleared; body cleared                                             │

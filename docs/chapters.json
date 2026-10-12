@@ -140,6 +140,11 @@
     "subtitle": "Turn a reviewed body into well-defined bytes"
   },
   {
+    "slug": "20-remembering-a-request",
+    "title": "Remembering a request",
+    "subtitle": "Values, files, and careful replacement"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

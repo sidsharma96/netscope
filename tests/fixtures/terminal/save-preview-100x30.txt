@@ -1,0 +1,30 @@
+NETSCOPE / REPLAY DRAFT                                                                             
+synthetic.har · 1 requests                                                                          
+Capture unchanged · only Review → Send starts network traffic                                       
+┌ Save preview · Enter writes file · Esc cancels ──────────────────────────────────────────────────┐
+│Source #0 · GET · HTTP/1.1 · no body                                                              │
+│Only Enter or s from Review sends a request                                                       │
+│SAVE TO: book.json                                                                                │
+│Enter replaces this file; Esc cancels. No request will be sent.                                   │
+│Plain-text file: URL, body and other headers may contain secrets.                                 │
+│Known authorization, cookie and API-key headers are omitted.                                      │
+│Exact file contents follow (scroll to inspect):                                                   │
+│{                                                                                                 │
+│  "version": 1,                                                                                   │
+│  "name": "quiet book",                                                                           │
+│  "url": "https://example.test/api/books",                                                        │
+│  "method": "GET",                                                                                │
+│  "format": "plain",                                                                              │
+│  "body": "",                                                                                     │
+│  "headers": []                                                                                   │
+│}                                                                                                 │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+↑/↓ scroll · Enter writes file · Esc cancel · q quit                                                

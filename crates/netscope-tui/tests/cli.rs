@@ -54,3 +54,25 @@ fn failed_imports_and_hostile_filenames_are_safe() -> Result<(), Box<dyn std::er
     assert!(text.contains("\\u{1b}"));
     Ok(())
 }
+
+#[test]
+fn saved_draft_summary_does_not_expose_body_or_send() -> Result<(), Box<dyn std::error::Error>> {
+    let path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/drafts/book.json");
+    let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+        .arg("--draft")
+        .arg(path)
+        .output()?;
+    assert!(output.status.success());
+    let text = String::from_utf8(output.stdout)?;
+    assert!(text.contains("Local book"));
+    assert!(text.contains("No request sent"));
+    assert!(!text.contains("café"));
+    let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+        .arg("--draft")
+        .arg(fixture("single-request.har"))
+        .output()?;
+    assert_eq!(output.status.code(), Some(1));
+    assert!(String::from_utf8(output.stderr)?.contains("Invalid saved-draft"));
+    Ok(())
+}

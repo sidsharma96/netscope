@@ -114,3 +114,10 @@ pub mod draft_lesson {}
 /// UTF-8 bytes borrowed from owned request text.
 #[doc = include_str!("../../../docs/chapters/19-submitting-text.md")]
 pub mod submission_lesson {}
+
+mod saved;
+pub use saved::{SAVED_FILE_LIMIT, SavedDraft, sensitive_saved_header};
+
+/// Serialization reconstructs independently owned values.
+#[doc = include_str!("../../../docs/chapters/20-remembering-a-request.md")]
+pub mod persistence_lesson {}

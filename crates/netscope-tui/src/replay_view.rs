@@ -15,6 +15,9 @@ enum Mode {
     Body(String),
     Name(String),
     Value(String, String),
+    SaveName(String),
+    SavePath(String, String),
+    SaveReview(String, netscope_core::SavedDraft),
     Review,
     Running(u64),
     Result,
@@ -30,6 +33,7 @@ pub struct ReplayEditor {
     reveal: bool,
     message: String,
     pending: Option<(u64, ReplayReview)>,
+    save_pending: Option<(String, netscope_core::SavedDraft)>,
     cancel: bool,
     started: Option<std::time::Instant>,
     result: Option<netscope_net::ReplayResult>,
@@ -44,6 +48,7 @@ impl ReplayEditor {
             reveal: false,
             message: String::new(),
             pending: None,
+            save_pending: None,
             cancel: false,
             started: None,
             result: None,
@@ -53,7 +58,12 @@ impl ReplayEditor {
     pub fn editing(&self) -> bool {
         matches!(
             self.mode,
-            Mode::Url(_) | Mode::Body(_) | Mode::Name(_) | Mode::Value(_, _)
+            Mode::Url(_)
+                | Mode::Body(_)
+                | Mode::Name(_)
+                | Mode::Value(_, _)
+                | Mode::SaveName(_)
+                | Mode::SavePath(_, _)
         )
     }
     pub(crate) fn waiting(&self) -> bool {
@@ -70,11 +80,19 @@ impl ReplayEditor {
     }
     pub(crate) fn footer(&self) -> &'static str {
         match self.mode {
+            Mode::SaveReview(_, _) => "↑/↓ scroll · Enter writes file · Esc cancel · q quit",
             Mode::Body(_) => "Ctrl+n newline · Tab tab · Enter save · Esc cancel · Ctrl+c quit",
-            Mode::Url(_) | Mode::Name(_) | Mode::Value(_, _) => {
+            Mode::Url(_)
+            | Mode::Name(_)
+            | Mode::Value(_, _)
+            | Mode::SaveName(_)
+            | Mode::SavePath(_, _) => {
                 "Text input · Ctrl+u clear · Enter save · Esc cancel · Ctrl+c quit"
             }
             Mode::Running(_) => "Esc cancel · q / Ctrl+c quit and cancel",
+            Mode::Result if !self.draft.has_capture() => {
+                "↑/↓ scroll · v reveal headers · Esc edit draft · q quit"
+            }
             Mode::Result => "↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit",
             Mode::Compare => "↑/↓ scroll both · v reveal headers · c / Esc result · q quit",
             Mode::Review => "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit",
@@ -88,6 +106,16 @@ impl ReplayEditor {
     /// Take a queued explicit Send. Drawing and editing never start I/O.
     pub fn take_send(&mut self) -> Option<(u64, ReplayReview)> {
         self.pending.take()
+    }
+    /// Take an explicitly confirmed save for the I/O layer.
+    pub fn take_save(&mut self) -> Option<(String, netscope_core::SavedDraft)> {
+        self.save_pending.take()
+    }
+    /// Report file-writing success or a fixed error without altering the request.
+    pub fn saved(&mut self, result: Result<(), &'static str>) {
+        self.message = result.map_or_else(str::to_owned, |()| {
+            "Draft saved; reopen with netscope --draft <file>".into()
+        });
     }
     /// Instant at which the current Send was accepted, before worker dispatch.
     pub fn started_at(&self) -> Option<std::time::Instant> {
@@ -149,7 +177,7 @@ impl ReplayEditor {
         }
         if matches!(self.mode, Mode::Result) {
             match key.code {
-                KeyCode::Char('c') => {
+                KeyCode::Char('c') if self.draft.has_capture() => {
                     self.mode = Mode::Compare;
                     self.offset = 0;
                     self.reveal = false;
@@ -175,6 +203,33 @@ impl ReplayEditor {
             if key.code == KeyCode::Enter {
                 let previous = std::mem::replace(&mut self.mode, Mode::Draft);
                 match previous {
+                    Mode::SaveName(name) => {
+                        match netscope_core::SavedDraft::from_draft(name.clone(), &self.draft) {
+                            Ok(_) => self.mode = Mode::SavePath(name, String::new()),
+                            Err(reason) => {
+                                self.message = reason.into();
+                                self.mode = Mode::SaveName(name);
+                            }
+                        }
+                    }
+                    Mode::SavePath(name, path) => {
+                        if path.is_empty() || path.chars().any(char::is_control) {
+                            self.message = "Enter a file path without control characters".into();
+                            self.mode = Mode::SavePath(name, path);
+                        } else {
+                            match netscope_core::SavedDraft::from_draft(name.clone(), &self.draft) {
+                                Ok(saved) => {
+                                    self.mode = Mode::SaveReview(path, saved);
+                                    self.offset = 0;
+                                    self.message.clear();
+                                }
+                                Err(reason) => {
+                                    self.message = reason.into();
+                                    self.mode = Mode::SaveName(name);
+                                }
+                            }
+                        }
+                    }
                     Mode::Url(value) => {
                         self.message = if self.draft.set_url(value) {
                             "URL changed; all header choices cleared; body cleared"
@@ -225,7 +280,12 @@ impl ReplayEditor {
             }
             let body_edit = matches!(self.mode, Mode::Body(_));
             let text = match &mut self.mode {
-                Mode::Url(s) | Mode::Body(s) | Mode::Name(s) | Mode::Value(_, s) => s,
+                Mode::Url(s)
+                | Mode::Body(s)
+                | Mode::Name(s)
+                | Mode::Value(_, s)
+                | Mode::SaveName(s)
+                | Mode::SavePath(_, s) => s,
                 _ => return false,
             };
             if body_edit
@@ -270,6 +330,27 @@ impl ReplayEditor {
         {
             return false;
         }
+        if matches!(self.mode, Mode::SaveReview(_, _)) {
+            match key.code {
+                KeyCode::Esc => {
+                    self.mode = Mode::Draft;
+                    self.offset = 0;
+                    self.message = "Save cancelled".into();
+                }
+                KeyCode::Up | KeyCode::Char('k') => self.offset = self.offset.saturating_sub(1),
+                KeyCode::Down | KeyCode::Char('j') => self.offset = self.offset.saturating_add(1),
+                KeyCode::Enter => {
+                    if let Mode::SaveReview(path, saved) =
+                        std::mem::replace(&mut self.mode, Mode::Draft)
+                    {
+                        self.save_pending = Some((path, saved));
+                        self.offset = 0;
+                    }
+                }
+                _ => {}
+            }
+            return false;
+        }
         if key.code == KeyCode::Char('v') {
             self.reveal = !self.reveal;
             return false;
@@ -309,6 +390,10 @@ impl ReplayEditor {
         let captured = self.draft.captured().len();
         let added = self.draft.added().len();
         match key.code {
+            KeyCode::Char('w') => {
+                self.mode = Mode::SaveName(String::new());
+                self.message.clear();
+            }
             KeyCode::Char('m') => {
                 self.draft.toggle_method();
                 self.message = "Method changed; body cleared and format reset to plain text".into();
@@ -416,8 +501,12 @@ impl ReplayEditor {
         };
         let mut lines = vec![
             format!(
-                "Source #{} · {} · HTTP/1.1 · {}",
-                self.draft.source().0,
+                "{} · {} · HTTP/1.1 · {}",
+                if self.draft.has_capture() {
+                    format!("Source #{}", self.draft.source().0)
+                } else {
+                    "Saved draft · no capture".into()
+                },
                 method.as_str(),
                 if method == ReplayMethod::Get {
                     "no body".into()
@@ -448,9 +537,34 @@ impl ReplayEditor {
                     lines.push(format!("{} {row}", if i == self.row { ">" } else { " " }));
                 }
             }
-            Mode::Url(s) | Mode::Body(s) | Mode::Name(s) | Mode::Value(_, s) => {
+            Mode::SaveReview(path, saved) => {
+                lines.push(format!("SAVE TO: {}", terminal_text(path)));
+                lines
+                    .push("Enter replaces this file; Esc cancels. No request will be sent.".into());
+                lines.push(
+                    "Plain-text file: URL, body and other headers may contain secrets.".into(),
+                );
+                lines.push("Known authorization, cookie and API-key headers are omitted.".into());
+                lines.push("Exact file contents follow (scroll to inspect):".into());
+                match saved.encode() {
+                    Ok(text) => lines.extend(text.lines().map(terminal_text)),
+                    Err(reason) => lines.push(reason.into()),
+                }
+            }
+            Mode::Url(s)
+            | Mode::Body(s)
+            | Mode::Name(s)
+            | Mode::Value(_, s)
+            | Mode::SaveName(s)
+            | Mode::SavePath(_, s) => {
                 lines.push(
                     match self.mode {
+                        Mode::SaveName(_) => {
+                            "SAVE NAME · plain-text file; known credential headers omitted"
+                        }
+                        Mode::SavePath(_, _) => {
+                            "SAVE PATH · existing file replaced only after confirmation"
+                        }
                         Mode::Url(_) => "EDIT URL",
                         Mode::Body(_) => "EDIT BODY · Ctrl+n newline · Tab inserts tab",
                         Mode::Name(_) => "NEW HEADER NAME",
@@ -645,7 +759,9 @@ impl ReplayEditor {
             }
             return;
         }
-        let title = if matches!(self.mode, Mode::Review) {
+        let title = if matches!(self.mode, Mode::SaveReview(_, _)) {
+            " Save preview · Enter writes file · Esc cancels "
+        } else if matches!(self.mode, Mode::Review) {
             " Review · Esc edits · Enter or s sends "
         } else if matches!(self.mode, Mode::Running(_)) {
             " Sending · Esc cancels "
@@ -653,8 +769,10 @@ impl ReplayEditor {
             " New result · ↑/↓ scroll · v reveals · Esc edits "
         } else if self.editing() {
             " Editing · Enter saves · Esc cancels "
+        } else if !self.draft.has_capture() {
+            " Draft · w save file · Enter chooses · o last result · Esc quits "
         } else {
-            " Draft · Enter chooses · o last result · Esc returns "
+            " Draft · w save file · Enter chooses · o last result · Esc returns "
         };
         let block = Block::default().borders(Borders::ALL).title(title);
         let inner = block.inner(area);

@@ -33,8 +33,9 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 14. [Waiting for a response](chapters/17-waiting-for-a-response.md)
 15. [Comparing responses](chapters/18-comparing-responses.md)
 16. [Submitting text](chapters/19-submitting-text.md)
-17. [Checking our work](chapters/04-quality-and-tests.md)
-18. [Try the first version](chapters/06-first-milestone.md)
-19. [Writing this book](chapters/05-decisions.md)
+17. [Remembering a request](chapters/20-remembering-a-request.md)
+18. [Checking our work](chapters/04-quality-and-tests.md)
+19. [Try the first version](chapters/06-first-milestone.md)
+20. [Writing this book](chapters/05-decisions.md)
 
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.

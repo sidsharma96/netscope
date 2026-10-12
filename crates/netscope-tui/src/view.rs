@@ -29,7 +29,7 @@ pub enum Action {
     Hosts,
     /// Restore the unfiltered request list.
     AllRequests,
-    /// Open a separate GET replay draft.
+    /// Open a separate replay draft.
     Replay,
     /// End the application.
     Quit,
@@ -76,6 +76,20 @@ pub struct App {
     height: u16,
 }
 impl App {
+    /// Open independent saved data, without inventing a captured response.
+    /// # Errors
+    /// Rejects invalid or unsupported saved requests.
+    pub fn from_saved(
+        session: &Session,
+        saved: &netscope_core::SavedDraft,
+    ) -> Result<Self, &'static str> {
+        let draft = saved.to_draft()?;
+        let mut app = Self::new(session);
+        app.screen = Screen::Replay(draft.source());
+        app.replay = Some(crate::ReplayEditor::new(draft));
+        Ok(app)
+    }
+
     /// Initialise selections from the session rather than inventing empty rows.
     pub fn new(session: &Session) -> Self {
         Self {
@@ -175,8 +189,12 @@ impl App {
                     return;
                 }
                 if editor.key(key) {
-                    self.replay = None;
-                    self.screen = Screen::Inspector(id);
+                    if editor.draft().has_capture() {
+                        self.replay = None;
+                        self.screen = Screen::Inspector(id);
+                    } else {
+                        self.quit = true;
+                    }
                 }
             }
             return;
@@ -615,7 +633,16 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                         app.notice.clone()
                     },
                 Screen::Replay(_) =>
-                    "Capture unchanged · only Review → Send starts network traffic".into(),
+                    if app
+                        .replay
+                        .as_ref()
+                        .is_some_and(|e| !e.draft().has_capture())
+                    {
+                        "Saved request · no capture · only Review → Send starts network traffic"
+                            .into()
+                    } else {
+                        "Capture unchanged · only Review → Send starts network traffic".into()
+                    },
                 Screen::Hosts => "Grouped by URL host · derived counts and duration sums".into(),
             }
         ),

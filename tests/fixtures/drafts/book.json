@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "name": "Local book",
+  "url": "http://127.0.0.1:8080/books",
+  "method": "POST",
+  "format": "json",
+  "body": "{\"title\":\"café\"}",
+  "headers": []
+}

@@ -1379,3 +1379,139 @@ fn post_edit_review_and_result_buffers_match() -> Result<(), Box<dyn std::error:
     }
     Ok(())
 }
+
+#[test]
+fn save_preview_never_sends_and_loading_has_no_capture() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    press(&mut app, &session, KeyCode::Char('w'));
+    for c in "quiet book".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    assert!(!app.quit);
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "book.json".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    let screen = render(&session, &mut app, 100, 30)?;
+    assert!(screen.contains("SAVE TO: book.json"));
+    assert!(screen.contains("Plain-text file"));
+    let editor = app.replay.as_mut().ok_or("missing editor")?;
+    assert!(editor.take_send().is_none());
+    assert!(editor.take_save().is_none());
+    press(&mut app, &session, KeyCode::Enter);
+    let editor = app.replay.as_mut().ok_or("missing editor")?;
+    let (path, saved) = editor.take_save().ok_or("save not queued")?;
+    assert_eq!(path, "book.json");
+    assert!(editor.take_save().is_none());
+    assert!(editor.take_send().is_none());
+    let empty = Session::new(vec![]);
+    let mut reopened = App::from_saved(&empty, &saved)?;
+    let screen = render(&empty, &mut reopened, 100, 30)?;
+    assert!(screen.contains("Saved draft · no capture"));
+    assert!(!screen.contains("Source #"));
+    assert!(
+        reopened
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .is_none()
+    );
+    // A reopened draft has only Edit URL, Add header, and Review rows.
+    press(&mut reopened, &empty, KeyCode::Down);
+    press(&mut reopened, &empty, KeyCode::Down);
+    press(&mut reopened, &empty, KeyCode::Enter);
+    assert!(
+        reopened
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .is_none()
+    );
+    press(&mut reopened, &empty, KeyCode::Enter);
+    let editor = reopened.replay.as_mut().ok_or("editor")?;
+    let (id, review) = editor.take_send().ok_or("missing explicit send")?;
+    editor.complete(
+        id,
+        netscope_net::ReplayResult {
+            method: review.method,
+            request_body_bytes: review.body.len(),
+            source: review.source,
+            destination: review.destination,
+            outcome: netscope_net::Outcome::Complete,
+            status: Some(200),
+            version: Some("HTTP/1.1".into()),
+            headers: vec![],
+            body: vec![],
+            elapsed: std::time::Duration::ZERO,
+        },
+    );
+    press(&mut reopened, &empty, KeyCode::Char('c'));
+    let screen = render(&empty, &mut reopened, 100, 30)?;
+    assert!(screen.contains("NEW RESULT"));
+    assert!(!screen.contains("RESPONSE COMPARISON"));
+    press(&mut reopened, &empty, KeyCode::Esc);
+    press(&mut reopened, &empty, KeyCode::Char('w'));
+    press(&mut reopened, &empty, KeyCode::Esc);
+    assert!(
+        reopened
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_save()
+            .is_none()
+    );
+    press(&mut reopened, &empty, KeyCode::Esc);
+    assert!(reopened.quit);
+    Ok(())
+}
+
+#[test]
+fn saved_and_save_preview_buffers_match() -> Result<(), Box<dyn std::error::Error>> {
+    for (width, height, preview_expected, saved_expected) in [
+        (
+            80,
+            24,
+            include_str!("../../../tests/fixtures/terminal/save-preview-80x24.txt"),
+            include_str!("../../../tests/fixtures/terminal/saved-80x24.txt"),
+        ),
+        (
+            100,
+            30,
+            include_str!("../../../tests/fixtures/terminal/save-preview-100x30.txt"),
+            include_str!("../../../tests/fixtures/terminal/saved-100x30.txt"),
+        ),
+    ] {
+        let session = session()?;
+        let mut app = App::new(&session);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Replay, &session);
+        for c in "wquiet book".chars() {
+            press(&mut app, &session, KeyCode::Char(c));
+        }
+        press(&mut app, &session, KeyCode::Enter);
+        for c in "book.json".chars() {
+            press(&mut app, &session, KeyCode::Char(c));
+        }
+        press(&mut app, &session, KeyCode::Enter);
+        assert_eq!(
+            render(&session, &mut app, width, height)?,
+            preview_expected.trim_end_matches('\n')
+        );
+        let saved = netscope_core::SavedDraft::decode(include_bytes!(
+            "../../../tests/fixtures/drafts/book.json"
+        ))?;
+        let empty = Session::new(vec![]);
+        let mut app = App::from_saved(&empty, &saved)?;
+        assert_eq!(
+            render(&empty, &mut app, width, height)?,
+            saved_expected.trim_end_matches('\n')
+        );
+    }
+    Ok(())
+}

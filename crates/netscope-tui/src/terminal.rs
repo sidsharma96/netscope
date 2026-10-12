@@ -92,14 +92,40 @@ pub fn run_with_renderer(
     filename: &str,
     mut render: impl FnMut(&mut Frame, &Session, &mut App, &str) -> io::Result<()>,
 ) -> io::Result<()> {
+    run_app(session, filename, App::new(session), &mut render)
+}
+/// Open a saved request in the editor with no capture or automatic Send.
+/// # Errors
+/// Returns terminal setup, event, rendering, or restoration failures.
+pub fn run_saved(saved: &netscope_core::SavedDraft, filename: &str) -> io::Result<()> {
+    let session = Session::new(vec![]);
+    let app = App::from_saved(&session, saved).map_err(io::Error::other)?;
+    run_app(
+        &session,
+        filename,
+        app,
+        &mut |frame, session, app, filename| {
+            draw(frame, session, app, filename);
+            Ok(())
+        },
+    )
+}
+fn run_app(
+    session: &Session,
+    filename: &str,
+    mut app: App,
+    render: &mut impl FnMut(&mut Frame, &Session, &mut App, &str) -> io::Result<()>,
+) -> io::Result<()> {
     let mut guard = Restore::enter()?;
     let result = (|| {
         let mut terminal: Terminal<CrosstermBackend<Stdout>> =
             Terminal::new(CrosstermBackend::new(io::stdout()))?;
-        let mut app = App::new(session);
         let mut worker: Option<(u64, netscope_net::Worker)> = None;
         while !app.quit {
             if let Some(editor) = &mut app.replay {
+                if let Some((path, saved)) = editor.take_save() {
+                    editor.saved(crate::saved_file::save(std::path::Path::new(&path), &saved));
+                }
                 if let Some((id, active)) = &mut worker {
                     // Accept completed work before handling a later cancellation key.
                     if let Some(result) = active.poll() {

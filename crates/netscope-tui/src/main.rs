@@ -8,12 +8,38 @@ use std::{
 };
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.len() == 2 && args[0] == "--draft" {
+        let path = Path::new(&args[1]);
+        return match netscope_tui::saved_file::load(path) {
+            Ok(saved) => {
+                if io::stdin().is_terminal() && io::stdout().is_terminal() {
+                    match netscope_tui::terminal::run_saved(&saved, &terminal_text(&saved.name)) {
+                        Ok(()) => ExitCode::SUCCESS,
+                        Err(_) => {
+                            eprintln!("Terminal operation failed");
+                            ExitCode::from(1)
+                        }
+                    }
+                } else {
+                    println!(
+                        "Saved draft: {}\nRun in a terminal to edit and review. No request sent.",
+                        terminal_text(&saved.name)
+                    );
+                    ExitCode::SUCCESS
+                }
+            }
+            Err(reason) => {
+                eprintln!("{reason}");
+                ExitCode::from(1)
+            }
+        };
+    }
     if args.is_empty() {
-        println!("Usage: netscope <capture.har>");
+        println!("Usage: netscope <capture.har> | netscope --draft <request.json>");
         return ExitCode::SUCCESS;
     }
     if args.len() != 1 {
-        eprintln!("Usage: netscope <capture.har>");
+        eprintln!("Usage: netscope <capture.har> | netscope --draft <request.json>");
         return ExitCode::from(2);
     }
     let path = Path::new(&args[0]);

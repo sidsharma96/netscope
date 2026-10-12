@@ -1,0 +1,30 @@
+NETSCOPE / REPLAY DRAFT                                                                             
+synthetic.har · 0 requests                                                                          
+Saved request · no capture · only Review → Send starts network traffic                              
+┌ Draft · w save file · Enter chooses · o last result · Esc quits ─────────────────────────────────┐
+│Saved draft · no capture · POST · HTTP/1.1 · 17 request body bytes                                │
+│Only Enter or s from Review sends a request                                                       │
+│m: method POST · t: application/json · b: edit body                                               │
+│> Edit URL: http://127.0.0.1:8080/books                                                           │
+│  Add a header                                                                                    │
+│  Review request                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit                           

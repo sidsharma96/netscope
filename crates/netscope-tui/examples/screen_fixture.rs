@@ -18,10 +18,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         include_bytes!("../../../tests/fixtures/har/single-request.har")
     };
-    let session = import_bytes(bytes, Limits::default())?;
+    let session = if mode == "saved" {
+        netscope_core::Session::new(vec![])
+    } else {
+        import_bytes(bytes, Limits::default())?
+    };
     let mut app = App::new(&session);
     app.resize(width, height, &session);
     match mode {
+        "saved" => {
+            let saved = netscope_core::SavedDraft::decode(include_bytes!(
+                "../../../tests/fixtures/drafts/book.json"
+            ))?;
+            app = App::from_saved(&session, &saved)?;
+        }
+        "save-preview" => {
+            use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+            app.apply(Action::Open, &session);
+            app.apply(Action::Replay, &session);
+            for c in "wquiet book".chars() {
+                app.handle_key(
+                    KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE),
+                    &session,
+                );
+            }
+            app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+            for c in "book.json".chars() {
+                app.handle_key(
+                    KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE),
+                    &session,
+                );
+            }
+            app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+        }
         "draft" | "review" | "draft-invalid" | "running" | "complete" | "cancelled" | "timeout"
         | "limited" | "failed" | "comparison" | "post-edit" | "post-review" | "post-result" => {
             use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
