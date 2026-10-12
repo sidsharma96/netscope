@@ -144,3 +144,26 @@ fn non_utf8_paths_reach_file_validation() -> Result<(), Box<dyn std::error::Erro
     assert!(!String::from_utf8(output.stderr)?.contains("Invalid arguments"));
     Ok(())
 }
+
+#[test]
+fn native_browser_exports_work_through_the_command() -> Result<(), Box<dyn std::error::Error>> {
+    for (name, count) in [
+        ("chrome-154.har", 9),
+        ("firefox-146.har", 9),
+        ("firefox-146-in-progress.har", 3),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+            .arg(fixture(&format!("browsers/{name}")))
+            .output()?;
+        assert!(
+            output.status.success(),
+            "{name}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let text = String::from_utf8(output.stdout)?;
+        assert!(text.contains(&format!("{count} requests")));
+        assert!(text.contains("Summary mode"));
+        assert!(!text.contains('\u{1b}'));
+    }
+    Ok(())
+}

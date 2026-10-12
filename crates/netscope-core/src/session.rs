@@ -48,6 +48,15 @@ pub enum RequestBody {
         /// Captured text, including an empty string.
         text: String,
     },
+    /// Both exporter text and parsed fields, retained without reconciling them.
+    TextAndParams {
+        /// Exporter MIME type.
+        mime_type: String,
+        /// Captured text, not reconstructed from the parameters.
+        text: String,
+        /// Ordered exporter-supplied fields.
+        params: Vec<Parameter>,
+    },
     /// Ordered captured form fields.
     Params {
         /// Exporter MIME type.

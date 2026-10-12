@@ -1,6 +1,6 @@
 # Synthetic HAR fixtures
 
-All timestamps and request data are invented. No real endpoints, cookies, or credentials are included. These fixtures are consumed by deterministic importer and CLI tests.
+In the root-level fixtures listed below, all timestamps and request data are invented. No real endpoints, cookies, or credentials are included. These fixtures are consumed by deterministic importer and CLI tests.
 
 | File | Verified importer behaviour |
 | --- | --- |
@@ -17,3 +17,5 @@ The multi-host.har fixture contains six entries across three normalised URL host
 `retries.har` contains synthetic GET/HEAD repeats after selected errors, an excluded POST, missing status, and a source with no match. Its Retry-After value deliberately exceeds the matching window; the inspector does not interpret that header.
 
 `protocols.har` retains exact request/response labels for equivalent aliases, disagreement, and unknown spellings. Its invented entries are not packet or frame captures.
+
+The [browser fixtures](browsers/README.md) instead contain native browser exports of controlled loopback requests, with real recorded timings and synthetic content. Their frozen files are also tested offline.

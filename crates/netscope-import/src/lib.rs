@@ -209,14 +209,6 @@ fn optional_bool(v: &Value, key: &str, p: &str) -> Result<Option<bool>> {
         })
         .transpose()
 }
-fn nonempty(v: &Value, key: &str, p: &str) -> Result<String> {
-    let s = required_string(v, key, p)?;
-    if s.is_empty() {
-        Err(error(&format!("{p}.{key}"), "expected nonempty string"))
-    } else {
-        Ok(s)
-    }
-}
 fn timestamp(s: &str, p: &str) -> Result<(i64, u32)> {
     DateTime::parse_from_rfc3339(s)
         .map(|t| (t.timestamp(), t.timestamp_subsec_nanos()))
@@ -268,7 +260,11 @@ fn cookies(v: &Value, p: &str) -> Result<Vec<Cookie>> {
             };
             let path = optional_string(x, "path", &p)?;
             let domain = optional_string(x, "domain", &p)?;
-            let expires = optional_string(x, "expires", &p)?;
+            let expires = if x.get("expires").is_some_and(Value::is_null) {
+                None
+            } else {
+                optional_string(x, "expires", &p)?
+            };
             if let Some(s) = &expires {
                 timestamp(s, &format!("{p}.expires"))?;
             }
@@ -290,13 +286,11 @@ fn request_body(v: &Value, p: &str) -> Result<RequestBody> {
     let p = format!("{p}.postData");
     object(v, &p)?;
     let mime_type = required_string(v, "mimeType", &p)?;
-    match (v.get("text"), v.get("params")) {
-        (Some(text), None) => Ok(RequestBody::Text {
-            mime_type,
-            text: string(text, &format!("{p}.text"))?,
-        }),
-        (None, Some(params)) => {
-            let params = array(params, &format!("{p}.params"))?
+    let text = optional_string(v, "text", &p)?;
+    let params = v
+        .get("params")
+        .map(|params| {
+            array(params, &format!("{p}.params"))?
                 .iter()
                 .enumerate()
                 .map(|(i, x)| {
@@ -309,12 +303,21 @@ fn request_body(v: &Value, p: &str) -> Result<RequestBody> {
                         content_type: optional_string(x, "contentType", &p)?,
                     })
                 })
-                .collect::<Result<_>>()?;
-            Ok(RequestBody::Params { mime_type, params })
-        }
-        _ => Err(error(&p, "expected exactly one of text or params")),
+                .collect::<Result<Vec<_>>>()
+        })
+        .transpose()?;
+    match (text, params) {
+        (Some(text), Some(params)) => Ok(RequestBody::TextAndParams {
+            mime_type,
+            text,
+            params,
+        }),
+        (Some(text), None) => Ok(RequestBody::Text { mime_type, text }),
+        (None, Some(params)) => Ok(RequestBody::Params { mime_type, params }),
+        (None, None) => Err(error(&p, "expected text or params")),
     }
 }
+
 fn response_body(v: &Value, p: &str, limit: usize) -> Result<Body> {
     let text = optional_string(v, "text", p)?;
     let encoding = optional_string(v, "encoding", p)?;
@@ -398,7 +401,7 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         .host_str()
         .ok_or_else(|| error(&format!("{rp}.url"), "expected host"))?
         .to_owned();
-    let request_version = nonempty(req, "httpVersion", &rp)?;
+    let request_version = required_string(req, "httpVersion", &rp)?;
     let headers = pairs(req, "headers", &rp)?;
     let query = pairs(req, "queryString", &rp)?;
     let request_cookies = cookies(req, &rp)?;
@@ -419,7 +422,7 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         ));
     }
     let status_text = required_string(res, "statusText", &sp)?;
-    let response_version = nonempty(res, "httpVersion", &sp)?;
+    let response_version = required_string(res, "httpVersion", &sp)?;
     let response_headers = pairs(res, "headers", &sp)?;
     let response_cookies = cookies(res, &sp)?;
     let response_header_size = size(res, "headersSize", &sp)?;
@@ -431,7 +434,8 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         field(content, "size", &format!("{cp}.size"))?,
         &format!("{cp}.size"),
     )?;
-    let mime_type = required_string(content, "mimeType", &cp)?;
+    let missing_mime = content.get("mimeType").is_none();
+    let mime_type = optional_string(content, "mimeType", &cp)?.unwrap_or_default();
     let body = response_body(content, &cp, limits.decoded_body_bytes)?;
     let t = field(v, "timings", &format!("{p}.timings"))?;
     let tp = format!("{p}.timings");
@@ -466,6 +470,9 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         .transpose()?;
     let connection = optional_string(v, "connection", p)?;
     let mut warnings = Vec::new();
+    if missing_mime {
+        warnings.push("Response MIME type not recorded".into());
+    }
     let sum = [timings.blocked, timings.dns, timings.connect].iter().fold(
         timings.send + timings.wait + timings.receive,
         |sum, t| {

@@ -1663,3 +1663,26 @@ fn end_cursor_after_a_full_row_has_its_own_display_space() -> Result<(), Box<dyn
     assert_eq!(text.len(), usize::from(80 - 2 * start.x));
     Ok(())
 }
+
+#[test]
+fn browser_forms_and_incomplete_metadata_remain_visible() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/browsers/firefox-146.har"),
+        Limits::default(),
+    )?;
+    let form = inspector_lines(&session.requests()[4], RequestId(4)).join("\n");
+    assert!(form.contains("tag=one&tag=two&empty="));
+    assert!(form.contains("tag: one") && form.contains("tag: two"));
+    assert!(form.contains("Exporter text is retained separately"));
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/browsers/firefox-146-in-progress.har"),
+        Limits::default(),
+    )?;
+    let lines = inspector_lines(&session.requests()[2], RequestId(2)).join("\n");
+    assert!(lines.contains("No HTTP status recorded"));
+    assert!(lines.contains("Not recorded (empty label)"));
+    assert!(lines.contains("Response MIME type not recorded"));
+    assert!(lines.contains("hello café"));
+    Ok(())
+}

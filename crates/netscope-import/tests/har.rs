@@ -107,7 +107,7 @@ fn known_field_failures_have_fixed_paths_and_do_not_leak_values()
         ("url", json!("ftp://example.test")),
         ("method", json!("GET SPACE")),
         ("headers", Value::Null),
-        ("httpVersion", json!("")),
+        ("httpVersion", Value::Null),
         ("bodySize", json!(-2)),
     ] {
         let mut v = fixture()?;
@@ -234,7 +234,9 @@ fn form_fields_sizes_cookies_and_status_zero_remain_evidence()
         matches!(&r.request_body,RequestBody::Params{params,..} if params.len()==2 && params[1].value.is_none())
     );
     v["log"]["entries"][0]["request"]["postData"]["text"] = json!("");
-    fails(&v, "log.entries[0].request.postData");
+    assert!(
+        matches!(&load(&v)?.requests()[0].request_body, RequestBody::TextAndParams { text, params, .. } if text.is_empty() && params.len() == 2)
+    );
     Ok(())
 }
 #[test]

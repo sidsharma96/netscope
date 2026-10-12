@@ -24,6 +24,20 @@ We also keep the exporter's numbers when they disagree. If the available timing 
 
 There is a similar reason to retain timestamp text alongside its parsed value. Two timestamps can use different time-zone offsets while naming the same instant. We compare the instants when sorting, and keep the original text for inspection.
 
+## When two recordings describe the same body differently
+
+Suppose a form submits two tags, one called `one` and another called `two`. An export may retain the body as text: `tag=one&tag=two`. Here each equals sign separates a field name from its value, and the ampersand separates the two fields. The repeated name matters: replacing the pair with a single value would lose one tag.
+
+Another export may include a list of those fields as well as the text. The list is convenient for reading, while the text preserves the exporter's spelling. Having both is useful. Rejecting the whole request because it has two descriptions would prevent us from inspecting information the browser deliberately recorded.
+
+Netscope retains each description independently. If the text and fields disagree, it does not silently rewrite either one. Nor does a field list establish the original bytes sent over the connection: file uploads, for example, need separators and file contents that the list may not contain. The inspector shows what was retained and leaves that limit visible.
+
+Rust's enum, introduced in the [chapter about missing values](09-options-results-and-matching.md), lets us name the possible shapes of this data. A request body can be unrecorded, text alone, fields alone, or both text and fields. Each alternative owns the values it needs. When the inspector borrows the combined alternative, it can read both descriptions without moving either out of the request. Closing the inspector therefore leaves the imported record available for the next visit.
+
+There is a second reason browser recordings can differ: the browser may still be collecting information when the export begins. A response body can appear in a record whose status is still zero or whose protocol label is empty. Zero here means no HTTP status was recorded; it does not tell us that the request failed. Likewise, an omitted response media type means we cannot identify it from that field. A media type is a label such as `text/plain` that describes how content should be interpreted.
+
+These are specific acceptance rules, not permission to ignore every malformed field. An empty protocol string can represent an unrecorded label; a number in its place remains an error. A missing expiry date for a cookie tells us that the export supplies no date, not how long the browser will keep the cookie. Before accepting a variation, we decide what the reader can safely conclude from it.
+
 ## Decide when a failure blocks the request
 
 An invalid required wait duration prevents us from accepting that request. A missing optional response body does not. We need a deliberate rule for each field, because accepting a capture and recovering every piece of it are different questions.
@@ -62,6 +76,6 @@ Now change the second request so only its base64 body is malformed. Explain why 
 
 ## Follow the implementation when ready
 
-The [importer](../../crates/netscope-import/src/lib.rs) implements these field checks, and the [session model](../../crates/netscope-core/src/session.rs) holds the accepted data. The [importer tests](../../crates/netscope-import/tests/har.rs) demonstrate both rejected captures and recoverable body warnings. The [verification record](../VERIFICATION.md) records the checks performed.
+The [importer](../../crates/netscope-import/src/lib.rs) implements these field checks, and the [session model](../../crates/netscope-core/src/session.rs) holds the accepted data. The [importer tests](../../crates/netscope-import/tests/har.rs) demonstrate both rejected captures and recoverable body warnings. The [browser compatibility reference](../HAR_COMPATIBILITY.md) records which native exports we have tested. The [verification record](../VERIFICATION.md) records the checks performed.
 
 For parser details, consult [Chrono's timestamp API](https://docs.rs/chrono/latest/chrono/struct.DateTime.html), the [URL parser](https://docs.rs/url/latest/url/struct.Url.html), and the [base64 library](https://docs.rs/base64/latest/base64/). These are references for implementation work, not prerequisites for the explanation above.

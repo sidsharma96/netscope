@@ -393,7 +393,7 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
         format!("Reported total: {} ms", request.total_ms),
         String::new(),
         "REQUEST · exporter-reported".into(),
-        format!("HTTP version: {}", terminal_text(&request.request_version)),
+        format!("HTTP version: {}", reported_label(&request.request_version)),
         format!("Header size: {}", size(request.request_header_size)),
         format!("Body size: {}", size(request.request_body_size)),
     ];
@@ -401,45 +401,60 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     pairs(&mut lines, "Query fields", &request.query);
     cookies(&mut lines, "Request cookies", &request.cookies);
     lines.push("Request body".into());
-    match &request.request_body {
-        RequestBody::NotRecorded => lines.push("Request body not recorded".into()),
-        RequestBody::Text { mime_type, text } => {
-            lines.push(format!("MIME type: {}", terminal_text(mime_type)));
-            if text.is_empty() {
-                lines.push("Captured body is empty".into());
-            }
-            let mut end = text.len().min(16 * 1024);
-            while !text.is_char_boundary(end) {
-                end -= 1;
-            }
-            lines.push(terminal_text(&text[..end]));
-            if end < text.len() {
-                lines.push("Preview truncated at 16 KiB".into());
-            }
+    if matches!(request.request_body, RequestBody::NotRecorded) {
+        lines.push("Request body not recorded".into());
+    }
+    if let RequestBody::Text { mime_type, text }
+    | RequestBody::TextAndParams {
+        mime_type, text, ..
+    } = &request.request_body
+    {
+        lines.push(format!("MIME type: {}", terminal_text(mime_type)));
+        if text.is_empty() {
+            lines.push("Captured body is empty".into());
         }
-        RequestBody::Params { mime_type, params } => {
+        let mut end = text.len().min(16 * 1024);
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
+        lines.push(terminal_text(&text[..end]));
+        if end < text.len() {
+            lines.push("Preview truncated at 16 KiB".into());
+        }
+    }
+    if let RequestBody::Params { mime_type, params }
+    | RequestBody::TextAndParams {
+        mime_type, params, ..
+    } = &request.request_body
+    {
+        lines.push(format!(
+            "Captured parameters · MIME type: {}",
+            terminal_text(mime_type)
+        ));
+        lines.push(
+            if matches!(request.request_body, RequestBody::TextAndParams { .. }) {
+                "Exporter text is retained separately; fields do not establish exact wire bytes"
+            } else {
+                "Exact multipart bytes not recorded"
+            }
+            .into(),
+        );
+        for param in params {
             lines.push(format!(
-                "Captured parameters · MIME type: {}",
-                terminal_text(mime_type)
+                "  {}: {}",
+                terminal_text(&param.name),
+                param
+                    .value
+                    .as_deref()
+                    .map(terminal_text)
+                    .unwrap_or_else(|| "Value not recorded".into())
             ));
-            lines.push("Exact multipart bytes not recorded".into());
-            for param in params {
-                lines.push(format!(
-                    "  {}: {}",
-                    terminal_text(&param.name),
-                    param
-                        .value
-                        .as_deref()
-                        .map(terminal_text)
-                        .unwrap_or_else(|| "Value not recorded".into())
-                ));
-                for (name, value) in [
-                    ("filename", &param.file_name),
-                    ("content type", &param.content_type),
-                ] {
-                    if let Some(value) = value {
-                        lines.push(format!("    {name}: {}", terminal_text(value)));
-                    }
+            for (name, value) in [
+                ("filename", &param.file_name),
+                ("content type", &param.content_type),
+            ] {
+                if let Some(value) = value {
+                    lines.push(format!("    {name}: {}", terminal_text(value)));
                 }
             }
         }
@@ -448,11 +463,14 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
         String::new(),
         "RESPONSE · exporter-reported".into(),
         format!("Status: {}", status(request)),
-        format!("HTTP version: {}", terminal_text(&request.response_version)),
+        format!(
+            "HTTP version: {}",
+            reported_label(&request.response_version)
+        ),
         format!("Header size: {}", size(request.response_header_size)),
         format!("Body size: {}", size(request.response_body_size)),
         format!("Content size: {} bytes (reported)", request.content_size),
-        format!("MIME type: {}", terminal_text(&request.mime_type)),
+        format!("MIME type: {}", reported_label(&request.mime_type)),
     ]);
     pairs(&mut lines, "Response headers", &request.response_headers);
     cookies(&mut lines, "Response cookies", &request.response_cookies);
@@ -938,12 +956,12 @@ pub fn protocol_lines(request: &Request) -> Vec<String> {
         "PROTOCOL NOTES · exporter labels".into(),
         format!(
             "Request label: {:?} -> {}",
-            terminal_text(&request.request_version),
+            reported_label(&request.request_version),
             sent.name()
         ),
         format!(
             "Response label: {:?} -> {}",
-            terminal_text(&request.response_version),
+            reported_label(&request.response_version),
             received.name()
         ),
     ];
@@ -965,4 +983,12 @@ pub fn protocol_lines(request: &Request) -> Vec<String> {
     lines.push("These HAR fields provide no packet/frame trace or stream IDs".into());
     lines.push("No compression savings or connection reuse are established".into());
     lines
+}
+
+fn reported_label(value: &str) -> String {
+    if value.is_empty() {
+        "Not recorded (empty label)".into()
+    } else {
+        terminal_text(value)
+    }
 }

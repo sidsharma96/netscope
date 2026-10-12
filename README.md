@@ -29,3 +29,5 @@ Read [the development guide](docs/DEVELOPMENT.md) for lint rules, fixtures, and 
 Save a reviewed, valid draft with **w**, choose a name and path, and confirm the file preview. Reopen it independently with `netscope --draft request.json`. Files preserve body text and selected non-credential headers; known authorization, cookie, and API-key headers are excluded. Opening never sends. See the [save/open walkthrough](docs/DEVELOPMENT.md#save-and-reopen-a-draft).
 
 Editable fields support Left/Right, Home/End, Backspace, and Delete, with a visible Unicode-aware cursor. Enter saves the edit; Esc discards it.
+
+Native Chrome and Firefox HAR exports are covered by frozen, offline regression fixtures. See [browser compatibility](docs/HAR_COMPATIBILITY.md) for tested versions, observed variations, and local reproduction.

@@ -149,7 +149,10 @@ impl ReplayDraft {
                     {
                         (ReplayMethod::Post, BodyFormat::Plain, String::new())
                     }
-                    RequestBody::Text { mime_type, text } => {
+                    RequestBody::Text { mime_type, text }
+                    | RequestBody::TextAndParams {
+                        mime_type, text, ..
+                    } => {
                         if text.len() > REQUEST_BODY_LIMIT {
                             return Err("Request body exceeds 16 KiB");
                         }

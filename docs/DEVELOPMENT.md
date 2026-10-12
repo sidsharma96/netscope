@@ -116,3 +116,9 @@ The [keyboard contract](contracts/m4-keyboard-editing.md) defines Unicode bounda
 ## Installation verification
 
 Run `python3 scripts/check_install.py` after the workspace checks. It builds and installs the release binary into a temporary root, then verifies PATH lookup and command behaviour outside the checkout. It requires Python 3.11 or newer and cached locked dependencies; it does not change the user’s installed command. See [the installation guide](INSTALLATION.md).
+
+## Browser HAR compatibility
+
+The normal workspace suite imports frozen exports from Chrome and Firefox, checks their retained data and replay eligibility, and exercises CLI output and inspector labels. No browser installation or live server is required for these tests. Derived malformed-field cases are separate from the unchanged native recordings.
+
+For a new manual recording, run `python3 scripts/har_fixture_server.py` and follow [the capture procedure](HAR_COMPATIBILITY.md). Regeneration is exploratory work: browser timings, ports, timestamps, and sometimes request order vary. Review a new recording before deliberately replacing any regression fixture.

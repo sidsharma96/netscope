@@ -1,0 +1,25 @@
+# Native browser exports
+
+Captured locally on October 11, 2026 (timestamps cross into October 12 UTC), from an isolated Python loopback HTTP server at port 57618. Request content is synthetic; timestamps and durations are actual exporter output. No normal user browser profile or third-party destination was used. The only cookie is `netscope_fixture=synthetic`; browser user-agent strings and local server metadata are intentionally retained.
+
+| File | Origin and transformation |
+| --- | --- |
+| chrome-154.har | Chrome 154.0.8037.98; native HAR string saved unchanged |
+| firefox-146.har | Firefox 146.0.1, build 20251217121356; native HAR JSON parsed and pretty-printed with Unicode characters preserved |
+| firefox-146-in-progress.har | Same Firefox exporter invoked before its request collection had settled; JSON reformatted as above; 3 entries |
+
+SHA256SUMS records the checked-in bytes. The Chrome HAR creator identifies WebInspector 537.36; that metadata is not the installed browser version. The complete files each have nine entries. The early Firefox file is an in-progress snapshot, not a deliberately failed network request.
+
+## Capture method
+
+Chrome ran headlessly with a fresh temporary profile and an ephemeral remote-debugging port. A bundled `devtools_app.html` frontend connected to the page target. Its Network panel and NetworkLog were initialized before navigation. After the controlled page completed, `Writer.harStringForRequests(NetworkLog.instance().requests(), {sanitize: false}, progress)` serialized the requests using Chrome's bundled HAR writer. Cookie inclusion was deliberate for the synthetic fixture.
+
+Firefox ran with a fresh temporary profile and Marionette system access. A Netmonitor toolbox was opened before navigation. After the page completed, the driver waited for the Network Monitor request store to contain all nine entries, obtained its HAR export connector, and called the bundled `HarExporter.fetchHarData` with those items, `includeResponseBodies: true`, and `forceExport: true`. An earlier call, made before the store settled, produced the retained three-entry snapshot. Both browser processes were closed after capture.
+
+These are native exporter outputs, not HAR files synthesized from browser protocol events. Temporary driver profiles are not repository fixtures. The [compatibility reference](../../../../docs/HAR_COMPATIBILITY.md) describes the covered scenarios and manual reproduction with the maintained local server helper. The helper has the same request sequence and content; it does not reproduce the original page source formatting or measurement values byte for byte.
+
+## Source cross-checks
+
+Exporter behaviour was also inspected in [Chrome's HAR builder](https://github.com/ChromeDevTools/devtools-frontend/blob/42f8e5fc3590ecbbea0b5efeda97a78e11f48197/front_end/models/har/Log.ts) and [Firefox's HAR builder](https://github.com/mozilla-firefox/firefox/blob/8e9ac3e12bbaf39d4c282dc8849221aa17d4f714/devtools/client/netmonitor/src/har/har-builder.js). These pinned research snapshots are not claimed to be the exact source revisions bundled in the installed browsers. The recordings themselves supply the regression evidence.
+
+Do not normalize these files to fit the importer. Add deliberate mutations inside tests, where the change and expected result remain visible. Tests use fixed bytes and values; recording new traffic is a separate exploratory activity.
