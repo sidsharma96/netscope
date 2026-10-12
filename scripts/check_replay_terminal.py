@@ -132,7 +132,11 @@ def check(mode):
                         assert not requests, 'opening sent without review'
                         os.write(master, b'jj\rs')
                     elif mode == 'post':
-                        os.write(master, b'\rrmtb' + post_body.replace(b'\n', b'\x0e') + b'\rjjjj\rs')
+                        # Correct the final letter in the middle of the body before sending.
+                        typed = post_body.replace('café'.encode(), b'cafx').replace(b'\n', b'\x0e')
+                        position = post_body.decode().index('café') + 3
+                        correction = b'\x1b[H' + b'\x1b[C' * position + b'\x1b[3~' + 'é'.encode() + b'\x1b[F'
+                        os.write(master, b'\rrmtb' + typed + correction + b'\rjjjj\rs')
                     else:
                         os.write(master, b'\rrjjjj\rs')
                     stage = 1

@@ -75,7 +75,7 @@ This separation matters during sending. A draft can change while someone is prep
 
 Open the single-request sample from the [walkthrough](06-first-milestone.md), inspect it, and press r. The draft begins with the captured URL and no selected headers. Use Up and Down to choose a row, then Enter to edit the URL, toggle a captured header, remove an added header, add a header, or open the review.
 
-Text editing currently happens at the end of the field. Backspace removes the last displayed character group; Ctrl+u clears the field. Enter saves, and Esc cancels that edit. Ordinary characters such as q, h, and j become text while editing. Outside text fields, q quits; Ctrl+c quits from anywhere. The editor labels the insertion point rather than pretending to offer a movable cursor.
+Text is inserted at the visible cursor. Left/Right move by displayed character groups; Home/End move to the beginning/end of the whole field. Backspace removes the preceding group, Delete removes the following group, and Ctrl+u clears the field. Enter saves, and Esc cancels that edit. Ordinary characters such as q, h, and j become text while editing. Outside text fields, q quits; Ctrl+c quits from anywhere. The [text-editing lesson](21-moving-through-text.md) explains why those movement units differ from bytes.
 
 Select one header, change the URL, and confirm that the header selection is cleared. Review the valid draft without sending. Return with Esc, then leave the draft with Esc again. The inspector should have its previous scroll position, and the captured URL should still be the original one.
 

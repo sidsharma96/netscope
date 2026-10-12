@@ -1515,3 +1515,151 @@ fn saved_and_save_preview_buffers_match() -> Result<(), Box<dyn std::error::Erro
     }
     Ok(())
 }
+
+#[test]
+fn cursor_edits_url_headers_name_and_path_without_sending() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::End);
+    for _ in 0..5 {
+        press(&mut app, &session, KeyCode::Left);
+    }
+    press(&mut app, &session, KeyCode::Char('q'));
+    press(&mut app, &session, KeyCode::Delete);
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(
+        app.replay
+            .as_ref()
+            .ok_or("editor")?
+            .draft()
+            .url()
+            .ends_with("/qooks")
+    );
+    assert!(!app.quit);
+    for _ in 0..3 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "X-Tet".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Left);
+    press(&mut app, &session, KeyCode::Char('s'));
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "ac".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Left);
+    press(&mut app, &session, KeyCode::Char('b'));
+    press(&mut app, &session, KeyCode::Enter);
+    let header = &app.replay.as_ref().ok_or("editor")?.draft().added()[0];
+    assert_eq!((&*header.name, &*header.value), ("X-Test", "abc"));
+    press(&mut app, &session, KeyCode::Char('w'));
+    for c in "bok".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Left);
+    press(&mut app, &session, KeyCode::Char('o'));
+    press(&mut app, &session, KeyCode::Enter);
+    for c in "ook.json".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Home);
+    press(&mut app, &session, KeyCode::Char('b'));
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Enter);
+    let editor = app.replay.as_mut().ok_or("editor")?;
+    let (path, saved) = editor.take_save().ok_or("save")?;
+    assert_eq!(path, "book.json");
+    assert_eq!(saved.name, "book");
+    assert!(editor.take_send().is_none());
+    Ok(())
+}
+
+#[test]
+fn body_cursor_tracks_unicode_controls_wrapping_resize_and_cancel()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    press(&mut app, &session, KeyCode::Char('m'));
+    press(&mut app, &session, KeyCode::Char('b'));
+    for c in "aé界".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    let mut terminal = Terminal::new(TestBackend::new(80, 24))?;
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let end = terminal.get_cursor_position()?;
+    press(&mut app, &session, KeyCode::Left);
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let before_wide = terminal.get_cursor_position()?;
+    assert_eq!(end.x - before_wide.x, 2);
+    press(&mut app, &session, KeyCode::Left);
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    assert_eq!(before_wide.x - terminal.get_cursor_position()?.x, 1);
+    press(&mut app, &session, KeyCode::Delete);
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
+        &session,
+    );
+    press(&mut app, &session, KeyCode::Tab);
+    press(&mut app, &session, KeyCode::Enter);
+    assert_eq!(
+        app.replay.as_ref().ok_or("editor")?.draft().body(),
+        "a\n\t界"
+    );
+    press(&mut app, &session, KeyCode::Char('b'));
+    for _ in 0..2000 {
+        press(&mut app, &session, KeyCode::Char('x'));
+    }
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let end = terminal.get_cursor_position()?;
+    assert!(end.y < 23);
+    press(&mut app, &session, KeyCode::Home);
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let start = terminal.get_cursor_position()?;
+    assert!(start.y < 23 && start.x < 80);
+    assert_ne!(start, end);
+    app.resize(100, 30, &session);
+    let mut wider = Terminal::new(TestBackend::new(100, 30))?;
+    wider.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    assert!(wider.get_cursor_position()?.y < 29);
+    press(&mut app, &session, KeyCode::Esc);
+    assert_eq!(
+        app.replay.as_ref().ok_or("editor")?.draft().body(),
+        "a\n\t界"
+    );
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    Ok(())
+}
+
+#[test]
+fn end_cursor_after_a_full_row_has_its_own_display_space() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = session()?;
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    press(&mut app, &session, KeyCode::Char('m'));
+    press(&mut app, &session, KeyCode::Char('b'));
+    let mut terminal = Terminal::new(TestBackend::new(80, 24))?;
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let start = terminal.get_cursor_position()?;
+    for _ in 0..80 - 2 * start.x {
+        press(&mut app, &session, KeyCode::Char('x'));
+    }
+    terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    let end = terminal.get_cursor_position()?;
+    assert_eq!(end.x, start.x);
+    assert_eq!(end.y, start.y + 1);
+    press(&mut app, &session, KeyCode::Enter);
+    let text = app.replay.as_ref().ok_or("editor")?.draft().body();
+    assert!(!text.contains('\n'));
+    assert_eq!(text.len(), usize::from(80 - 2 * start.x));
+    Ok(())
+}

@@ -140,6 +140,11 @@
     "subtitle": "Turn a reviewed body into well-defined bytes"
   },
   {
+    "slug": "21-moving-through-text",
+    "title": "Moving through text",
+    "subtitle": "Bytes, graphemes, and the visible cursor"
+  },
+  {
     "slug": "20-remembering-a-request",
     "title": "Remembering a request",
     "subtitle": "Values, files, and careful replacement"

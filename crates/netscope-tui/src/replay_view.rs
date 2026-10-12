@@ -6,7 +6,7 @@ use ratatui::{
     layout::Rect,
     widgets::{Block, Borders, Paragraph},
 };
-use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug)]
 enum Mode {
@@ -27,6 +27,7 @@ enum Mode {
 #[derive(Debug)]
 pub struct ReplayEditor {
     draft: ReplayDraft,
+    cursor: crate::text_edit::Cursor,
     mode: Mode,
     row: usize,
     offset: usize,
@@ -42,6 +43,7 @@ impl ReplayEditor {
     pub(crate) fn new(draft: ReplayDraft) -> Self {
         Self {
             draft,
+            cursor: crate::text_edit::Cursor::default(),
             mode: Mode::Draft,
             row: 0,
             offset: 0,
@@ -154,7 +156,26 @@ impl ReplayEditor {
             self.message = "Could not start replay worker".into();
         }
     }
+    fn edit_text(&self) -> Option<&str> {
+        match &self.mode {
+            Mode::Url(s)
+            | Mode::Body(s)
+            | Mode::Name(s)
+            | Mode::Value(_, s)
+            | Mode::SaveName(s)
+            | Mode::SavePath(_, s) => Some(s),
+            _ => None,
+        }
+    }
     pub(crate) fn key(&mut self, key: KeyEvent) -> bool {
+        let was_editing = self.editing();
+        let leave = self.key_inner(key);
+        if (!was_editing || key.code == KeyCode::Enter) && self.editing() {
+            self.cursor.byte = self.edit_text().map_or(0, str::len);
+        }
+        leave
+    }
+    fn key_inner(&mut self, key: KeyEvent) -> bool {
         if matches!(self.mode, Mode::Running(_)) {
             if key.code == KeyCode::Esc {
                 self.cancel = true;
@@ -293,29 +314,27 @@ impl ReplayEditor {
                     && key.code == KeyCode::Char('n'))
                     || key.code == KeyCode::Tab)
             {
-                if text.len() < netscope_core::REQUEST_BODY_LIMIT {
-                    text.push(if key.code == KeyCode::Tab { '\t' } else { '\n' });
-                } else {
+                let value = if key.code == KeyCode::Tab { '\t' } else { '\n' };
+                if !self.cursor.insert(text, value) {
                     self.message = "Text limit: 16 KiB".into();
                 }
             } else if key.modifiers.contains(KeyModifiers::CONTROL)
                 && key.code == KeyCode::Char('u')
             {
-                text.clear();
+                self.cursor.clear(text);
             } else if !key
                 .modifiers
                 .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
             {
                 match key.code {
-                    KeyCode::Backspace => {
-                        if let Some((i, _)) = text.grapheme_indices(true).next_back() {
-                            text.truncate(i);
-                        }
-                    }
+                    KeyCode::Left => self.cursor.left(text),
+                    KeyCode::Right => self.cursor.right(text),
+                    KeyCode::Home => self.cursor.byte = 0,
+                    KeyCode::End => self.cursor.end(text),
+                    KeyCode::Backspace => self.cursor.backspace(text),
+                    KeyCode::Delete => self.cursor.delete(text),
                     KeyCode::Char(c) if !c.is_control() => {
-                        if text.len() + c.len_utf8() <= 16_384 {
-                            text.push(c);
-                        } else {
+                        if !self.cursor.insert(text, c) {
                             self.message = "Text limit: 16 KiB".into();
                         }
                     }
@@ -573,11 +592,10 @@ impl ReplayEditor {
                     .into(),
                 );
                 lines.push(
-                    "Append text · Backspace deletes · Ctrl+u clears · Enter saves · Esc cancels"
-                        .into(),
+                    "←/→ move · Home/End start/end · Backspace/Delete remove · Ctrl+u clear".into(),
                 );
                 lines.push(terminal_text(s));
-                lines.push("[insertion point at end]".into());
+                lines.push("[type at cursor · Enter saves · Esc cancels]".into());
             }
             Mode::Running(_) => {
                 if let Ok(review) = self.draft.review() {
@@ -777,14 +795,37 @@ impl ReplayEditor {
         let block = Block::default().borders(Borders::ALL).title(title);
         let inner = block.inner(area);
         frame.render_widget(block, area);
-        let lines: Vec<String> = self
-            .content()
+        let content = self.content();
+        let mut lines: Vec<String> = content
             .iter()
             .flat_map(|s| crate::view::wrap(s, usize::from(inner.width).max(2)))
             .collect();
         let height = usize::from(inner.height);
-        if self.editing() {
-            self.offset = lines.len().saturating_sub(height);
+        let cursor = self.edit_text().map(|text| {
+            let width = usize::from(inner.width).max(2);
+            let before_field: usize = content[..content.len() - 2]
+                .iter()
+                .map(|s| crate::view::wrap(s, width).len())
+                .sum();
+            let mut prefix = terminal_text(&text[..self.cursor.byte]);
+            prefix.push(' ');
+            let wrapped = crate::view::wrap(&prefix, width);
+            let row = before_field + wrapped.len() - 1;
+            let column = wrapped.last().map_or(0, |s| s.width().saturating_sub(1));
+            // Reserve a blank row when the insertion point follows a full final row.
+            let field_rows = crate::view::wrap(&terminal_text(text), width).len();
+            if wrapped.len() > field_rows {
+                lines.insert(before_field + field_rows, String::new());
+            }
+            (row, column)
+        });
+        if let Some((row, _)) = cursor {
+            if row < self.offset {
+                self.offset = row;
+            }
+            if row >= self.offset + height {
+                self.offset = row + 1 - height;
+            }
         } else if matches!(self.mode, Mode::Draft) {
             let selected = lines.iter().position(|s| s.starts_with("> ")).unwrap_or(0);
             if selected < self.offset {
@@ -806,5 +847,11 @@ impl ReplayEditor {
             ),
             inner,
         );
+        if let Some((row, column)) = cursor {
+            frame.set_cursor_position((
+                inner.x + column as u16,
+                inner.y + (row - self.offset) as u16,
+            ));
+        }
     }
 }

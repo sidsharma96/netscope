@@ -106,3 +106,9 @@ cargo run -p netscope-tui --locked --offline -- --draft /tmp/book.json
 The saved name identifies the screen. The request opens for editing, with no captured response or comparison. Review and explicitly Send only when ready. Esc from the draft exits. The supplied `tests/fixtures/drafts/book.json` is a local POST example you can open with the same command and use with the echo server above.
 
 Files contain versioned JSON, without response history or capture identity. Known credential headers cannot be persisted in this version; enter them explicitly after opening when needed. [The contract](contracts/m3-saved-drafts.md) lists the exact exclusions and limits. A failed write leaves an existing destination intact. A crash may leave `<filename>.netscope-tmp`; inspect that file before removing it or save to a different path. Unix saves use owner-only permissions. The writer does not promise survival across every power-loss or network-filesystem scenario.
+
+## Correct text in the middle of a field
+
+URL, body, header name/value, saved name, and path fields support Left/Right, Home/End, Backspace, and Delete. Home/End target the whole field, even when its display wraps. Type at the visible cursor; Ctrl+u clears. Ctrl+n and Tab insert newline/tab only in body editing. Enter saves and Esc discards the edit. Moving the cursor does not review, send, or write a file. The terminal cursor stays visible while editing and follows wrapping when resized.
+
+The [keyboard contract](contracts/m4-keyboard-editing.md) defines Unicode boundaries and remaining limitations. Dedicated paste, selection, undo, and vertical/word-wise cursor movement are not implemented.
