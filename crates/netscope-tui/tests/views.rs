@@ -1713,3 +1713,77 @@ fn https_inspector_labels_protocol_content_and_unavailable_sizes()
     }
     Ok(())
 }
+
+#[test]
+fn large_lists_page_and_jump_without_losing_filter_return_position()
+-> Result<(), Box<dyn std::error::Error>> {
+    let seed = session()?;
+    let requests = (0..10_000)
+        .map(|i| {
+            let mut request = seed.requests()[0].clone();
+            request.host = format!("host{:03}.example.test", i % 100);
+            request.url = format!("https://{}/books/{i}", request.host);
+            request
+        })
+        .collect();
+    let session = Session::new(requests);
+    for (width, height, page, host_page) in [(80, 24, 15, 7), (100, 30, 21, 13)] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        press(&mut app, &session, KeyCode::PageDown);
+        assert_eq!(app.selected, Some(page));
+        press(&mut app, &session, KeyCode::PageUp);
+        assert_eq!(app.selected, Some(0));
+        press(&mut app, &session, KeyCode::End);
+        assert_eq!(app.selected, Some(9999));
+        assert!(render(&session, &mut app, width, height)?.contains("9999"));
+        let position = (app.selected, app.overview_offset);
+        press(&mut app, &session, KeyCode::Enter);
+        assert_eq!(app.screen, Screen::Inspector(RequestId(9999)));
+        press(&mut app, &session, KeyCode::PageDown);
+        assert!(app.inspector_offset > 0);
+        press(&mut app, &session, KeyCode::End);
+        let end = app.inspector_offset;
+        press(&mut app, &session, KeyCode::PageDown);
+        assert_eq!(app.inspector_offset, end);
+        press(&mut app, &session, KeyCode::Home);
+        assert_eq!(app.inspector_offset, 0);
+        press(&mut app, &session, KeyCode::Esc);
+        assert_eq!((app.selected, app.overview_offset), position);
+        press(&mut app, &session, KeyCode::Char('h'));
+        press(&mut app, &session, KeyCode::PageDown);
+        assert_eq!(app.host_selected, Some(host_page));
+        press(&mut app, &session, KeyCode::End);
+        assert_eq!(app.host_selected, Some(99));
+        press(&mut app, &session, KeyCode::Enter);
+        assert_eq!(app.request_order(&session).len(), 100);
+        press(&mut app, &session, KeyCode::End);
+        assert_eq!(app.selected, Some(99));
+        assert_eq!(app.request_order(&session)[99], RequestId(9999));
+        press(&mut app, &session, KeyCode::Char('a'));
+        assert_eq!((app.selected, app.overview_offset), position);
+        press(&mut app, &session, KeyCode::Char('?'));
+        press(&mut app, &session, KeyCode::Home);
+        assert_eq!(app.selected, Some(9999));
+        press(&mut app, &session, KeyCode::Esc);
+        app.resize(40, 10, &session);
+        press(&mut app, &session, KeyCode::Home);
+        assert_eq!(app.selected, Some(9999));
+        app.resize(width, height, &session);
+        press(&mut app, &session, KeyCode::Home);
+        assert_eq!(app.selected, Some(0));
+    }
+    let empty = Session::new(vec![]);
+    let mut app = App::new(&empty);
+    for key in [
+        KeyCode::Home,
+        KeyCode::End,
+        KeyCode::PageUp,
+        KeyCode::PageDown,
+    ] {
+        press(&mut app, &empty, key);
+        assert_eq!(app.selected, None);
+        assert_eq!(app.overview_offset, 0);
+    }
+    Ok(())
+}

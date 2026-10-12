@@ -27,7 +27,7 @@ def check(command, expected_exit, quit_key):
             if select.select([master], [], [], .1)[0]:
                 output.extend(os.read(master, 65536))
             if quit_key and not sent and b'NETSCOPE' in output:
-                os.write(master, b'h\rj\r\x1b\x1ba?q')
+                os.write(master, b'\x1b[6~\x1b[5~\x1b[F\x1b[Hh\rj\r\x1b[6~\x1b[F\x1b[H\x1b\x1ba?q')
                 sent = True
             if process.poll() is not None:
                 while select.select([master], [], [], 0)[0]:

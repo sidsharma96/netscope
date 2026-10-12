@@ -36,6 +36,18 @@ Rust checks that this mutable access is exclusive while it is in use. The caller
 
 The drawing function also receives a mutable frame. A frame represents the terminal cells being prepared for the current screen. Writing those cells changes the display, while the borrowed capture remains intact.
 
+## Move through a list that does not fit
+
+Suppose the capture contains ten thousand requests and the window has room for fifteen rows. Pressing Down thousands of times would keep the rules simple but make the program tedious to use. Page Down moves the selection by the number of rows the current view can display. Home selects the first request; End selects the last. Page Up moves back toward the beginning.
+
+Selection and scrolling still answer different questions. Selection identifies the request you want. The scroll offset identifies the first row visible in the window. After moving the selection, the program adjusts that offset only as far as needed to keep the selected row visible. Near the end, it also avoids leaving an unnecessary blank region below the last request.
+
+A host filter changes the list these movements refer to. If a host has one hundred requests, End selects its hundredth request, even if the complete capture has thousands more. Returning to all requests restores the earlier position in that complete list. The selected row is a position within the current list; its request ID identifies the original captured entry. Keeping those two numbers separate prevents opening the wrong request after filtering.
+
+The inspector uses the same keys to move through wrapped lines rather than requests. Its page size is different because the screen reserves a different amount of space for headings and controls. Resizing changes how many rows fit, so the next page movement uses the new size. An empty list has no selection to move, and a temporarily unusable window preserves the previous position.
+
+There is also an arithmetic boundary to respect. Moving up fifteen rows from row three must stop at the beginning. Rust's unsigned integers represent zero and positive values; they cannot represent a negative row. Saturating subtraction stops at zero instead of producing a negative result. Movement toward the end is bounded by the list's last valid position. These rules make a page key predictable even when less than a full page remains.
+
 ## A line of text has more than one length
 
 The letter A uses one UTF-8 byte and usually one terminal column. The character 界 uses three UTF-8 bytes and commonly two columns. An accented letter can contain a base character and a combining mark, while a joined emoji may contain several Unicode characters.

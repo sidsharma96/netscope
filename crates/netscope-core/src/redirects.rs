@@ -87,14 +87,15 @@ pub(crate) fn analyze(requests: &[Request], chronological: &[RequestId]) -> Vec<
             let mut ids = Vec::new();
             let mut more = false;
             if let Some(candidates) = by_url.get(target.as_str()) {
-                let start =
-                    candidates.partition_point(|id| requests[id.0].instant <= source.instant);
+                // Sorted starts let us skip every request before the source finishes.
+                let start = candidates.partition_point(|id| {
+                    let candidate = &requests[id.0];
+                    candidate.instant <= source.instant
+                        || elapsed_ms(source, candidate) < source.total_ms
+                });
                 for id in &candidates[start..] {
                     let candidate = &requests[id.0];
                     let elapsed = elapsed_ms(source, candidate);
-                    if elapsed < source.total_ms {
-                        continue;
-                    }
                     if elapsed - source.total_ms > 30_000.0 {
                         break;
                     }

@@ -19,6 +19,14 @@ pub enum Action {
     Up,
     /// Move down one request or inspector line.
     Down,
+    /// Move upward by the current view's visible rows.
+    PageUp,
+    /// Move downward by the current view's visible rows.
+    PageDown,
+    /// Select the first row or scroll to the beginning.
+    First,
+    /// Select the last row or scroll to the end.
+    Last,
     /// Inspect the selected request.
     Open,
     /// Return to overview, or close help.
@@ -223,6 +231,37 @@ impl App {
             if action == Action::Back {
                 self.help = false;
             }
+            return;
+        }
+        if matches!(
+            action,
+            Action::PageUp | Action::PageDown | Action::First | Action::Last
+        ) {
+            let move_to = |position: usize, rows: u16| match action {
+                Action::PageUp => position.saturating_sub(usize::from(rows.max(1))),
+                Action::PageDown => position.saturating_add(usize::from(rows.max(1))),
+                Action::First => 0,
+                Action::Last => usize::MAX,
+                _ => position,
+            };
+            match self.screen {
+                Screen::Overview => {
+                    self.selected = self
+                        .selected
+                        .map(|i| move_to(i, self.height.saturating_sub(9)));
+                }
+                Screen::Hosts => {
+                    self.host_selected = self
+                        .host_selected
+                        .map(|i| move_to(i, self.height.saturating_sub(17)));
+                }
+                Screen::Inspector(_) => {
+                    self.inspector_offset =
+                        move_to(self.inspector_offset, self.height.saturating_sub(6));
+                }
+                Screen::Replay(_) => {}
+            }
+            self.clamp(session);
             return;
         }
         match (self.screen, action) {
@@ -686,7 +725,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\na           all requests (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nPgUp/PgDn   move by visible rows\nHome/End    first/last row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\na           all requests (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {

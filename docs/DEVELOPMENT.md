@@ -124,3 +124,7 @@ The normal workspace suite imports frozen exports from Chrome and Firefox, check
 For a new manual recording, run `python3 scripts/har_fixture_server.py` and follow [the capture procedure](HAR_COMPATIBILITY.md). Regeneration is exploratory work: browser timings, ports, timestamps, and sometimes request order vary. Review a new recording before deliberately replacing any regression fixture.
 
 The HTTPS extension uses `scripts/har_https_fixture_server.mjs` with disposable certificate files. See the [HTTPS reproduction procedure](HAR_COMPATIBILITY.md#reproduce-the-https-scenarios) for setup and certificate scope. Its Node/OpenSSL dependencies are only for recording new traffic; CI imports frozen HAR files offline.
+
+## Large-capture checks
+
+`python3 scripts/probe_large_capture.py` builds the release measurement example, creates temporary deterministic HAR workloads at 1,000 and 10,000 entries, and reports three import/render samples per workload. It requires no network after dependencies are cached. Elapsed times are observations, not pass/fail assertions. The [measurement reference](LARGE_CAPTURES.md) describes scope and limitations. Normal workspace tests cover the 10,000-entry boundary, relationship matching equivalence, and page/end navigation without wall-clock thresholds.

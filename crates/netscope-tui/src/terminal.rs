@@ -65,6 +65,10 @@ pub fn key_action(key: KeyEvent) -> Option<Action> {
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => Some(Action::Up),
         KeyCode::Down | KeyCode::Char('j') => Some(Action::Down),
+        KeyCode::PageUp => Some(Action::PageUp),
+        KeyCode::PageDown => Some(Action::PageDown),
+        KeyCode::Home => Some(Action::First),
+        KeyCode::End => Some(Action::Last),
         KeyCode::Enter => Some(Action::Open),
         KeyCode::Esc => Some(Action::Back),
         KeyCode::Char('?') => Some(Action::Help),

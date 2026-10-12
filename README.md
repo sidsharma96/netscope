@@ -31,3 +31,5 @@ Save a reviewed, valid draft with **w**, choose a name and path, and confirm the
 Editable fields support Left/Right, Home/End, Backspace, and Delete, with a visible Unicode-aware cursor. Enter saves the edit; Esc discards it.
 
 Native Chrome and Firefox HAR exports are covered by frozen, offline regression fixtures. See [browser compatibility](docs/HAR_COMPATIBILITY.md) for tested versions, observed variations, and local reproduction.
+
+Use Page Up/Page Down and Home/End in request lists, Hosts, and the inspector. See [large-capture checks](docs/LARGE_CAPTURES.md) for tested limits and local measurements.

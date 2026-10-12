@@ -76,7 +76,7 @@ At 100 columns by 30 rows, the overview has a title, filename and request count,
 
 The inspector has a summary plus scrollable sections for request fields, response fields, body previews, timings, and warnings. Captured empty bodies and unrecorded bodies have different labels. Long headers wrap or scroll without replacing their retained values. Warnings are text, not only red colouring.
 
-Up and Down move selection; j and k are equivalents. Enter opens the selected request. Esc returns to overview. Inspector scrolling uses the same movement keys. q quits from either screen. Help is available through ?. Resize redraws the current state. Below 80 columns or 24 rows, show `Terminal too small: use at least 80 columns × 24 rows`, allow q, and resume the same state when enlarged.
+Up and Down move selection; j and k are equivalents. Enter opens the selected request. Esc returns to overview. Inspector scrolling uses the same movement keys. Page Up/Page Down move by the current view’s visible rows. Home/End select the first/last request or host, or reach the beginning/end of the inspector. Movement stays within the active host filter; empty lists remain unselected. q quits from either screen. Help is available through ?. Resize redraws the current state. Below 80 columns or 24 rows, show `Terminal too small: use at least 80 columns × 24 rows`, allow q, and resume the same state when enlarged.
 
 Import errors are visible before entering the TUI. The filename and input data remain local. Terminal restoration is part of correctness, not just visual polish.
 
