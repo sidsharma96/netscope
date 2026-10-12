@@ -8,6 +8,18 @@ The [M1 contract](docs/contracts/m1-har-inspection.md), [host-summary contract](
 
 Single-request replay is defined in the [single-request replay contract](docs/contracts/m3-single-request-replay.md). Press r in an eligible GET or POST inspector to edit and review a replay draft. Use m for method, t for plain text/JSON, and b for body editing. Enter or s from Review sends one HTTP/1.1 GET or POST over HTTP or verified HTTPS. POST bodies are limited to 16 KiB of UTF-8; JSON is checked without rewriting it. Responses have a 10-second total deadline and a 2 MiB body limit, with partial data retained. Esc cancels; o in the draft reopens the last result. Press c on a result to compare it beside the captured response, with partial data and unavailable comparisons labelled. Redirects, retries, proxy discovery, and decompression are disabled. See the [local testing instructions](docs/DEVELOPMENT.md#try-a-local-send).
 
+## Install and start
+
+From this checkout, run:
+
+```sh
+cargo install --path crates/netscope-tui --locked
+netscope --help
+netscope tests/fixtures/har/single-request.har
+```
+
+The installed command is `netscope`. Ensure Cargo's installation bin directory is on PATH. Use `netscope --version` to identify the installed package version, or `netscope --draft request.json` to reopen a saved draft. See the [installation guide](docs/INSTALLATION.md) for prerequisites, offline installation, command lookup, and removal. Opening files never sends network requests.
+
 ## Development
 
 Run `python3 scripts/check.py` for formatting, compiler, Clippy, tests, build, and reader checks. The pinned Rust toolchain may require an initial download. Rust checks run with the lockfile and offline mode; run cargo fetch --locked once to download the locked dependencies before offline checks.

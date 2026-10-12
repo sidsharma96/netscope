@@ -76,3 +76,71 @@ fn saved_draft_summary_does_not_expose_body_or_send() -> Result<(), Box<dyn std:
     assert!(String::from_utf8(output.stderr)?.contains("Invalid saved-draft"));
     Ok(())
 }
+
+#[test]
+fn help_version_and_invalid_options_do_not_open_files() -> Result<(), Box<dyn std::error::Error>> {
+    for flag in ["--help", "-h"] {
+        let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+            .arg(flag)
+            .output()?;
+        assert!(output.status.success());
+        assert!(output.stderr.is_empty());
+        let text = String::from_utf8(output.stdout)?;
+        assert!(text.contains("--draft <request.json>"));
+        assert!(text.contains("Opening never sends"));
+        assert!(!text.contains('\u{1b}'));
+    }
+    for flag in ["--version", "-V"] {
+        let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+            .arg(flag)
+            .output()?;
+        assert!(output.status.success());
+        assert!(output.stderr.is_empty());
+        assert_eq!(
+            String::from_utf8(output.stdout)?,
+            format!("netscope {}\n", env!("CARGO_PKG_VERSION"))
+        );
+    }
+    for args in [
+        vec!["--draft"],
+        vec!["--draft", "--help"],
+        vec!["--unknown"],
+        vec!["--"],
+        vec!["--help", "extra"],
+        vec!["--version", "extra"],
+        vec!["--draft", "--"],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+            .args(args)
+            .output()?;
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+        assert!(String::from_utf8(output.stderr)?.contains("netscope --help"));
+    }
+    // A literal option-looking filename reaches file loading, not argument dispatch.
+    for args in [
+        vec!["--", "--netscope-missing.har"],
+        vec!["--draft", "--", "--netscope-missing.json"],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+            .args(args)
+            .output()?;
+        assert_eq!(output.status.code(), Some(1));
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn non_utf8_paths_reach_file_validation() -> Result<(), Box<dyn std::error::Error>> {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let path = std::env::temp_dir().join(OsString::from_vec(b"netscope-missing-\xff.har".to_vec()));
+    let output = Command::new(env!("CARGO_BIN_EXE_netscope"))
+        .arg("--")
+        .arg(&path)
+        .output()?;
+    // Some filesystems reject these bytes; argument parsing must still accept the path.
+    assert_eq!(output.status.code(), Some(1));
+    assert!(!String::from_utf8(output.stderr)?.contains("Invalid arguments"));
+    Ok(())
+}

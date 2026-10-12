@@ -112,3 +112,7 @@ Files contain versioned JSON, without response history or capture identity. Know
 URL, body, header name/value, saved name, and path fields support Left/Right, Home/End, Backspace, and Delete. Home/End target the whole field, even when its display wraps. Type at the visible cursor; Ctrl+u clears. Ctrl+n and Tab insert newline/tab only in body editing. Enter saves and Esc discards the edit. Moving the cursor does not review, send, or write a file. The terminal cursor stays visible while editing and follows wrapping when resized.
 
 The [keyboard contract](contracts/m4-keyboard-editing.md) defines Unicode boundaries and remaining limitations. Dedicated paste, selection, undo, and vertical/word-wise cursor movement are not implemented.
+
+## Installation verification
+
+Run `python3 scripts/check_install.py` after the workspace checks. It builds and installs the release binary into a temporary root, then verifies PATH lookup and command behaviour outside the checkout. It requires Python 3.11 or newer and cached locked dependencies; it does not change the user’s installed command. See [the installation guide](INSTALLATION.md).

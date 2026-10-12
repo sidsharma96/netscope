@@ -11,6 +11,11 @@
     }
   },
   {
+    "slug": "22-running-a-program",
+    "title": "Running a program",
+    "subtitle": "Compilation, installation, and PATH"
+  },
+  {
     "slug": "02-reading-a-capture",
     "title": "Reading a capture",
     "subtitle": "What the recording can tell us",
