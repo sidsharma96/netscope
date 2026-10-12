@@ -62,6 +62,7 @@ def check(mode):
     closed = threading.Event()
     errors = []
     requests = []
+    post_body = ' {"message":"café","n":1.00}\n'.encode()
 
     def serve():
         try:
@@ -74,7 +75,17 @@ def check(mode):
                         raise AssertionError('closed before request')
                     head += part
                 requests.append(head)
-                if mode == 'complete':
+                if mode == 'post':
+                    fields = dict(line.split(b':', 1) for line in head.split(b'\r\n')[1:] if b':' in line)
+                    assert fields[b'content-type'].strip() == b'application/json'
+                    assert int(fields[b'content-length']) == len(post_body)
+                    body = bytearray()
+                    while len(body) < len(post_body):
+                        part = stream.recv(len(post_body) - len(body))
+                        assert part, 'body ended early'
+                        body.extend(part)
+                    assert bytes(body) == post_body, body
+                if mode in ('complete', 'post'):
                     stream.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: 14\r\n\r\nlocal response')
                 else:
                     stream.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\npartial')
@@ -110,10 +121,13 @@ def check(mode):
                     output.extend(os.read(master, 65536))
                 visible = screen_text(output)
                 if stage == 0 and 'NETSCOPE' in visible:
-                    os.write(master, b'\rrjjjj\rs')
+                    if mode == 'post':
+                        os.write(master, b'\rrmtb' + post_body.replace(b'\n', b'\x0e') + b'\rjjjj\rs')
+                    else:
+                        os.write(master, b'\rrjjjj\rs')
                     stage = 1
                 if stage == 1 and received.is_set():
-                    if mode == 'complete':
+                    if mode in ('complete', 'post'):
                         if 'Outcome: Complete' not in visible or 'local response' not in visible:
                             continue
                         os.write(master, b'c')
@@ -122,12 +136,12 @@ def check(mode):
                     else:
                         os.write(master, b'q' if mode == 'quit' else b'\x03')
                     stage = 2
-                if mode == 'complete' and stage == 2 and 'RESPONSE COMPARISON' in visible and 'Stored bytes differ' in visible:
+                if mode in ('complete', 'post') and stage == 2 and 'RESPONSE COMPARISON' in visible and 'Stored bytes differ' in visible:
                     assert 'Captured response' in visible and 'Replay response' in visible
                     assert 'Stored bytes differ' in visible
                     os.write(master, b'\x1b')
                     stage = 3
-                if mode == 'complete' and stage == 3 and 'NEW RESULT' in visible:
+                if mode in ('complete', 'post') and stage == 3 and 'NEW RESULT' in visible:
                     os.write(master, b'q')
                     stage = 4
                 if mode == 'cancel' and stage == 2 and 'Operation stopped' in visible:
@@ -144,13 +158,14 @@ def check(mode):
                 Path('/tmp/netscope-replay-pty.log').write_bytes(output)
             assert process.poll() == 0, f'{mode}: process did not exit cleanly (stage {stage})'
             assert stage >= 2, 'live send was not reached'
-            if mode == 'complete': assert stage == 4, 'comparison return was not exercised'
+            if mode in ('complete', 'post'): assert stage == 4, 'comparison return was not exercised'
             thread.join(2)
             assert not thread.is_alive(), 'server did not observe socket disposal'
             assert not errors, errors
             assert closed.is_set(), 'socket was not closed'
             assert len(requests) == 1
-            assert requests[0].startswith(b'GET /local?q=1 HTTP/1.1\r\n')
+            method = b'POST' if mode == 'post' else b'GET'
+            assert requests[0].startswith(method + b' /local?q=1 HTTP/1.1\r\n')
             assert b'accept-encoding: identity\r\n' in requests[0]
             after = termios.tcgetattr(slave)
             pending = getattr(termios, 'PENDIN', 0)
@@ -158,7 +173,7 @@ def check(mode):
             after[3] &= ~pending
             assert before == after, 'terminal modes not restored'
             assert b'\x1b[?1049l' in output and b'\x1b[?25h' in output
-            print(f'PASS: live {mode}; one GET, connection disposed, terminal restored')
+            print(f'PASS: live {mode}; one {method.decode()}, connection disposed, terminal restored')
     finally:
         if process is not None and process.poll() is None:
             process.kill()
@@ -168,5 +183,5 @@ def check(mode):
         listener.close()
 
 
-for mode in ['complete', 'cancel', 'quit', 'ctrl-c']:
+for mode in ['complete', 'post', 'cancel', 'quit', 'ctrl-c']:
     check(mode)

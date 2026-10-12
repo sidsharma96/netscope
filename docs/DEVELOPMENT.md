@@ -10,7 +10,7 @@ This checks rustfmt, every workspace target, Clippy, Rust tests and rustdoc exam
 
 ## Current implementation
 
-The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
+The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET or POST requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
 
 Core timing tests exercise timing distinctions, valid precision, and invalid numbers. Rustdoc also checks chapter examples, including an intentional compiler rejection. The pure tests do not depend on elapsed time, network, random input, or terminal state; the separate pseudo-terminal check is described below. Importer tests consume the synthetic fixtures and mutate fixed values to cover malformed input, body states, warnings, identity, and limits. Binary integration tests verify exit codes and escaped output.
 
@@ -46,9 +46,9 @@ The multi-host sample is tests/fixtures/har/multi-host.har. The [M2 host-summary
 
 The [protocol contract](contracts/m2-recorded-protocols.md) defines exact exporter-label recognition and evidence limits. Open tests/fixtures/har/protocols.har: #0 has equivalent aliases, #1 disagrees, and #2 has an unrecognized request label. Protocol notes describe general behaviour without reconstructing frames or connections.
 
-## Next milestone
+## Replay workflow
 
-The agreed [M3 replay contract](contracts/m3-single-request-replay.md) defines an editable GET draft, explicit header selection, review before sending, response limits, cancellation, and controlled local tests. The pure draft model and terminal draft/review editor are implemented. Press r from an eligible inspector; Review the destination, then Enter or s sends. The result stays separate from the capture. Esc during sending cancels and returns to the draft after cleanup; o reopens the retained result.
+The agreed [M3 replay contract](contracts/m3-single-request-replay.md) and its [request-body extension](contracts/m3-request-bodies.md) define an editable GET or POST draft, explicit header selection, review before sending, response limits, cancellation, and controlled local tests. The pure draft model and terminal draft/review editor are implemented. Press r from an eligible inspector; Review the destination, then Enter or s sends. The result stays separate from the capture. Esc during sending cancels and returns to the draft after cleanup; o reopens the retained result.
 
 
 ## Try a local send
@@ -69,10 +69,26 @@ cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-reques
 
 Enter opens the inspector; r opens a draft. On Edit URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Press c to compare the captured and replayed responses side by side. Up/Down scroll both columns, v reveals header values, and Esc returns to the result. The [comparison contract](contracts/m3-response-comparison.md) distinguishes stored-byte equality from incomplete or unavailable data. Esc from the result returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
 
+## Try a local POST
+
+Start the supplied loopback echo server in a separate terminal. Stop any previous server using port 8080 first:
+
+```sh
+python3 scripts/echo_server.py
+```
+
+Run Netscope with the same single-request fixture shown above. Open the inspector and press r. Edit the URL to `http://127.0.0.1:8080/books` **before entering a body**: saving a changed destination clears the body and header choices.
+
+Press m to switch from GET to POST. The initial format is plain text; press t to select JSON. Press b, type `{"title":"café"}`, then Enter to save. Select Review request and press Enter. Expect method POST, Content-Type application/json, and Content-Length 17. Check the destination and body, then press s to send. The response should report body_bytes 17 and echo the original text.
+
+For a second example, return to the draft, press t to select plain text, then b and Ctrl+u to replace the body with `café`. Save and review: the body is five bytes. Ctrl+n inserts a newline while editing; Tab inserts a tab. Esc discards an unfinished edit. Stop the echo server with Ctrl+C when finished.
+
+The editor limits bodies to 16,384 UTF-8 bytes. JSON must contain one complete value accepted by the parser; validation preserves the entered whitespace and number spelling. Content-Type and Content-Length are managed from the reviewed body. The [body contract](contracts/m3-request-bodies.md) records capture eligibility and exact limits.
+
 ## Network verification
 
 `cargo test -p netscope-net --locked --offline` includes two kinds of checks: paused-clock/scripted-body tests for deadline and retention rules, and loopback socket tests for actual HTTP/TLS behaviour. Socket tests use ephemeral ports and explicit synchronization, with wall-clock watchdogs. Local certificates are generated for tests; production code still verifies bundled roots and the destination hostname. No captured external destination is used.
 
-`python3 scripts/check_replay_terminal.py` exercises a live local GET, cancellation while a response stalls, repeated Send keys, q, and Ctrl+C in pseudo-terminals. It checks socket disposal and restored terminal attributes. Run it alongside `python3 scripts/check_terminal.py` to cover the existing navigation and rendering-error paths. Fixed screen buffers test every terminal outcome at both supported minimum/review sizes. The CI workflow runs both process scripts after the workspace checks.
+`python3 scripts/check_replay_terminal.py` exercises live local GET and JSON POST requests, cancellation while a response stalls, repeated Send keys, q, and Ctrl+C in pseudo-terminals. It checks socket disposal and restored terminal attributes. Run it alongside `python3 scripts/check_terminal.py` to cover the existing navigation and rendering-error paths. Fixed screen buffers test every terminal outcome at both supported minimum/review sizes. The CI workflow runs both process scripts after the workspace checks.
 
 The worker emits one result through a capacity-one channel. Socket and TLS futures are disposed before delivery. An OS DNS lookup may outlive cancellation; runtime shutdown does not wait indefinitely for it, and it cannot update the UI. Body retention is capped at 2 MiB; HTTP parser buffers, TLS buffers, and stored headers are additional bounded memory, as described in the transport decision.

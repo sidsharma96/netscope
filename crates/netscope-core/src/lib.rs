@@ -102,8 +102,15 @@ pub use protocol::RecordedProtocol;
 pub mod protocol_lesson {}
 
 mod replay;
-pub use replay::{ReplayDraft, ReplayReview, validate_replay_header};
+pub use replay::{
+    BodyFormat, REQUEST_BODY_LIMIT, ReplayDraft, ReplayMethod, ReplayReview, validate_replay_body,
+    validate_replay_header,
+};
 
 /// Independent owned text for an editable request draft.
 #[doc = include_str!("../../../docs/chapters/16-preparing-a-request.md")]
 pub mod draft_lesson {}
+
+/// UTF-8 bytes borrowed from owned request text.
+#[doc = include_str!("../../../docs/chapters/19-submitting-text.md")]
+pub mod submission_lesson {}

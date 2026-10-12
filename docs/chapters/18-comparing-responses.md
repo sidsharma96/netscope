@@ -8,7 +8,7 @@ A useful comparison tells us what agrees, what differs, and what remains unknown
 
 The left column belongs to the recorded request. The right column belongs to a new operation whose destination and headers you chose in the draft. An unchanged source request ID connects the two observations, but does not make their conditions identical. You may have replaced a public address with a local one, omitted a header, or sent the request after the server's data changed.
 
-Netscope therefore begins the comparison with both destinations and status values. The recorded duration and the new elapsed duration have separate labels. A smaller number on the right is something you can observe, but the two numbers alone do not establish why it is smaller. This comparison does not calculate a speedup or attribute a change to a protocol.
+Netscope therefore begins the comparison with both methods, destinations, and status values. The recorded duration and the new elapsed duration have separate labels. A smaller number on the right is something you can observe, but the two numbers alone do not establish why it is smaller. This comparison does not calculate a speedup or attribute a change to a protocol.
 
 A status can be compared only when both observations contain one. In a HAR recording, zero means no status was recorded. A replay that fails before receiving headers also has no status to compare. Neither is an HTTP response with status zero, and neither should be quietly converted to a successful empty response.
 

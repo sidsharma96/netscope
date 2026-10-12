@@ -6,6 +6,9 @@ use tokio::{
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn review(address: std::net::SocketAddr) -> ReplayReview {
     ReplayReview {
+        method: netscope_core::ReplayMethod::Get,
+        format: netscope_core::BodyFormat::Plain,
+        body: String::new(),
         source: RequestId(7),
         destination: format!("http://{address}/a?q=1"),
         authority: address.to_string(),
@@ -244,6 +247,9 @@ async fn tls_verifies_trust_and_hostname() -> TestResult {
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let port = listener.local_addr()?.port();
         let review = ReplayReview {
+            method: netscope_core::ReplayMethod::Get,
+            format: netscope_core::BodyFormat::Plain,
+            body: String::new(),
             source: RequestId(0),
             destination: format!("https://{host}:{port}/"),
             authority: format!("{host}:{port}"),
@@ -509,5 +515,111 @@ fn an_expired_send_deadline_does_not_open_a_connection() -> TestResult {
     assert_eq!(result.outcome, Outcome::TimedOut);
     assert_eq!(result.status, None);
     assert!(matches!(listener.accept(),Err(e) if e.kind() == io::ErrorKind::WouldBlock));
+    Ok(())
+}
+
+#[tokio::test]
+async fn post_sends_exact_utf8_bytes_and_managed_headers() -> TestResult {
+    for (format, body) in [
+        (netscope_core::BodyFormat::Plain, ""),
+        (netscope_core::BodyFormat::Plain, "café\n🙂"),
+        (
+            netscope_core::BodyFormat::Json,
+            " {\"message\":\"café\",\"n\":1.00} \n",
+        ),
+    ] {
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let mut review = review(listener.local_addr()?);
+        review.method = netscope_core::ReplayMethod::Post;
+        review.format = format;
+        review.body = body.into();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await?;
+            let head = read_head(&mut stream).await?;
+            let mut bytes = vec![0; body.len()];
+            stream.read_exact(&mut bytes).await?;
+            assert!(head.starts_with("POST /a?q=1 HTTP/1.1\r\n"));
+            assert!(head.contains(&format!("content-length: {}\r\n", body.len())));
+            assert!(head.contains(&format!("content-type: {}\r\n", format.content_type())));
+            assert!(!head.contains("transfer-encoding:"));
+            assert_eq!(bytes, body.as_bytes());
+            stream
+                .write_all(b"HTTP/1.1 201 Created\r\nContent-Length: 2\r\n\r\nok")
+                .await?;
+            Ok::<_, io::Error>(())
+        });
+        let (_cancel, cancelled) = oneshot::channel();
+        let result = execute(
+            &review,
+            cancelled,
+            tokio::time::Instant::now() + TIME_LIMIT,
+            configuration(),
+        )
+        .await;
+        assert_eq!(result.outcome, Outcome::Complete);
+        assert_eq!(result.status, Some(201));
+        assert_eq!(result.method, netscope_core::ReplayMethod::Post);
+        assert_eq!(result.request_body_bytes, body.len());
+        tokio::time::timeout(TIME_LIMIT, server).await???;
+    }
+    Ok(())
+}
+#[tokio::test(start_paused = true)]
+async fn cancellation_and_deadline_drop_a_backpressured_upload() -> TestResult {
+    for cancel_now in [true, false] {
+        let mut review = review("127.0.0.1:1".parse()?);
+        review.method = netscope_core::ReplayMethod::Post;
+        review.body = "x".repeat(netscope_core::REQUEST_BODY_LIMIT);
+        let (_, request) = request(&review)?;
+        let (client, mut server) = tokio::io::duplex(1);
+        let (cancel, cancelled) = oneshot::channel();
+        let (finished, finish) = oneshot::channel();
+        let peer = tokio::spawn(async move {
+            read_head(&mut server).await?;
+            assert_eq!(server.read_u8().await?, b'x');
+            if cancel_now {
+                let _ = cancel.send(());
+            } else {
+                let _hold = cancel;
+                finish.await.map_err(io::Error::other)?;
+            }
+            let mut remainder = vec![];
+            server.read_to_end(&mut remainder).await?;
+            assert!(remainder.len() < netscope_core::REQUEST_BODY_LIMIT - 1);
+            Ok::<_, io::Error>(())
+        });
+        let mut result = ReplayResult::empty(&review);
+        let work = async {
+            exchange_on(Box::new(client), request, &mut result)
+                .await
+                .unwrap_or(Outcome::Failed("exchange"))
+        };
+        let outcome = wait_for(work, cancelled, tokio::time::Instant::now() + TIME_LIMIT).await;
+        assert_eq!(
+            outcome,
+            if cancel_now {
+                Outcome::Cancelled
+            } else {
+                Outcome::TimedOut
+            }
+        );
+        assert_eq!(result.status, None);
+        let _ = finished.send(());
+        peer.await??;
+    }
+    Ok(())
+}
+#[test]
+fn transport_rejects_invalid_bodies_without_io() -> TestResult {
+    let mut review = review("127.0.0.1:1".parse()?);
+    review.body = "unexpected GET body".into();
+    assert!(validate(&review).is_err());
+    review.method = netscope_core::ReplayMethod::Post;
+    review.format = netscope_core::BodyFormat::Json;
+    assert!(validate(&review).is_err());
+    review.body = "null".into();
+    assert!(validate(&review).is_ok());
+    review.body = "0".repeat(netscope_core::REQUEST_BODY_LIMIT + 1);
+    assert!(validate(&review).is_err());
     Ok(())
 }

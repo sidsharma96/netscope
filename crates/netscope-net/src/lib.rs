@@ -1,6 +1,6 @@
-//! One reviewed GET, with bounded response data and cancellable waiting.
+//! One reviewed GET or POST, with bounded response data and cancellable waiting.
 use bytes::Bytes;
-use http_body_util::{BodyExt, Empty};
+use http_body_util::{BodyExt, Full};
 use hyper::{
     Request,
     client::conn::http1,
@@ -47,6 +47,10 @@ pub enum Outcome {
 /// A separate result that never mutates the imported session.
 #[derive(Debug)]
 pub struct ReplayResult {
+    /// Method accepted for this operation, independent of later draft edits.
+    pub method: netscope_core::ReplayMethod,
+    /// Reviewed UTF-8 body length, not proof that the server received it.
+    pub request_body_bytes: usize,
     /// Original captured request identity.
     pub source: RequestId,
     /// Reviewed destination for this new operation.
@@ -67,6 +71,8 @@ pub struct ReplayResult {
 impl ReplayResult {
     fn empty(review: &ReplayReview) -> Self {
         Self {
+            method: review.method,
+            request_body_bytes: review.body.len(),
             source: review.source,
             destination: review.destination.clone(),
             outcome: Outcome::Failed("Worker stopped without a result"),
@@ -88,7 +94,8 @@ fn configuration() -> Arc<ClientConfig> {
     Arc::new(config)
 }
 
-fn request(review: &ReplayReview) -> Result<(url::Url, Request<Empty<Bytes>>), &'static str> {
+fn request(review: &ReplayReview) -> Result<(url::Url, Request<Full<Bytes>>), &'static str> {
+    netscope_core::validate_replay_body(review.method, review.format, &review.body)?;
     let url = url::Url::parse(&review.destination).map_err(|_| "Invalid destination")?;
     if url.as_str() != review.destination
         || review.destination.len() > 16_384
@@ -105,10 +112,10 @@ fn request(review: &ReplayReview) -> Result<(url::Url, Request<Empty<Bytes>>), &
         return Err("Destination and Host disagree");
     }
     let mut request = Request::builder()
-        .method("GET")
+        .method(review.method.as_str())
         .uri(&url[url::Position::BeforePath..])
         .version(hyper::Version::HTTP_11)
-        .body(Empty::new())
+        .body(Full::new(Bytes::copy_from_slice(review.body.as_bytes())))
         .map_err(|_| "Invalid request target")?;
     let mut size = 0usize;
     if review.headers.len() > 100 {
@@ -132,6 +139,17 @@ fn request(review: &ReplayReview) -> Result<(url::Url, Request<Empty<Bytes>>), &
     request
         .headers_mut()
         .insert("accept-encoding", HeaderValue::from_static("identity"));
+    if review.method == netscope_core::ReplayMethod::Post {
+        request.headers_mut().insert(
+            "content-type",
+            HeaderValue::from_static(review.format.content_type()),
+        );
+        request.headers_mut().insert(
+            "content-length",
+            HeaderValue::from_str(&review.body.len().to_string())
+                .map_err(|_| "Invalid body length")?,
+        );
+    }
     Ok((url, request))
 }
 /// Check the concrete client's representation before offering Send. No I/O occurs.
@@ -179,6 +197,13 @@ async fn exchange_inner(
     } else {
         Box::new(tcp)
     };
+    exchange_on(stream, request, result).await
+}
+async fn exchange_on(
+    stream: Box<dyn Stream>,
+    request: Request<Full<Bytes>>,
+    result: &mut ReplayResult,
+) -> Result<Outcome, &'static str> {
     let (mut sender, connection) = http1::Builder::new()
         .max_headers(100)
         .max_header_size(HEADER_LIMIT)

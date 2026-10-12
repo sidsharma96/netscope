@@ -55,9 +55,9 @@ These are validation rules for this editor. They are not evidence that the serve
 
 ## A destination change also changes a decision
 
-Suppose you explicitly select an Authorization header for one destination, then change the URL to a local server. Keeping that header selected would carry a choice into a different context. Netscope therefore clears selected and manually added headers whenever the saved URL text changes, and immediately explains the reset.
+Suppose you explicitly select an Authorization header for one destination, then change the URL to a local server. Keeping that header selected would carry a choice into a different context. Netscope therefore clears the request body and selected or manually added headers whenever the saved URL text changes, and immediately explains the reset.
 
-Every draft starts with no captured headers selected. Repeated captured headers remain separate choices. Fields managed by the HTTP client, such as Host and Content-Length, cannot be copied as ordinary user headers. A blocked entry includes its reason, so a disabled choice does not look like a broken key.
+Every draft starts with no captured headers selected. Repeated captured headers remain separate choices. Fields managed by the HTTP client, such as Host, Content-Type, and Content-Length, cannot be copied as ordinary user headers. A blocked entry includes its reason, so a disabled choice does not look like a broken key.
 
 All header values are hidden in the draft list and review until you explicitly reveal them. Masking every value avoids guessing which custom header might contain private information. Names remain visible so you can navigate. When you enter a new value, the editing field shows what you type; leaving that field restores masking.
 

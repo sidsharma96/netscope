@@ -62,6 +62,14 @@ fn outcome(outcome: Outcome) -> &'static str {
 fn rows(captured: &Request, result: &ReplayResult, reveal: bool) -> Vec<(String, String)> {
     let mut rows = vec![
         (
+            format!("Captured method: {}", terminal_text(&captured.method)),
+            format!(
+                "Reviewed: {}; {} body bytes",
+                result.method.as_str(),
+                result.request_body_bytes
+            ),
+        ),
+        (
             format!("Source #{}", result.source.0),
             "New request; capture unchanged".into(),
         ),

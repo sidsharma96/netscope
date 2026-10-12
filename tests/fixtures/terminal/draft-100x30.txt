@@ -4,6 +4,7 @@ Capture unchanged · only Review → Send starts network traffic
 ┌ Draft · Enter chooses · o last result · Esc returns ─────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                                              │
 │Only Enter or s from Review sends a request                                                       │
+│m: method GET · t: bodyless · b: edit body                                                        │
 │> Edit URL: https://example.test/api/books                                                        │
 │  [ ] X-Example: [hidden; v reveals all values]                                                   │
 │  [ ] X-Example: [hidden; v reveals all values]                                                   │
@@ -25,6 +26,5 @@ Capture unchanged · only Review → Send starts network traffic
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │
-│                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit                                               
+m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit                           

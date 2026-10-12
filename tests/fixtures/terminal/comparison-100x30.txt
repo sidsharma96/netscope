@@ -2,6 +2,7 @@ NETSCOPE / RESPONSE COMPARISON
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
 ┌ Captured response ─────────────────────────────┐┌ Replay response ───────────────────────────────┐
+│Captured method: GET                            ││Reviewed: GET; 0 body bytes                     │
 │Source #0                                       ││New request; capture unchanged                  │
 │https://example.test/api/books                  ││https://example.test/api/books                  │
 │Destinations                                    ││Same stored URL text                            │
@@ -17,7 +18,6 @@ Capture unchanged · only Review → Send starts network traffic
 │RESPONSE HEADERS                                ││Names ignore case; values/order exact           │
 │content-type                                    ││Stored values differ                            │
 │[hidden; v reveals values]                      ││[hidden; v reveals values]                      │
-│                                                ││                                                │
 │                                                ││                                                │
 │                                                ││                                                │
 │                                                ││                                                │

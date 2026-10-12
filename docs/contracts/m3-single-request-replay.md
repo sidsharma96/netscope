@@ -1,5 +1,8 @@
 # M3, first slice: send one reviewed GET request
 
+The [request-body extension](m3-request-bodies.md) adds POST, reviewed UTF-8 bodies, and managed body headers. Its rules supersede the original GET-only scope below; the transport and response limits still apply.
+
+
 Status: GET draft, review, network operation, separate results, and cancellation are implemented. On October 9, 2026, we agreed to an editable URL, explicit headers, a 10-second total deadline, and a 2 MiB body limit. The [transport decision](replay-transport.md) records the selected stack and additional bounds; the [verification record](../VERIFICATION.md) records checks actually run. This contract specifies required behaviour.
 
 The reader's question is: “What happens when I send this request?” The visible journey is select, edit, review, send, then inspect a separate result. Reading a file, drawing a screen, editing a draft, and opening a preview must never initiate network activity.

@@ -14,6 +14,8 @@ fn observations() -> Result<(Request, ReplayResult), Box<dyn std::error::Error>>
     captured.body = Body::Text("abc".into());
     captured.response_headers.clear();
     let replay = ReplayResult {
+        method: netscope_core::ReplayMethod::Get,
+        request_body_bytes: 0,
         source: RequestId(0),
         destination: "http://localhost/different".into(),
         outcome: Outcome::Complete,

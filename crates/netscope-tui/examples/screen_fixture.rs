@@ -23,11 +23,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.resize(width, height, &session);
     match mode {
         "draft" | "review" | "draft-invalid" | "running" | "complete" | "cancelled" | "timeout"
-        | "limited" | "failed" | "comparison" => {
+        | "limited" | "failed" | "comparison" | "post-edit" | "post-review" | "post-result" => {
             use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
             app.apply(Action::Open, &session);
             app.apply(Action::Replay, &session);
-            if mode != "draft" && mode != "draft-invalid" {
+            if mode.starts_with("post-") {
+                for code in [KeyCode::Char('m'), KeyCode::Char('t'), KeyCode::Char('b')] {
+                    app.handle_key(KeyEvent::new(code, KeyModifiers::NONE), &session);
+                }
+                for c in "{\"title\":\"café\"}".chars() {
+                    app.handle_key(
+                        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE),
+                        &session,
+                    );
+                }
+                if mode != "post-edit" {
+                    app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
+                }
+            }
+            if mode != "draft" && mode != "draft-invalid" && mode != "post-edit" {
                 for _ in 0..4 {
                     app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &session);
                 }
@@ -49,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     | "limited"
                     | "failed"
                     | "comparison"
+                    | "post-result"
             ) {
                 app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &session);
                 let editor = app.replay.as_mut().ok_or("missing editor")?;
@@ -56,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if mode != "running" {
                     use netscope_net::{Outcome, ReplayResult};
                     let outcome = match mode {
-                        "complete" | "comparison" => Outcome::Complete,
+                        "complete" | "comparison" | "post-result" => Outcome::Complete,
                         "cancelled" => Outcome::Cancelled,
                         "timeout" => Outcome::TimedOut,
                         "limited" => Outcome::SizeLimited,
@@ -65,6 +80,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     editor.complete(
                         id,
                         ReplayResult {
+                            method: review.method,
+                            request_body_bytes: review.body.len(),
                             source: review.source,
                             destination: review.destination,
                             outcome,

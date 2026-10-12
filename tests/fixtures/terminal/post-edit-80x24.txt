@@ -1,0 +1,24 @@
+NETSCOPE / REPLAY DRAFT                                                         
+synthetic.har · 1 requests                                                      
+Capture unchanged · only Review → Send starts network traffic                   
+┌ Editing · Enter saves · Esc cancels ─────────────────────────────────────────┐
+│Source #0 · POST · HTTP/1.1 · 17 request body bytes                           │
+│Only Enter or s from Review sends a request                                   │
+│EDIT BODY · Ctrl+n newline · Tab inserts tab                                  │
+│Append text · Backspace deletes · Ctrl+u clears · Enter saves · Esc cancels   │
+│{"title":"café"}                                                              │
+│[insertion point at end]                                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+Ctrl+n newline · Tab tab · Enter save · Esc cancel · Ctrl+c quit                

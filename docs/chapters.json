@@ -135,6 +135,11 @@
     "subtitle": "Separate matching bytes from missing evidence"
   },
   {
+    "slug": "19-submitting-text",
+    "title": "Submitting text",
+    "subtitle": "Turn a reviewed body into well-defined bytes"
+  },
+  {
     "slug": "04-quality-and-tests",
     "title": "Checking our work",
     "subtitle": "State an expectation, then test it",

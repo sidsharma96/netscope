@@ -767,13 +767,13 @@ fn replay_manual_headers_cancel_resize_and_ineligible_source()
     );
     press(&mut app, &session, KeyCode::Esc);
     let mut post = session.requests()[0].clone();
-    post.method = "POST".into();
+    post.method = "DELETE".into();
     let session = Session::new(vec![post]);
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
     app.apply(Action::Replay, &session);
     assert!(app.replay.is_none());
-    assert!(render(&session, &mut app, 100, 30)?.contains("require a GET"));
+    assert!(render(&session, &mut app, 100, 30)?.contains("require GET or POST"));
     Ok(())
 }
 
@@ -909,6 +909,8 @@ fn invalid_manual_header_name_remains_editable() -> Result<(), Box<dyn std::erro
 
 fn new_replay_result(outcome: netscope_net::Outcome) -> netscope_net::ReplayResult {
     netscope_net::ReplayResult {
+        method: netscope_core::ReplayMethod::Get,
+        request_body_bytes: 0,
         source: RequestId(0),
         destination: "http://localhost/example".into(),
         outcome,
@@ -1025,6 +1027,8 @@ fn running_and_each_result_match_fixed_buffers() -> Result<(), Box<dyn std::erro
                 editor.complete(
                     id,
                     ReplayResult {
+                        method: netscope_core::ReplayMethod::Get,
+                        request_body_bytes: 0,
                         source: review.source,
                         destination: review.destination,
                         outcome,
@@ -1102,6 +1106,8 @@ fn comparison_buffers_match_at_both_sizes() -> Result<(), Box<dyn std::error::Er
         editor.complete(
             id,
             netscope_net::ReplayResult {
+                method: netscope_core::ReplayMethod::Get,
+                request_body_bytes: 0,
                 source: review.source,
                 destination: review.destination,
                 outcome: netscope_net::Outcome::Complete,
@@ -1229,5 +1235,147 @@ fn comparison_reveals_non_utf8_header_bytes_as_hex() -> Result<(), Box<dyn std::
     assert!(screen.contains("ff 1b [hex bytes]"));
     assert!(!screen.contains('�'));
     assert!(!screen.contains('\x1b'));
+    Ok(())
+}
+
+fn post_app(session: &Session, body: &str, editing: bool) -> App {
+    let mut app = App::new(session);
+    app.apply(Action::Open, session);
+    app.apply(Action::Replay, session);
+    for code in [KeyCode::Char('m'), KeyCode::Char('t'), KeyCode::Char('b')] {
+        press(&mut app, session, code);
+    }
+    for c in body.chars() {
+        press(&mut app, session, KeyCode::Char(c));
+    }
+    if !editing {
+        press(&mut app, session, KeyCode::Enter);
+        for _ in 0..4 {
+            press(&mut app, session, KeyCode::Down);
+        }
+        press(&mut app, session, KeyCode::Enter);
+    }
+    app
+}
+#[test]
+fn body_editing_cancels_locally_and_preserves_text_shortcuts()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = post_app(&session, "qmtb🙂", true);
+    press(&mut app, &session, KeyCode::Backspace);
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
+        &session,
+    );
+    press(&mut app, &session, KeyCode::Tab);
+    assert!(!app.quit);
+    press(&mut app, &session, KeyCode::Enter);
+    assert_eq!(
+        app.replay.as_ref().ok_or("editor")?.draft().body(),
+        "qmtb\n\t"
+    );
+    press(&mut app, &session, KeyCode::Char('b'));
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    press(&mut app, &session, KeyCode::Esc);
+    assert_eq!(
+        app.replay.as_ref().ok_or("editor")?.draft().body(),
+        "qmtb\n\t"
+    );
+    press(&mut app, &session, KeyCode::Char('m'));
+    assert!(
+        app.replay
+            .as_ref()
+            .ok_or("editor")?
+            .draft()
+            .body()
+            .is_empty()
+    );
+    assert_eq!(session.requests()[0].method, "GET");
+    Ok(())
+}
+#[test]
+fn invalid_json_cannot_send_and_the_result_retains_the_reviewed_method()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = post_app(&session, "{", false);
+    press(&mut app, &session, KeyCode::Char('s'));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    assert!(render(&session, &mut app, 100, 30)?.contains("Body must be one valid JSON"));
+    press(&mut app, &session, KeyCode::Char('b'));
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &session,
+    );
+    for c in "{\"title\":\"café\"}".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Enter);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Content-Length: 17 UTF-8 bytes"));
+    press(&mut app, &session, KeyCode::Char('s'));
+    let (id, review) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    assert_eq!(review.method, netscope_core::ReplayMethod::Post);
+    assert_eq!(review.body, "{\"title\":\"café\"}");
+    press(&mut app, &session, KeyCode::Char('s'));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    let mut result = new_replay_result(netscope_net::Outcome::Complete);
+    result.method = review.method;
+    result.request_body_bytes = review.body.len();
+    app.replay.as_mut().ok_or("editor")?.complete(id, result);
+    press(&mut app, &session, KeyCode::Esc);
+    press(&mut app, &session, KeyCode::Char('m'));
+    press(&mut app, &session, KeyCode::Char('o'));
+    assert!(
+        render(&session, &mut app, 100, 30)?.contains("POST · HTTP/1.1 · 17 request body bytes")
+    );
+    press(&mut app, &session, KeyCode::Char('c'));
+    let comparison = render(&session, &mut app, 100, 30)?;
+    assert!(comparison.contains("Captured method: GET"));
+    assert!(comparison.contains("Reviewed: POST; 17 body bytes"));
+    Ok(())
+}
+#[test]
+fn post_edit_review_and_result_buffers_match() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for mode in ["post-edit", "post-review", "post-result"] {
+        for (width, height) in [(80, 24), (100, 30)] {
+            let mut app = post_app(&session, "{\"title\":\"café\"}", mode == "post-edit");
+            if mode == "post-result" {
+                press(&mut app, &session, KeyCode::Enter);
+                let editor = app.replay.as_mut().ok_or("editor")?;
+                let (id, review) = editor.take_send().ok_or("send")?;
+                editor.complete(
+                    id,
+                    netscope_net::ReplayResult {
+                        method: review.method,
+                        request_body_bytes: review.body.len(),
+                        source: review.source,
+                        destination: review.destination,
+                        outcome: netscope_net::Outcome::Complete,
+                        status: Some(200),
+                        version: Some("HTTP/1.1".into()),
+                        headers: vec![("content-type".into(), b"text/plain".to_vec())],
+                        body: b"hello".to_vec(),
+                        elapsed: std::time::Duration::from_millis(25),
+                    },
+                );
+            }
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+                "../../tests/fixtures/terminal/{mode}-{width}x{height}.txt"
+            ));
+            assert_eq!(
+                render(&session, &mut app, width, height)?,
+                std::fs::read_to_string(path)?.trim_end_matches('\n')
+            );
+        }
+    }
     Ok(())
 }

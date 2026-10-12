@@ -1,5 +1,8 @@
 # Replay transport decision
 
+The [request-body extension](m3-request-bodies.md) adds POST, reviewed UTF-8 bodies, and managed body headers. Its rules supersede the original GET-only scope below; the transport and response limits still apply.
+
+
 Selected October 10, 2026, before adding network dependencies: Hyper's HTTP/1 connection API, Tokio, and tokio-rustls with WebPKI roots. Hyper parses HTTP; Netscope does not implement a wire parser. One connection carries one GET. There is no connection pool, redirect follower, HTTP retry loop, proxy discovery, cookie store, content decompressor, or credential provider. Address resolution may produce several addresses to try before sending.
 
 The connection parser accepts at most 100 response headers and 32 KiB including the status line; its read buffer is capped at 32 KiB. The same header-size limit applies to chunked trailers. Trailers are consumed but not retained. The application retains at most 2 MiB of body data; transport/TLS buffers are separate bounded overhead. A frame can contain excess bytes, but the application only checks whether one additional byte exists and never copies excess bytes into the result. Outgoing explicit headers are limited to 100 entries and 32 KiB including field separators, before sending. Host and Accept-Encoding: identity are added by the client; no other application headers are added.

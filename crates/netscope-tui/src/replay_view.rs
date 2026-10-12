@@ -1,6 +1,6 @@
 //! Drafts, pending sends, and new results stay separate from the capture.
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use netscope_core::{NameValue, ReplayDraft, ReplayReview, terminal_text};
+use netscope_core::{NameValue, ReplayDraft, ReplayMethod, ReplayReview, terminal_text};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -12,6 +12,7 @@ use unicode_segmentation::UnicodeSegmentation;
 enum Mode {
     Draft,
     Url(String),
+    Body(String),
     Name(String),
     Value(String, String),
     Review,
@@ -50,7 +51,10 @@ impl ReplayEditor {
     }
     /// Whether ordinary characters belong to a text field.
     pub fn editing(&self) -> bool {
-        matches!(self.mode, Mode::Url(_) | Mode::Name(_) | Mode::Value(_, _))
+        matches!(
+            self.mode,
+            Mode::Url(_) | Mode::Body(_) | Mode::Name(_) | Mode::Value(_, _)
+        )
     }
     pub(crate) fn waiting(&self) -> bool {
         matches!(self.mode, Mode::Running(_))
@@ -66,11 +70,15 @@ impl ReplayEditor {
     }
     pub(crate) fn footer(&self) -> &'static str {
         match self.mode {
+            Mode::Body(_) => "Ctrl+n newline · Tab tab · Enter save · Esc cancel · Ctrl+c quit",
+            Mode::Url(_) | Mode::Name(_) | Mode::Value(_, _) => {
+                "Text input · Ctrl+u clear · Enter save · Esc cancel · Ctrl+c quit"
+            }
             Mode::Running(_) => "Esc cancel · q / Ctrl+c quit and cancel",
             Mode::Result => "↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit",
             Mode::Compare => "↑/↓ scroll both · v reveal headers · c / Esc result · q quit",
             Mode::Review => "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit",
-            _ => "↑/↓ move · Enter choose/save · Esc back · Ctrl+c quit",
+            _ => "m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit",
         }
     }
     /// Borrow the current draft for inspection and tests.
@@ -169,11 +177,17 @@ impl ReplayEditor {
                 match previous {
                     Mode::Url(value) => {
                         self.message = if self.draft.set_url(value) {
-                            "URL changed; all header choices cleared"
+                            "URL changed; all header choices cleared; body cleared"
                         } else {
                             "URL unchanged"
                         }
                         .into();
+                    }
+                    Mode::Body(value) => {
+                        if let Err(reason) = self.draft.set_body(value.clone()) {
+                            self.mode = Mode::Body(value);
+                            self.message = reason.into();
+                        }
                     }
                     Mode::Name(name) => {
                         let header = NameValue {
@@ -209,11 +223,24 @@ impl ReplayEditor {
                 self.reveal = false;
                 return false;
             }
+            let body_edit = matches!(self.mode, Mode::Body(_));
             let text = match &mut self.mode {
-                Mode::Url(s) | Mode::Name(s) | Mode::Value(_, s) => s,
+                Mode::Url(s) | Mode::Body(s) | Mode::Name(s) | Mode::Value(_, s) => s,
                 _ => return false,
             };
-            if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('u') {
+            if body_edit
+                && ((key.modifiers.contains(KeyModifiers::CONTROL)
+                    && key.code == KeyCode::Char('n'))
+                    || key.code == KeyCode::Tab)
+            {
+                if text.len() < netscope_core::REQUEST_BODY_LIMIT {
+                    text.push(if key.code == KeyCode::Tab { '\t' } else { '\n' });
+                } else {
+                    self.message = "Text limit: 16 KiB".into();
+                }
+            } else if key.modifiers.contains(KeyModifiers::CONTROL)
+                && key.code == KeyCode::Char('u')
+            {
                 text.clear();
             } else if !key
                 .modifiers
@@ -282,6 +309,28 @@ impl ReplayEditor {
         let captured = self.draft.captured().len();
         let added = self.draft.added().len();
         match key.code {
+            KeyCode::Char('m') => {
+                self.draft.toggle_method();
+                self.message = "Method changed; body cleared and format reset to plain text".into();
+                self.reveal = false;
+            }
+            KeyCode::Char('t') => {
+                self.draft.toggle_format();
+                self.message = if self.draft.method() == ReplayMethod::Post {
+                    "Body format changed; text preserved"
+                } else {
+                    "Choose POST to set a body format"
+                }
+                .into();
+            }
+            KeyCode::Char('b') => {
+                if self.draft.method() == ReplayMethod::Post {
+                    self.mode = Mode::Body(self.draft.body().into());
+                    self.message.clear();
+                } else {
+                    self.message = "Choose POST before editing a body".into();
+                }
+            }
             KeyCode::Esc => return true,
             KeyCode::Char('o') if self.result.is_some() => {
                 self.mode = Mode::Result;
@@ -355,10 +404,26 @@ impl ReplayEditor {
         rows
     }
     fn content(&self) -> Vec<String> {
+        let (method, bytes) = if let Mode::Body(text) = &self.mode {
+            (self.draft.method(), text.len())
+        } else if matches!(self.mode, Mode::Result) {
+            self.result
+                .as_ref()
+                .map(|r| (r.method, r.request_body_bytes))
+                .unwrap_or((self.draft.method(), self.draft.body().len()))
+        } else {
+            (self.draft.method(), self.draft.body().len())
+        };
         let mut lines = vec![
             format!(
-                "Source #{} · GET · HTTP/1.1 · no body",
-                self.draft.source().0
+                "Source #{} · {} · HTTP/1.1 · {}",
+                self.draft.source().0,
+                method.as_str(),
+                if method == ReplayMethod::Get {
+                    "no body".into()
+                } else {
+                    format!("{bytes} request body bytes")
+                }
             ),
             "Only Enter or s from Review sends a request".into(),
         ];
@@ -367,17 +432,27 @@ impl ReplayEditor {
         }
         match &self.mode {
             Mode::Draft => {
+                lines.push(format!(
+                    "m: method {} · t: {} · b: edit body",
+                    self.draft.method().as_str(),
+                    if self.draft.method() == ReplayMethod::Get {
+                        "bodyless"
+                    } else {
+                        self.draft.format().content_type()
+                    }
+                ));
                 if let Err(e) = self.draft.review() {
-                    lines.push(format!("URL: {e}"));
+                    lines.push(format!("Draft: {e}"));
                 }
                 for (i, row) in self.rows().iter().enumerate() {
                     lines.push(format!("{} {row}", if i == self.row { ">" } else { " " }));
                 }
             }
-            Mode::Url(s) | Mode::Name(s) | Mode::Value(_, s) => {
+            Mode::Url(s) | Mode::Body(s) | Mode::Name(s) | Mode::Value(_, s) => {
                 lines.push(
                     match self.mode {
                         Mode::Url(_) => "EDIT URL",
+                        Mode::Body(_) => "EDIT BODY · Ctrl+n newline · Tab inserts tab",
                         Mode::Name(_) => "NEW HEADER NAME",
                         _ => "NEW HEADER VALUE",
                     }
@@ -495,6 +570,22 @@ impl ReplayEditor {
                         ));
                     }
                     lines.push("Limits: 10 seconds total · 2 MiB response body".into());
+                    if r.method == ReplayMethod::Post {
+                        lines.push(format!(
+                            "Client-managed Content-Type: {}",
+                            r.format.content_type()
+                        ));
+                        lines.push(format!(
+                            "Client-managed Content-Length: {} UTF-8 bytes",
+                            r.body.len()
+                        ));
+                        lines.push("Outgoing body (visible; controls escaped):".into());
+                        lines.push(if r.body.is_empty() {
+                            "[empty body]".into()
+                        } else {
+                            terminal_text(&r.body)
+                        });
+                    }
                     lines.push("Explicit headers:".into());
                     if r.headers.is_empty() {
                         lines.push("  None selected".into());
@@ -512,7 +603,12 @@ impl ReplayEditor {
                     ));
                     lines.push("Client-managed Accept-Encoding: identity".into());
                     lines.push(
-                        "No body framing, cookies, auth, or User-Agent added implicitly".into(),
+                        if r.method == ReplayMethod::Get {
+                            "No body framing, cookies, auth, or User-Agent added implicitly"
+                        } else {
+                            "No cookies, auth, compression, or User-Agent added implicitly"
+                        }
+                        .into(),
                     );
                     lines.push("Semantic preview; header spelling/order may differ".into());
                     lines.push("Captured headers left out:".into());
@@ -555,6 +651,8 @@ impl ReplayEditor {
             " Sending · Esc cancels "
         } else if matches!(self.mode, Mode::Result) {
             " New result · ↑/↓ scroll · v reveals · Esc edits "
+        } else if self.editing() {
+            " Editing · Enter saves · Esc cancels "
         } else {
             " Draft · Enter chooses · o last result · Esc returns "
         };
