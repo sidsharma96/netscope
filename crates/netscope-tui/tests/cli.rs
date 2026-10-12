@@ -149,6 +149,8 @@ fn non_utf8_paths_reach_file_validation() -> Result<(), Box<dyn std::error::Erro
 fn native_browser_exports_work_through_the_command() -> Result<(), Box<dyn std::error::Error>> {
     for (name, count) in [
         ("chrome-154.har", 9),
+        ("chrome-154-h2.har", 6),
+        ("firefox-146-h2.har", 6),
         ("firefox-146.har", 9),
         ("firefox-146-in-progress.har", 3),
     ] {

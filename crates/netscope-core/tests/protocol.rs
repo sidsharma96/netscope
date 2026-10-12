@@ -6,7 +6,10 @@ fn recognizes_only_explicit_spellings() {
     for (labels, expected) in [
         (&["HTTP/1.0"][..], RecordedProtocol::Http10),
         (&["HTTP/1.1"][..], RecordedProtocol::Http11),
-        (&["HTTP/2", "HTTP/2.0", "h2"][..], RecordedProtocol::Http2),
+        (
+            &["HTTP/2", "HTTP/2.0", "http/2.0", "h2"][..],
+            RecordedProtocol::Http2,
+        ),
         (&["HTTP/3", "HTTP/3.0", "h3"][..], RecordedProtocol::Http3),
     ] {
         for label in labels {
@@ -17,6 +20,9 @@ fn recognizes_only_explicit_spellings() {
         "",
         "http/1.1",
         "H2",
+        "http/2",
+        "http/2.0 ",
+        "http/20.0",
         "HTTP/2 ",
         " HTTP/3",
         "HTTP/20",

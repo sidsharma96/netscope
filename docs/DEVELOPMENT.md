@@ -122,3 +122,5 @@ Run `python3 scripts/check_install.py` after the workspace checks. It builds and
 The normal workspace suite imports frozen exports from Chrome and Firefox, checks their retained data and replay eligibility, and exercises CLI output and inspector labels. No browser installation or live server is required for these tests. Derived malformed-field cases are separate from the unchanged native recordings.
 
 For a new manual recording, run `python3 scripts/har_fixture_server.py` and follow [the capture procedure](HAR_COMPATIBILITY.md). Regeneration is exploratory work: browser timings, ports, timestamps, and sometimes request order vary. Review a new recording before deliberately replacing any regression fixture.
+
+The HTTPS extension uses `scripts/har_https_fixture_server.mjs` with disposable certificate files. See the [HTTPS reproduction procedure](HAR_COMPATIBILITY.md#reproduce-the-https-scenarios) for setup and certificate scope. Its Node/OpenSSL dependencies are only for recording new traffic; CI imports frozen HAR files offline.

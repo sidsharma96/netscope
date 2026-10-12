@@ -1,0 +1,13 @@
+{"path":"/","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"identity","decodedBytes":399,"encodedBytes":399}
+{"path":"/.well-known/appspecific/com.chrome.devtools.json","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"identity","decodedBytes":9,"encodedBytes":9}
+{"path":"/plain","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"identity","decodedBytes":1280,"encodedBytes":1280}
+{"path":"/gzip","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"gzip","decodedBytes":1280,"encodedBytes":52}
+{"path":"/br","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"br","decodedBytes":1280,"encodedBytes":40}
+{"path":"/gzip-binary","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"gzip","decodedBytes":4,"encodedBytes":24}
+{"path":"/plain?again=1","httpVersion":"2.0","alpn":"h2","session":1,"encoding":"identity","decodedBytes":1280,"encodedBytes":1280}
+{"path":"/","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"identity","decodedBytes":399,"encodedBytes":399}
+{"path":"/plain","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"identity","decodedBytes":1280,"encodedBytes":1280}
+{"path":"/gzip","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"gzip","decodedBytes":1280,"encodedBytes":52}
+{"path":"/br","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"br","decodedBytes":1280,"encodedBytes":40}
+{"path":"/gzip-binary","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"gzip","decodedBytes":4,"encodedBytes":24}
+{"path":"/plain?again=1","httpVersion":"2.0","alpn":"h2","session":3,"encoding":"identity","decodedBytes":1280,"encodedBytes":1280}

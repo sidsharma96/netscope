@@ -18,7 +18,7 @@ impl RecordedProtocol {
         match label {
             "HTTP/1.0" => Self::Http10,
             "HTTP/1.1" => Self::Http11,
-            "HTTP/2" | "HTTP/2.0" | "h2" => Self::Http2,
+            "HTTP/2" | "HTTP/2.0" | "http/2.0" | "h2" => Self::Http2,
             "HTTP/3" | "HTTP/3.0" | "h3" => Self::Http3,
             _ => Self::Unrecognized,
         }

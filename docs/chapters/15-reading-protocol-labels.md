@@ -40,24 +40,55 @@ A version label also does not tell us how much faster another protocol would hav
 
 This does not make the label useless. It gives us a vocabulary for asking the next question. We can ask for a connection trace, look for missing exporter fields, or design a separate experiment. We simply avoid presenting the answer before we have that evidence.
 
+## Why the body can be larger than the download
+
+Imagine downloading a book description with a sentence repeated many times. Compression represents repeated content more compactly; decompression restores the original bytes. Gzip and Brotli are two compression formats a server can use for a response body. They are separate from the way HTTP/2 represents headers and divides messages into frames.
+
+The browser can decompress a response before saving its content in a HAR. The captured headers still describe the response that arrived, so `Content-Encoding: gzip` may appear beside ordinary readable text. Applying gzip decompression to that text again would be a mistake: the browser has already performed that step.
+
+Read the following illustration from left to right. Each arrow changes the representation of the same content; the sizes are invented to make the relationship clear.
+
+```text
+Illustration · one body, two representations
+
+Server                         Browser                         HAR
+1,000 bytes of text
+       │ compress
+       ▼
+  80 compressed bytes ────────► decompress ──────────────────► 1,000 bytes of text
+                               response headers retained ───► Content-Encoding: gzip
+```
+
+The downloaded body and the saved content therefore answer different size questions. A recorded content size describes the exported content, while a reported body size is a separate exporter value. Netscope keeps those numbers separate. In our controlled recordings, the browsers did not report body size in the same way, so subtracting it from content size would not give a dependable measure of compression savings. An unavailable size gives us even less basis for that calculation.
+
+Binary content adds another representation. A browser may decompress the received bytes and then write them as base64 so they fit in a JSON string. Base64, introduced in the [import chapter](10-importing-a-har.md), encodes bytes as text; it is not compression. Netscope decodes the HAR's base64 representation once and shows the resulting bytes. It does not apply the response's gzip header to them again.
+
+## When a connection timing is not a measurement
+
+Now suppose a later request has a connection timing of `-1`. This is the exporter's marker for an unavailable duration. It is not a measured duration of zero. If the field is omitted entirely, the record supplies no value at all. A numeric zero remains a reported zero; its precision and collection rules do not establish that no work happened.
+
+Rust's `Timing` enum keeps these cases separate. An enum value selects one named alternative: missing, unavailable, or a duration carrying a number. The inspector matches that alternative to choose the display. It can show an unavailable label without manufacturing a number that would later enter a calculation.
+
+Reusing a connection could explain why a later request has no new connection setup measurement, but the timing field alone cannot prove reuse. Even a reported zero is insufficient. We need separate evidence about which connection handled each request. The [browser compatibility reference](../HAR_COMPATIBILITY.md) keeps our controlled server observations separate from what the HAR inspector can infer.
+
 ## Keep both labels when they differ
 
 The file has one protocol field on the request and another on the response. If one says HTTP/1.1 and the other says HTTP/3, choosing the newer value would throw away the disagreement. Calling it an upgrade would add a story that these two strings do not establish.
 
 Netscope shows both originals, recognizes each independently, and labels disagreement. It also accepts unrecognized nonempty text as captured data. A label such as HTTP/4 stays visible even though this version of the inspector does not explain it. “Unrecognized” describes our recognition policy; it does not declare that the exporter is wrong.
 
-Sometimes different strings have the same classification. Netscope explicitly recognizes HTTP/2, HTTP/2.0, and h2 as HTTP/2 labels, and similarly recognizes three documented spellings for HTTP/3. Those are supported spellings in this tool, not permission to treat any text beginning with “HTTP/2” as the same value.
+Sometimes different strings have the same classification. Netscope explicitly recognizes HTTP/2, HTTP/2.0, http/2.0, and h2 as HTTP/2 labels, and similarly recognizes three documented spellings for HTTP/3. Those are supported spellings in this tool, not permission to treat any text beginning with “HTTP/2” as the same value.
 
 ## Read text without taking ownership of it
 
 The recognition function needs to look at a label, but it does not need to own or modify the text. Rust's `&str` is a shared reference to a string slice: a view of UTF-8 text whose bytes are kept alive elsewhere. A `String`, by contrast, owns a text buffer that can grow. We met that ownership in the [storage chapter](03-storing-requests.md).
 
-Here is a small recognizer for just the HTTP/2 spellings. It returns a Boolean, the true-or-false value from the [previous chapter](14-recognizing-repeats.md). The full application keeps a separate classification for each recognized version and for unrecognized labels.
+Here is a small recognizer for the supported HTTP/2 spellings. It returns a Boolean, the true-or-false value from the [previous chapter](14-recognizing-repeats.md). The full application keeps a separate classification for each recognized version and for unrecognized labels.
 
 ```rust
 fn is_http2(label: &str) -> bool {
     match label {
-        "HTTP/2" | "HTTP/2.0" | "h2" => true,
+        "HTTP/2" | "HTTP/2.0" | "http/2.0" | "h2" => true,
         _ => false,
     }
 }
@@ -72,7 +103,7 @@ assert_eq!(is_http2("HTTP/2 "), false);
 
 `captured.as_str()` lends a view of the existing string to the function. It does not copy the buffer or transfer its ownership. The caller can still read `captured` afterward. The borrowed view is valid while the owning string remains alive, and Rust checks that borrowed access does not outlast its data.
 
-Inside `match`, each quoted value is an exact text pattern. The vertical bar, `|`, separates alternative patterns in the same arm: any of those three spellings produces `true`. It is not the Boolean `&&` operator from the previous lesson. The underscore, `_`, accepts every value left over and produces `false`. That final arm also handles future labels the author has never seen.
+Inside `match`, each quoted value is an exact text pattern. The vertical bar, `|`, separates alternative patterns in the same arm: any of those four spellings produces `true`. It is not the Boolean `&&` operator from the previous lesson. The underscore, `_`, accepts every value left over and produces `false`. That final arm also handles future labels the author has never seen.
 
 The last two checks are deliberate. HTTP/20 shares a prefix with HTTP/2, but exact matching does not confuse them. The trailing space in the final example is part of the string, so that spelling does not match either. We could choose a different recognition policy later, but it should be an explicit change rather than an accidental consequence of a broad comparison.
 

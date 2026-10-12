@@ -1686,3 +1686,30 @@ fn browser_forms_and_incomplete_metadata_remain_visible() -> Result<(), Box<dyn 
     assert!(lines.contains("hello café"));
     Ok(())
 }
+
+#[test]
+fn https_inspector_labels_protocol_content_and_unavailable_sizes()
+-> Result<(), Box<dyn std::error::Error>> {
+    for (bytes, label, size) in [
+        (
+            include_bytes!("../../../tests/fixtures/har/browsers/chrome-154-h2.har").as_slice(),
+            "http/2.0",
+            "Body size: Unavailable",
+        ),
+        (
+            include_bytes!("../../../tests/fixtures/har/browsers/firefox-146-h2.har").as_slice(),
+            "HTTP/2",
+            "Body size: 234 bytes",
+        ),
+    ] {
+        let session = import_bytes(bytes, Limits::default())?;
+        let lines = inspector_lines(&session.requests()[2], RequestId(2)).join("\n");
+        assert!(lines.contains(&format!("HTTP version: {label}")));
+        assert!(lines.contains("-> HTTP/2"));
+        assert!(lines.contains("Content size: 1280 bytes (reported)"));
+        assert!(lines.contains(size), "{lines}");
+        assert!(lines.contains("A book about café."));
+        assert!(lines.contains("No compression savings or connection reuse are established"));
+    }
+    Ok(())
+}

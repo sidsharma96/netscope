@@ -1,10 +1,12 @@
 # M2 recorded protocol explanations
 
-Explain the request and response httpVersion strings already retained by the importer. Preserve their original spelling and escape controls on display. Recognition is a local display policy, not validation of actual network traffic. Unknown nonempty labels remain valid imported data.
+Explain the request and response httpVersion strings already retained by the importer. Preserve their original spelling and escape controls on display. Recognition is a local display policy, not validation of actual network traffic. Unknown labels remain valid imported data; empty labels are displayed as not recorded.
 
 ## Recognition
 
-Recognize exactly HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/2.0, h2, HTTP/3, HTTP/3.0, and h3. The HTTP/2 spellings share a classification; the HTTP/3 spellings share another. All other strings are unrecognized, including case changes, added whitespace, prefix matches, draft identifiers, and future versions. Do not derive a version from the URL scheme, status, headers, timing, IP address, or connection metadata.
+Recognize exactly HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/2.0, http/2.0, h2, HTTP/3, HTTP/3.0, and h3. The HTTP/2 spellings share a classification; the HTTP/3 spellings share another. All other strings are unrecognized, including unlisted case changes, added whitespace, prefix matches, draft identifiers, and future versions. Do not derive a version from the URL scheme, status, headers, timing, IP address, or connection metadata.
+
+The lowercase http/2.0 spelling is backed by the native Chrome HTTPS fixture in the [browser compatibility reference](../HAR_COMPATIBILITY.md). Recognition remains an explicit list, not case-insensitive matching.
 
 Classify both fields independently. When both are recognized and classify differently, explicitly label disagreement without choosing a winner or claiming an upgrade, downgrade, or intermediary. When either is unknown, say that comparison is unavailable. Equivalent recognized aliases agree. Original labels remain visible even when classifications agree.
 
