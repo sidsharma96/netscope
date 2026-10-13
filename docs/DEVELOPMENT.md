@@ -132,3 +132,13 @@ The HTTPS extension uses `scripts/har_https_fixture_server.mjs` with disposable 
 ## Architecture decisions
 
 Keep [the architecture record](ARCHITECTURE.md) alongside material changes. Record the problem, current choice, plausible alternatives, costs, evidence, and conditions for reconsideration. Label retrospective assessments separately from previously recorded decisions. Put the learner-facing explanation in the relevant chapter; a new chapter is justified by a new reader question, not each implementation patch. Open audit questions remain open until implementation and verification support a new status.
+
+## Inspect retained SSE text
+
+```sh
+cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/sse.har
+```
+
+Open request #0 and scroll to SSE EVENTS. Its synthetic text produces an added event containing `first line\ncafé`, then an empty message event inheriting ID book-7. Retry 1500 is a setting, not an observed retry. The final block is unfinished. The original body appears below the derived section. Request #1 contains base64-decoded UTF-8 with an empty ID reset; #2 has no retained text; #3 contains SSE-like plain text that is not automatically interpreted. These are generated examples, not native browser recordings.
+
+The [contract](contracts/m5-captured-sse.md) records recognition, fixed analysis budgets, and missing-evidence rules. The [book chapter](chapters/25-reading-event-streams.md) explains event boundaries and remembered state. The parser uses fixed input and no clocks or network services; inspector checks use the existing in-memory terminal backend.

@@ -1,0 +1,24 @@
+NETSCOPE / INSPECTOR                                                            
+synthetic.har · 4 requests                                                      
+Captured data · Up/Down scroll                                                  
+┌ Request #0 · line 32 ────────────────────────────────────────────────────────┐
+│SSE EVENTS · derived from retained text                                       │
+│Order only · event arrival times and actual browser delivery are not recorded │
+│2 complete events in examined text                                            │
+│ID buffer starts empty here; earlier connection state is unknown              │
+│Event 1 · type: "added"                                                       │
+│  ID buffer: "book-7"                                                         │
+│  Data: "first line\ncafé"                                                    │
+│Event 2 · type: "message"                                                     │
+│  ID buffer: "book-7"                                                         │
+│  Data: ""                                                                    │
+│Examined comments: 1 · ignored fields/values: 0                               │
+│Last examined ID buffer: "book-7"                                             │
+│Last retry setting: "1500" ms · instruction, not an observed retry            │
+│Unfinished trailing block · no event emitted from this block                  │
+│  Retained tail: "event: pending\ndata: unfinished"                           │
+│Blank-line boundaries do not establish that the capture is complete           │
+│                                                                              │
+│Response body                                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                

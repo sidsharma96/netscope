@@ -2052,3 +2052,158 @@ fn switching_hosts_rebuilds_search_and_all_preserves_id() -> Result<(), Box<dyn 
     assert_eq!(app.screen, Screen::Inspector(RequestId(2)));
     Ok(())
 }
+
+#[test]
+fn retained_sse_fixture_derives_events_without_changing_recorded_bodies()
+-> Result<(), Box<dyn std::error::Error>> {
+    use netscope_core::{SseInspection, inspect_sse};
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/sse.har"),
+        Limits::default(),
+    )?;
+    let originals = session.requests().to_vec();
+    let Some(SseInspection::Parsed(stream)) = inspect_sse(&session.requests()[0]) else {
+        panic!("text fixture must be inspectable");
+    };
+    assert_eq!(stream.events.len(), 2);
+    assert_eq!(stream.events[0].data, "first line\ncafé");
+    assert_eq!(stream.events[0].event_type, "added");
+    assert_eq!(stream.events[1].id, "book-7");
+    assert_eq!(stream.events[1].data, "");
+    assert_eq!(stream.retry_ms, Some("1500"));
+    assert!(stream.pending.is_some());
+    let Some(SseInspection::Parsed(decoded)) = inspect_sse(&session.requests()[1]) else {
+        panic!("decoded fixture must be inspectable");
+    };
+    assert_eq!(decoded.events.len(), 2);
+    assert_eq!(decoded.events[0].id, "reset");
+    assert_eq!(decoded.events[1].id, "");
+    assert_eq!(
+        inspect_sse(&session.requests()[2]),
+        Some(SseInspection::Unavailable("Response text not recorded"))
+    );
+    assert!(inspect_sse(&session.requests()[3]).is_none());
+    let lines = inspector_lines(&session.requests()[0], RequestId(0)).join("\n");
+    assert!(lines.contains("SSE EVENTS · derived from retained text"));
+    assert!(lines.contains("Data: \"first line\\ncafé\""));
+    assert!(lines.contains("Unfinished trailing block"));
+    assert!(lines.contains("instruction, not an observed retry"));
+    assert!(lines.contains("event arrival times and actual browser delivery are not recorded"));
+    assert!(lines.contains("Response body\nExported text"));
+    let mut app = App::new(&session);
+    app.apply(Action::Open, &session);
+    for (width, height) in [(80, 24), (100, 30)] {
+        app.inspector_offset = 0;
+        let mut found = false;
+        for _ in 0..100 {
+            if render(&session, &mut app, width, height)?.contains("SSE EVENTS") {
+                found = true;
+                break;
+            }
+            app.apply(Action::Down, &session);
+        }
+        assert!(found, "SSE section must be reachable at {width}x{height}");
+    }
+    app.apply(Action::Back, &session);
+    assert_eq!(app.selected, Some(0));
+    assert_eq!(session.requests(), originals);
+    Ok(())
+}
+#[test]
+fn sse_eligibility_empty_text_limits_and_hostile_values_are_explicit()
+-> Result<(), Box<dyn std::error::Error>> {
+    use netscope_core::{SSE_TEXT_LIMIT, SseInspection, inspect_sse};
+    let mut request = session()?.requests()[0].clone();
+    request.mime_type = " TEXT/EVENT-STREAM ; charset=utf-8".into();
+    request.body = Body::Text(String::new());
+    assert!(matches!(inspect_sse(&request), Some(SseInspection::Parsed(s)) if s.events.is_empty()));
+    assert!(
+        inspector_lines(&request, RequestId(0))
+            .join("\n")
+            .contains("0 complete events")
+    );
+    request.body = Body::Binary(vec![255]);
+    assert!(matches!(
+        inspect_sse(&request),
+        Some(SseInspection::Unavailable(_))
+    ));
+    request.body = Body::Undecoded {
+        encoded: "bad".into(),
+        reason: "invalid".into(),
+    };
+    assert!(matches!(
+        inspect_sse(&request),
+        Some(SseInspection::Unavailable(_))
+    ));
+    request.body = Body::Text("event: \x1b[2J\nid: x\0y\ndata: \x1b[31m\n\n".into());
+    let lines = inspector_lines(&request, RequestId(0)).join("\n");
+    assert!(!lines.contains('\x1b'));
+    assert!(!lines.contains('\0'));
+    assert!(lines.contains("\\u{1b}[31m"));
+    request.body = Body::Text(format!("data: {}\n\n", "界".repeat(SSE_TEXT_LIMIT)));
+    assert!(
+        inspector_lines(&request, RequestId(0))
+            .join("\n")
+            .contains("SSE analysis stopped at 64 KiB")
+    );
+    request.body = Body::Text("data: x\n\n".repeat(101));
+    assert!(
+        inspector_lines(&request, RequestId(0))
+            .join("\n")
+            .contains("SSE analysis stopped before event 101")
+    );
+    request.body = Body::Text(format!(
+        "id: {}\ndata: {}\n\n",
+        "x".repeat(300),
+        "y".repeat(3000)
+    ));
+    assert!(
+        inspector_lines(&request, RequestId(0))
+            .join("\n")
+            .contains("[display shortened]")
+    );
+    request.mime_type = "text/event-stream-extra".into();
+    assert!(inspect_sse(&request).is_none());
+    request.mime_type.clear();
+    request.response_headers.push(netscope_core::NameValue {
+        name: "Content-Type".into(),
+        value: "text/event-stream".into(),
+    });
+    assert!(inspect_sse(&request).is_none()); // Eligibility uses the retained MIME label, not a guessed header reconciliation.
+    Ok(())
+}
+
+#[test]
+fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::Error>> {
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/sse.har"),
+        Limits::default(),
+    )?;
+    for (width, height) in [(80, 24), (100, 30)] {
+        let mut app = App::new(&session);
+        app.apply(Action::Open, &session);
+        let mut output = render(&session, &mut app, width, height)?;
+        for _ in 0..100 {
+            if output
+                .lines()
+                .nth(4)
+                .is_some_and(|line| line.contains("SSE EVENTS"))
+            {
+                break;
+            }
+            app.apply(Action::Down, &session);
+            output = render(&session, &mut app, width, height)?;
+        }
+        assert!(
+            output
+                .lines()
+                .nth(4)
+                .is_some_and(|line| line.contains("SSE EVENTS"))
+        );
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../tests/fixtures/terminal/sse-{width}x{height}.txt"
+        ));
+        assert_eq!(output, std::fs::read_to_string(path)?);
+    }
+    Ok(())
+}

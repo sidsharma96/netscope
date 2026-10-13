@@ -1,5 +1,9 @@
 # Release notes
 
+## Unreleased
+
+- Inspect captured SSE text as ordered derived events, with persistent ID state, multiline data, retry instructions, unfinished tails, and explicit analysis limits. The original response remains available. This adds no live capture or reconnection.
+
 ## 0.1.0 — October 13, 2026
 
 The first Netscope release inspects local HAR captures and prepares explicitly reviewed HTTP requests. Install from the tagged source checkout; this release has no registry package or prebuilt binaries.

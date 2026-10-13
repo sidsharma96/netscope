@@ -125,3 +125,13 @@ pub mod persistence_lesson {}
 /// Ownership and synchronization choices, with isolated atomic examples.
 #[doc = include_str!("../../../docs/chapters/24-sharing-work.md")]
 pub mod sharing_lesson {}
+
+mod sse;
+pub use sse::{
+    SSE_EVENT_LIMIT, SSE_TEXT_LIMIT, SseEvent, SseInspection, SseLimit, SseStream, inspect_sse,
+    parse_sse,
+};
+
+/// Captured event boundaries and joined data in a beginner example.
+#[doc = include_str!("../../../docs/chapters/25-reading-event-streams.md")]
+pub mod sse_lesson {}

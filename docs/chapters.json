@@ -155,6 +155,11 @@
     "subtitle": "Bytes, graphemes, and the visible cursor"
   },
   {
+    "slug": "25-reading-event-streams",
+    "title": "Reading event streams",
+    "subtitle": "Boundaries, remembered state, and missing arrival times"
+  },
+  {
     "slug": "20-remembering-a-request",
     "title": "Remembering a request",
     "subtitle": "Values, files, and careful replacement"

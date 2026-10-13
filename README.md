@@ -4,7 +4,7 @@ A Rust terminal application for inspecting HTTP captures and sending reviewed re
 
 ## Install and start
 
-From a checkout of this release:
+From a source checkout:
 
 ```sh
 cargo install --path crates/netscope-tui --locked
@@ -18,7 +18,7 @@ The command is `netscope`; Cargo installs it into its configured bin directory, 
 
 Enter opens a request; Esc returns. Use arrows or j/k to move, Page Up/Page Down to move by a screen, and Home/End to reach either end. Press h for host summaries and Enter to filter by a host. From Requests, / edits a case-sensitive literal substring search of the full URL. Enter applies; Esc cancels; an empty query clears search. Search combines with the host filter, and a clears both. Press ? for keys and q to quit.
 
-Headers, body representations, timings, protocol labels, and warnings remain tied to the recorded request. Redirect and retry suggestions show their evidence and ambiguity. [Browser compatibility](docs/HAR_COMPATIBILITY.md) describes frozen Chrome/Firefox cases; [large-capture checks](docs/LARGE_CAPTURES.md) record tested limits and local measurements. Redirected output prints a safe summary.
+Headers, body representations, timings, protocol labels, and warnings remain tied to the recorded request. Redirect and retry suggestions show their evidence and ambiguity. [Browser compatibility](docs/HAR_COMPATIBILITY.md) describes frozen Chrome/Firefox cases; [large-capture checks](docs/LARGE_CAPTURES.md) record tested limits and local measurements. Responses labelled text/event-stream now show derived events from retained text, including unfinished tails and analysis limits, without inventing arrival times. Try tests/fixtures/har/sse.har and read the [event-stream lesson](docs/chapters/25-reading-event-streams.md). Redirected output prints a safe summary.
 
 ## Prepare a request
 

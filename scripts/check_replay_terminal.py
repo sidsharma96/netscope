@@ -275,3 +275,53 @@ def check_save_and_reopen():
 
 
 check_save_and_reopen()
+
+
+def check_captured_sse():
+    master, slave = pty.openpty()
+    process = None
+    try:
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
+        before = termios.tcgetattr(slave)
+        process = subprocess.Popen([str(BINARY), str(ROOT / 'tests/fixtures/har/sse.har')],
+            cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+        output = bytearray()
+        stage = 0
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            if select.select([master], [], [], .05)[0]:
+                output.extend(os.read(master, 65536))
+            visible = screen_text(output)
+            if stage == 0 and 'NETSCOPE' in visible:
+                os.write(master, b'\r\x1b[6~')
+                stage = 1
+            if stage == 1 and all(marker in visible for marker in (
+                'SSE EVENTS', 'first line\\ncafé', 'Unfinished trailing block',
+                'instruction, not an observed retry')):
+                assert 'first line\\ncafé' in visible, visible
+                assert 'Unfinished trailing block' in visible, visible
+                assert 'instruction, not an observed retry' in visible, visible
+                os.write(master, b'q')
+                stage = 2
+            if process.poll() is not None:
+                break
+        assert stage == 2, 'captured SSE inspection was not reached'
+        assert process.wait(timeout=3) == 0
+        while select.select([master], [], [], 0)[0]:
+            output.extend(os.read(master, 65536))
+        after = termios.tcgetattr(slave)
+        pending = getattr(termios, 'PENDIN', 0)
+        before[3] &= ~pending
+        after[3] &= ~pending
+        assert after == before, 'SSE inspection did not restore terminal modes'
+        assert b'\x1b[?1049l' in output and b'\x1b[?25h' in output
+        print('PASS: retained SSE events, unfinished tail, retry label, and terminal restoration')
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+        os.close(slave)
+
+
+check_captured_sse()

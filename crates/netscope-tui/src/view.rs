@@ -612,6 +612,7 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     ]);
     pairs(&mut lines, "Response headers", &request.response_headers);
     cookies(&mut lines, "Response cookies", &request.response_cookies);
+    lines.extend(crate::sse_view::lines(request));
     lines.push("Response body".into());
     lines.push(match &request.body {
         Body::NotRecorded => "Response body not recorded".into(),
