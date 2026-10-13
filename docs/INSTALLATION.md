@@ -1,6 +1,6 @@
 # Install and run Netscope
 
-This version installs from a local checkout. It is not published on crates.io. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
+Version 0.1.0 installs from a local checkout. Use `git checkout v0.1.0` in a clean checkout to select this release before installing. It is not published on crates.io. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
 
 From the repository root:
 
@@ -25,7 +25,7 @@ netscope --draft tests/fixtures/drafts/book.json
 
 Elsewhere, provide an absolute path to the file or copy it into the current directory. Capture paths and saved-draft paths are resolved from the directory where you invoke Netscope, not from the source checkout or installed binary's directory.
 
-The interactive view needs a terminal at least 80 columns by 24 rows. Enter opens the selected capture request, r prepares a replay draft, ? shows navigation help, and q quits. A saved draft opens directly for editing. Opening either kind of file never sends a request. Use the [local server walkthrough](DEVELOPMENT.md#try-a-local-post) before testing Send.
+The interactive view needs a terminal at least 80 columns by 24 rows. Enter opens the selected capture request; / searches its full URL; h opens host summaries; a clears host and URL filters. Use r to prepare a replay draft, ? for navigation help, and q to quit. A saved draft opens directly for editing. Opening either kind of file never sends a request. Use the [local server walkthrough](DEVELOPMENT.md#try-a-local-post) before testing Send.
 
 When input or output is redirected, Netscope prints a capture summary or the saved request's name and exits. `--help`/`-h` and `--version`/`-V` always print text without entering the terminal UI. No arguments show help. Exit status 0 means success, 1 means a file/validation/terminal failure, and 2 means invalid arguments.
 
@@ -42,6 +42,6 @@ netscope --draft -- -request.json
 python3 scripts/check_install.py
 ```
 
-This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, and failure exit codes. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
+This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, malformed and empty captures, and failure exit codes. On POSIX systems it also runs navigation/search, small-window recovery, local GET/POST replay, cancellation, and save/reopen against the installed release binary. An injected drawing-error check uses a separate development probe. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
 
 To remove a normal Cargo installation, use `cargo uninstall netscope-tui`. If you selected a custom installation root, supply that same `--root` to uninstall.

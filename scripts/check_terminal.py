@@ -4,28 +4,36 @@ import fcntl
 import os
 import pty
 import select
+import signal
 import struct
 import subprocess
 import termios
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+BINARY = Path(os.environ.get('NETSCOPE_CHECK_BINARY', ROOT / 'target/debug/netscope'))
+WORKING_DIRECTORY = Path(os.environ.get('NETSCOPE_CHECK_CWD', ROOT))
 subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--examples', '--bins', '--locked', '--offline'], cwd=ROOT, check=True)
 
 
-def check(command, expected_exit, quit_key):
+def check(command, expected_exit, quit_key, small=False):
     master, slave = pty.openpty()
     process = None
     try:
-        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 10 if small else 30, 40 if small else 100, 0, 0))
         before = termios.tcgetattr(slave)
-        process = subprocess.Popen(command, cwd=ROOT, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+        process = subprocess.Popen(command, cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
         output = bytearray()
         sent = False
+        enlarged = False
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             if select.select([master], [], [], .1)[0]:
                 output.extend(os.read(master, 65536))
+            if small and not enlarged and b'Terminal too small' in output:
+                fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
+                os.kill(process.pid, signal.SIGWINCH)
+                enlarged = True
             if quit_key and not sent and b'NETSCOPE' in output:
                 os.write(master, b'\x1b[6~\x1b[5~\x1b[F\x1b[Hh\rj\r\x1b[6~\x1b[F\x1b[H\x1b\x1ba/cover\r/\x15absent\r/\x15\r?q')
                 sent = True
@@ -35,6 +43,8 @@ def check(command, expected_exit, quit_key):
                 break
         if process.poll() is None:
             raise AssertionError('terminal process timed out')
+        if small:
+            assert enlarged, 'small terminal did not recover'
         assert process.returncode == expected_exit, process.returncode
         assert b'NETSCOPE' in output, 'renderer was not reached'
         after = termios.tcgetattr(slave)
@@ -62,5 +72,7 @@ def check(command, expected_exit, quit_key):
         os.close(slave)
 
 
-check([str(ROOT / 'target/debug/netscope'), 'tests/fixtures/har/multi-host.har'], 0, True)
+capture = str(ROOT / 'tests/fixtures/har/multi-host.har')
+check([str(BINARY), capture], 0, True)
+check([str(BINARY), capture], 0, True, small=True)
 check([str(ROOT / 'target/debug/examples/terminal_probe')], 1, False)

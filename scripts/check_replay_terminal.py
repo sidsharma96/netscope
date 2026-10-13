@@ -15,7 +15,10 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--locked', '--offline'], cwd=ROOT, check=True)
+BINARY = Path(os.environ.get('NETSCOPE_CHECK_BINARY', ROOT / 'target/debug/netscope'))
+WORKING_DIRECTORY = Path(os.environ.get('NETSCOPE_CHECK_CWD', ROOT))
+if 'NETSCOPE_CHECK_BINARY' not in os.environ:
+    subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--locked', '--offline'], cwd=ROOT, check=True)
 
 
 def screen_text(output):
@@ -119,7 +122,7 @@ def check(mode):
                     url=capture['log']['entries'][0]['request']['url'], method='POST', format='json',
                     body=post_body.decode(), headers=[])))
                 args = ['--draft', str(saved_path)]
-            process = subprocess.Popen([str(ROOT / 'target/debug/netscope'), *args], stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+            process = subprocess.Popen([str(BINARY), *args], cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
             output = bytearray()
             stage = 0
             deadline = time.monotonic() + 15
@@ -136,9 +139,9 @@ def check(mode):
                         typed = post_body.replace('café'.encode(), b'cafx').replace(b'\n', b'\x0e')
                         position = post_body.decode().index('café') + 3
                         correction = b'\x1b[H' + b'\x1b[C' * position + b'\x1b[3~' + 'é'.encode() + b'\x1b[F'
-                        os.write(master, b'\rrmtb' + typed + correction + b'\rjjjj\rs')
+                        os.write(master, b'/local\r\rrmtb' + typed + correction + b'\rjjjj\rs')
                     else:
-                        os.write(master, b'\rrjjjj\rs')
+                        os.write(master, b'/local\r\rrjjjj\rs')
                     stage = 1
                 if stage == 1 and received.is_set():
                     if mode in ('complete', 'post', 'saved'):
@@ -214,8 +217,8 @@ def check_save_and_reopen():
             try:
                 fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
                 before = termios.tcgetattr(slave)
-                process = subprocess.Popen([str(ROOT / 'target/debug/netscope'), *args],
-                    stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+                process = subprocess.Popen([str(BINARY), *args],
+                    cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
                 output = bytearray()
                 stage = 0
                 deadline = time.monotonic() + 15

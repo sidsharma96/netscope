@@ -27,7 +27,8 @@ Examples:
   netscope --draft request.json
   netscope -- ./captures/session.har
 
-In a terminal: Enter inspects, r prepares a replay, ? shows keys, q quits.
+In a terminal: Enter inspects, / searches URLs, h shows hosts, a clears filters.
+Use r to prepare a replay, ? for keys, and q to quit.
 Drafts: m changes method, b edits body, w previews a saved file.
 Only Review followed by Send starts network traffic. Opening never sends.
 Redirected output prints a capture summary or saved-request name.

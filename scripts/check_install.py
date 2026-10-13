@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import sys
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,4 +37,17 @@ with tempfile.TemporaryDirectory(prefix='netscope-install-') as temporary:
     run('missing.har', status=1)
     (elsewhere / 'bad.json').write_text('{')
     run('--draft', 'bad.json', status=1)
+    (elsewhere / 'empty.har').write_text('{"log":{"version":"1.2","creator":{"name":"check","version":"1"},"entries":[]}}')
+    assert '0 requests' in run('empty.har').stdout
+    (elsewhere / 'bad.har').write_text('{')
+    run('bad.har', status=1)
+    shutil.copyfile(ROOT / 'tests/fixtures/har/single-request.har', elsewhere / 'invalid.har')
+    (elsewhere / 'invalid.har').write_text((elsewhere / 'invalid.har').read_text().replace('45', '-45', 1))
+    run('invalid.har', status=1)
+    environment['NETSCOPE_CHECK_BINARY'] = str(binary)
+    environment['NETSCOPE_CHECK_CWD'] = str(elsewhere)
+    if os.name == 'posix':
+        for script in ('check_terminal.py', 'check_replay_terminal.py'):
+            subprocess.run([sys.executable, str(ROOT / 'scripts' / script)], cwd=elsewhere,
+                           env=environment, check=True, timeout=180)
     print('PASS: release installation, PATH lookup, help/version, local files, and exit codes outside checkout')

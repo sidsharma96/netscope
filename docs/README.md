@@ -11,7 +11,7 @@ python3 scripts/check_docs.py
 
 Run these commands from the repository root. `chapters.json` defines reading order, navigation labels, and aliases for previous section links. Its sequence follows the concepts a beginner needs, while chapter filenames and URLs remain stable. The generated reader is retained alongside its sources so it can be opened directly. The renderer supports paragraphs, headings, links, inline code, fenced code blocks, and explicit markers for the ownership, import, navigation, overlapping-duration, and redirect-evidence diagrams. Extend the renderer deliberately when adding other Markdown constructs.
 
-The book separates proposed architecture, illustrative teaching examples, and verified implementation. The workspace now implements offline HAR import and a summary command. Lint and deterministic test rules are enforced by scripts/check.py; the interactive overview and inspector are now implemented.
+The book separates proposed architecture, illustrative teaching examples, and verified implementation. The application supports HAR inspection, host filtering and URL search, reviewed GET/POST replay, response comparison, and saved drafts. Lint and deterministic test rules are enforced by scripts/check.py. The [release notes](../CHANGELOG.md) describe the versioned scope; the [release-readiness record](RELEASE_READINESS.md) records checks and limits.
 
 Read [the writing principles](chapters/05-decisions.md) before editing prose. The reader's questions determine the explanation; code provides supporting examples after the idea is clear. Root AGENTS.md records this requirement for future chapters.
 

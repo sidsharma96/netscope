@@ -1,16 +1,10 @@
 # Netscope
 
-A Rust terminal application for inspecting HTTP captures and learning how the program works.
-
-Start with the [field notes](docs/README.md), an offline reading interface with beginner Rust explanations, chapter navigation, search, and an interactive ownership diagram. The [documentation README](docs/README.md) explains editing and regeneration.
-
-The [M1 contract](docs/contracts/m1-har-inspection.md), [host-summary contract](docs/contracts/m2-host-summaries.md), [redirect contract](docs/contracts/m2-redirect-suggestions.md), [retry contract](docs/contracts/m2-retry-suggestions.md), and [protocol contract](docs/contracts/m2-recorded-protocols.md) define the implemented scope. Original planning documents and HTML mockups are local references excluded from Git. The four-crate Rust workspace, session model, HAR importer, and offline summary command are implemented. The interactive overview, inspector, and host summaries are implemented. The inspector includes conservative redirect and retry suggestions with explicit ambiguity; try tests/fixtures/har/redirects.har or tests/fixtures/har/retries.har. Protocol notes distinguish recorded version labels from general explanations. Press h for Hosts, Enter to filter, and a to return to all requests. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal.
-
-Single-request replay is defined in the [single-request replay contract](docs/contracts/m3-single-request-replay.md). Press r in an eligible GET or POST inspector to edit and review a replay draft. Use m for method, t for plain text/JSON, and b for body editing. Enter or s from Review sends one HTTP/1.1 GET or POST over HTTP or verified HTTPS. POST bodies are limited to 16 KiB of UTF-8; JSON is checked without rewriting it. Responses have a 10-second total deadline and a 2 MiB body limit, with partial data retained. Esc cancels; o in the draft reopens the last result. Press c on a result to compare it beside the captured response, with partial data and unavailable comparisons labelled. Redirects, retries, proxy discovery, and decompression are disabled. See the [local testing instructions](docs/DEVELOPMENT.md#try-a-local-send).
+A Rust terminal application for inspecting HTTP captures and sending reviewed requests, with a beginner book explaining how the program works and why it is designed this way.
 
 ## Install and start
 
-From this checkout, run:
+From a checkout of this release:
 
 ```sh
 cargo install --path crates/netscope-tui --locked
@@ -18,22 +12,24 @@ netscope --help
 netscope tests/fixtures/har/single-request.har
 ```
 
-The installed command is `netscope`. Ensure Cargo's installation bin directory is on PATH. Use `netscope --version` to identify the installed package version, or `netscope --draft request.json` to reopen a saved draft. See the [installation guide](docs/INSTALLATION.md) for prerequisites, offline installation, command lookup, and removal. Opening files never sends network requests.
+The command is `netscope`; Cargo installs it into its configured bin directory, which must be on PATH. See [installation](docs/INSTALLATION.md) for prerequisites, selecting version 0.1.0, offline builds, and removal. Opening a capture or saved draft never sends a request.
 
-## Development
+## Inspect a capture
 
-Run `python3 scripts/check.py` for formatting, compiler, Clippy, tests, build, and reader checks. The pinned Rust toolchain may require an initial download. Rust checks run with the lockfile and offline mode; run cargo fetch --locked once to download the locked dependencies before offline checks.
+Enter opens a request; Esc returns. Use arrows or j/k to move, Page Up/Page Down to move by a screen, and Home/End to reach either end. Press h for host summaries and Enter to filter by a host. From Requests, / edits a case-sensitive literal substring search of the full URL. Enter applies; Esc cancels; an empty query clears search. Search combines with the host filter, and a clears both. Press ? for keys and q to quit.
 
-Read [the development guide](docs/DEVELOPMENT.md) for lint rules, fixtures, and test scope.
+Headers, body representations, timings, protocol labels, and warnings remain tied to the recorded request. Redirect and retry suggestions show their evidence and ambiguity. [Browser compatibility](docs/HAR_COMPATIBILITY.md) describes frozen Chrome/Firefox cases; [large-capture checks](docs/LARGE_CAPTURES.md) record tested limits and local measurements. Redirected output prints a safe summary.
 
-Save a reviewed, valid draft with **w**, choose a name and path, and confirm the file preview. Reopen it independently with `netscope --draft request.json`. Files preserve body text and selected non-credential headers; known authorization, cookie, and API-key headers are excluded. Opening never sends. See the [save/open walkthrough](docs/DEVELOPMENT.md#save-and-reopen-a-draft).
+## Prepare a request
 
-Editable fields support Left/Right, Home/End, Backspace, and Delete, with a visible Unicode-aware cursor. Enter saves the edit; Esc discards it.
+Press r from an eligible GET/POST inspector to create a separate editable draft. Review the destination, headers, and body before Send. Only sending from Review starts network traffic. The result can be compared with the captured response; cancellation retains available partial data.
 
-Native Chrome and Firefox HAR exports are covered by frozen, offline regression fixtures. See [browser compatibility](docs/HAR_COMPATIBILITY.md) for tested versions, observed variations, and local reproduction.
+Press w from a valid draft to name a file and confirm its save preview. Reopen with `netscope --draft request.json`. Known credential headers are excluded from saved files. Use the [local testing walkthrough](docs/DEVELOPMENT.md#try-a-local-send) to try GET, JSON POST, and save/reopen.
 
-Use Page Up/Page Down and Home/End in request lists, Hosts, and the inspector. See [large-capture checks](docs/LARGE_CAPTURES.md) for tested limits and local measurements.
+Replay uses HTTP/1.1 over HTTP or verified HTTPS. POST text is limited to 16 KiB; responses have a 10-second total deadline and a 2 MiB body limit. Redirects, retries, proxy discovery, a browser cookie jar, and decompression are absent. The [release notes](CHANGELOG.md) describe version 0.1.0 and its boundaries.
 
-The [architecture decision record](docs/ARCHITECTURE.md) explains current boundaries, alternatives, evidence, and unresolved questions, with beginner lessons on program structure and sharing work.
+## Learn and contribute
 
-From the request list, press `/` to search the full captured URL. Enter applies a case-sensitive literal substring; Esc cancels. Search combines with the host filter. An empty query clears search; `a` clears both filters. See the [search contract](docs/contracts/m4-url-search.md).
+Start with the [field notes](docs/README.md). Read the beginner Rust chapters on GitHub or open docs/index.html from the checkout for the offline reader, diagrams, and concept index. The [architecture decision record](docs/ARCHITECTURE.md) explains constraints, alternatives, evidence, and unresolved questions. The binary needs no documentation website.
+
+Run `cargo fetch --locked` once to obtain dependencies, then `python3 scripts/check.py` for formatting, compilation, Clippy, tests, build, and book checks. `python3 scripts/check_install.py` verifies a temporary release installation and interactive workflows outside the checkout. See [development](docs/DEVELOPMENT.md) and [release evidence](docs/RELEASE_READINESS.md) for scope. Original planning documents and HTML mockups remain local references excluded from Git.
