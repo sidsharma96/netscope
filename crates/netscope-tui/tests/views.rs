@@ -1861,3 +1861,194 @@ fn send_ids_survive_editor_replacement_and_ignore_old_completion()
     );
     Ok(())
 }
+
+fn search_urls(urls: &[&str]) -> Result<Session, Box<dyn std::error::Error>> {
+    let one = session()?;
+    Ok(Session::new(
+        urls.iter()
+            .map(|url| {
+                let mut request = one.requests()[0].clone();
+                request.url = (*url).into();
+                request.host = url.split('/').nth(2).unwrap_or("").into();
+                request
+            })
+            .collect(),
+    ))
+}
+fn search(app: &mut App, session: &Session, query: &str) {
+    press(app, session, KeyCode::Char('/'));
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        session,
+    );
+    for c in query.chars() {
+        press(app, session, KeyCode::Char(c));
+    }
+    press(app, session, KeyCode::Enter);
+}
+#[test]
+fn search_uses_literal_full_urls_and_keeps_source_identity()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = search_urls(&[
+        "https://a.test/Books",
+        "https://b.test/books?q=[x]",
+        "https://a.test/books?q=[x]",
+        "https://a.test/books?q=%5Bx%5D",
+    ])?;
+    let mut app = App::new(&session);
+    app.selected = Some(2);
+    search(&mut app, &session, "[x]");
+    assert_eq!(app.request_order(&session), [RequestId(1), RequestId(2)]);
+    assert_eq!(app.selected, Some(1));
+    app.apply(Action::Open, &session);
+    assert_eq!(app.screen, Screen::Inspector(RequestId(2)));
+    app.apply(Action::Back, &session);
+    search(&mut app, &session, "Books");
+    assert_eq!(app.request_order(&session), [RequestId(0)]);
+    assert_eq!(app.selected, Some(0));
+    search(&mut app, &session, "");
+    assert_eq!(app.request_order(&session), session.chronological());
+    assert_eq!(app.selected, Some(0));
+    Ok(())
+}
+#[test]
+fn search_combines_with_hosts_and_all_clears_both() -> Result<(), Box<dyn std::error::Error>> {
+    let session = search_urls(&[
+        "https://a.test/books",
+        "https://b.test/books",
+        "https://a.test/cover",
+    ])?;
+    let original = session.requests().to_vec();
+    let mut app = App::new(&session);
+    search(&mut app, &session, "books");
+    app.apply(Action::Hosts, &session);
+    app.apply(Action::Open, &session);
+    assert_eq!(app.request_order(&session), [RequestId(0)]);
+    assert!(
+        render(&session, &mut app, 80, 24)?
+            .contains("1 / 3 requests · a.test · URL contains: books")
+    );
+    search(&mut app, &session, "cover");
+    assert_eq!(app.request_order(&session), [RequestId(2)]);
+    search(&mut app, &session, "");
+    assert_eq!(app.request_order(&session), [RequestId(0), RequestId(2)]);
+    app.apply(Action::AllRequests, &session);
+    assert_eq!(app.selected, Some(2));
+    assert_eq!(app.request_order(&session), session.chronological());
+    assert!(app.host_filter.is_none());
+    assert_eq!(session.requests(), original);
+    Ok(())
+}
+#[test]
+fn empty_search_results_have_no_selection_and_recover() -> Result<(), Box<dyn std::error::Error>> {
+    let session = search_urls(&["https://a.test/books"])?;
+    let mut app = App::new(&session);
+    search(&mut app, &session, "absent");
+    assert_eq!(app.selected, None);
+    assert_eq!(app.overview_offset, 0);
+    for action in [Action::Open, Action::Down, Action::PageDown, Action::Last] {
+        app.apply(action, &session);
+        assert_eq!(app.selected, None);
+        assert_eq!(app.screen, Screen::Overview);
+    }
+    let output = render(&session, &mut app, 80, 24)?;
+    assert!(output.contains("0 / 1 requests"));
+    assert!(output.contains("No requests match these filters"));
+    app.apply(Action::AllRequests, &session);
+    assert_eq!(app.selected, Some(0));
+    Ok(())
+}
+#[test]
+fn search_editing_routes_shortcuts_and_cancel_keeps_applied_query()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = search_urls(&["https://a.test/qha?", "https://a.test/other"])?;
+    let mut app = App::new(&session);
+    search(&mut app, &session, "qha?");
+    assert!(!app.quit);
+    assert!(!app.help);
+    assert_eq!(app.screen, Screen::Overview);
+    assert_eq!(app.request_order(&session), [RequestId(0)]);
+    press(&mut app, &session, KeyCode::Char('/'));
+    press(&mut app, &session, KeyCode::Char('x'));
+    press(&mut app, &session, KeyCode::Esc);
+    assert_eq!(app.request_order(&session), [RequestId(0)]);
+    press(&mut app, &session, KeyCode::Char('/'));
+    let output = render(&session, &mut app, 80, 24)?;
+    assert!(output.contains("URL search: qha?│"));
+    app.resize(40, 10, &session);
+    press(&mut app, &session, KeyCode::Enter);
+    app.resize(80, 24, &session);
+    assert!(render(&session, &mut app, 80, 24)?.contains("Enter apply · Esc cancel"));
+    app.handle_key(
+        KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        &session,
+    );
+    assert!(app.quit);
+    Ok(())
+}
+#[test]
+fn search_cursor_unicode_limit_release_and_long_view_are_predictable()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = search_urls(&["https://a.test/界e\u{301}Z"])?;
+    let mut app = App::new(&session);
+    press(&mut app, &session, KeyCode::Char('/'));
+    for c in "界e\u{301}xZ".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Left);
+    press(&mut app, &session, KeyCode::Backspace);
+    press(&mut app, &session, KeyCode::Home);
+    press(&mut app, &session, KeyCode::Right);
+    press(&mut app, &session, KeyCode::Delete);
+    press(&mut app, &session, KeyCode::Char('e'));
+    press(&mut app, &session, KeyCode::Char('\u{301}'));
+    let mut release = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
+    release.kind = KeyEventKind::Release;
+    app.handle_key(release, &session);
+    press(&mut app, &session, KeyCode::Enter);
+    assert_eq!(app.request_order(&session), [RequestId(0)]);
+    search(&mut app, &session, &"a".repeat(1025));
+    press(&mut app, &session, KeyCode::Char('/'));
+    press(&mut app, &session, KeyCode::Home);
+    let output = render(&session, &mut app, 80, 24)?;
+    assert!(output.contains("URL search: │aaa"));
+    press(&mut app, &session, KeyCode::End);
+    assert!(
+        render(&session, &mut app, 80, 24)?
+            .lines()
+            .nth(2)
+            .is_some_and(|line| line.contains('│'))
+    );
+    for _ in 0..1024 {
+        press(&mut app, &session, KeyCode::Backspace);
+    }
+    assert!(render(&session, &mut app, 80, 24)?.contains("URL search: │"));
+    press(&mut app, &session, KeyCode::Enter);
+    assert_eq!(app.request_order(&session), session.chronological());
+    Ok(())
+}
+
+#[test]
+fn switching_hosts_rebuilds_search_and_all_preserves_id() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = search_urls(&[
+        "https://a.test/other",
+        "https://a.test/books",
+        "https://b.test/books",
+    ])?;
+    let mut app = App::new(&session);
+    search(&mut app, &session, "books");
+    app.apply(Action::Hosts, &session);
+    app.apply(Action::Open, &session);
+    assert_eq!(app.request_order(&session), [RequestId(1)]);
+    app.apply(Action::Hosts, &session);
+    app.apply(Action::Down, &session);
+    app.apply(Action::Open, &session);
+    assert_eq!(app.request_order(&session), [RequestId(2)]);
+    app.apply(Action::AllRequests, &session);
+    assert_eq!(app.selected, Some(2));
+    assert_eq!(app.request_order(&session), session.chronological());
+    app.apply(Action::Open, &session);
+    assert_eq!(app.screen, Screen::Inspector(RequestId(2)));
+    Ok(())
+}

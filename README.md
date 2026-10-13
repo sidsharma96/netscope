@@ -35,3 +35,5 @@ Native Chrome and Firefox HAR exports are covered by frozen, offline regression 
 Use Page Up/Page Down and Home/End in request lists, Hosts, and the inspector. See [large-capture checks](docs/LARGE_CAPTURES.md) for tested limits and local measurements.
 
 The [architecture decision record](docs/ARCHITECTURE.md) explains current boundaries, alternatives, evidence, and unresolved questions, with beginner lessons on program structure and sharing work.
+
+From the request list, press `/` to search the full captured URL. Enter applies a case-sensitive literal substring; Esc cancels. Search combines with the host filter. An empty query clears search; `a` clears both filters. See the [search contract](docs/contracts/m4-url-search.md).

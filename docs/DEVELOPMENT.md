@@ -38,7 +38,7 @@ The GitHub workflow is configured to run the same check script on Linux. The rep
 
 ## Terminal verification
 
-`cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har` starts the viewer when both input and output are terminals. Up/Down or j/k move; Enter inspects; Esc returns; ? toggles help; q quits. Press h for host summaries, Enter to filter, and a to return to all requests. Ctrl+C also requests a clean exit. Redirected output uses the safe summary without changing terminal state.
+`cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har` starts the viewer when both input and output are terminals. Up/Down or j/k move; Enter inspects; Esc returns; ? toggles help; q quits. Press h for host summaries, Enter to filter, and a to return to all requests. From Requests, / edits a literal, case-sensitive full-URL search; Enter applies and Esc cancels. Ctrl+u clears the edit. Search combines with the host filter; an empty query clears only search, while a clears both filters. Ctrl+C also requests a clean exit. Redirected output uses the safe summary without changing terminal state.
 
 `python3 scripts/check_terminal.py` is a separate POSIX pseudo-terminal check. It builds the terminal_probe example, compares input/output modes after keyboard exit and an injected rendering error, and verifies alternate-screen exit and cursor visibility. The check has a bounded process timeout and is separate from the deterministic buffer suite. On macOS it excludes the transient PENDIN input-retype bit when comparing mode flags. GitHub's Linux workflow runs this check after the pure suite.
 

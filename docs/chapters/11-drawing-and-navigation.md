@@ -48,6 +48,39 @@ The inspector uses the same keys to move through wrapped lines rather than reque
 
 There is also an arithmetic boundary to respect. Moving up fifteen rows from row three must stop at the beginning. Rust's unsigned integers represent zero and positive values; they cannot represent a negative row. Saturating subtraction stops at zero instead of producing a negative result. Movement toward the end is bounded by the list's last valid position. These rules make a page key predictable even when less than a full page remains.
 
+## Find a request without changing the capture
+
+Suppose a page loads a hundred requests and you want the ones whose URLs contain `/books`. A search should narrow what you see while leaving every recorded request available. If you open a result, its details must belong to that original request, even though it now occupies a different row.
+
+In the request list, `/` opens a small text editor. Enter applies the text; Esc discards the edit. The search looks for an exact, case-sensitive substring anywhere in the captured URL, including its query string. A substring is a consecutive piece of text: `books` matches `/books?page=2`, but `Books` does not. Punctuation is ordinary text, so a dot means a dot rather than “any character.” Encoded text stays encoded: `%20` and a space are different searches.
+
+A host filter and a URL search both have to match. The following illustration starts with three captured requests. The arrows mean “keep the IDs that pass this condition”; they do not move or remove the recorded requests.
+
+```text
+Captured URLs                            Original ID
+https://a.test/books                     0
+https://b.test/books                     1
+https://a.test/cover                     2
+
+All IDs [0, 1, 2]
+       │ host is a.test
+       ▼
+       [0, 2]
+       │ URL contains books
+       ▼
+       [0]
+```
+
+The result contains ID 0. Clearing just the search reveals IDs 0 and 2 again because the host condition still applies. Pressing `a` clears both conditions. The host summaries continue to describe the complete capture, so narrowing the request list does not silently change the meaning of those counts.
+
+Remembering selection requires one more distinction. A row number describes a place in the current list; an ID describes a captured request. Before applying a query, the program remembers the selected ID. It then finds that ID's position in the new results. If it is absent, the first result becomes selected. If there are no results, selection becomes `None`, the absence introduced earlier, and Enter opens nothing. Clearing search recovers a usable list without inventing a request.
+
+The application stores a vector of matching IDs, rather than copying request bodies or headers. It builds that vector when the applied query or host condition changes. Drawing can then read the same result list repeatedly. Searching every time the terminal redraws would save this extra vector, but would repeat a scan even when neither the capture nor the query had changed. The stored vector costs space for one ID per result and requires every filter change to rebuild it. That tradeoff fits a capture which stays fixed while you browse.
+
+Edits remain separate from the applied query until Enter. You can type `q`, `h`, or `/` into the search without triggering their browsing shortcuts. Left and Right move between complete displayed characters; Home and End move to either end; Ctrl+u clears the edit. The editor accepts up to 1024 UTF-8 bytes. This is a bound on stored text, so a character that uses several bytes consumes several bytes of that allowance.
+
+Try selecting a request whose URL contains `books`, then apply that search. Predict its new row and original ID before opening it. Next apply a word absent from the capture. Explain why the empty result can be drawn safely and why clearing it does not require importing the file again.
+
 ## A line of text has more than one length
 
 The letter A uses one UTF-8 byte and usually one terminal column. The character 界 uses three UTF-8 bytes and commonly two columns. An accented letter can contain a base character and a combining mark, while a joined emoji may contain several Unicode characters.

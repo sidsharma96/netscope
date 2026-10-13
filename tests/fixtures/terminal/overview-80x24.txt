@@ -21,4 +21,4 @@ Chronological order · Reported total (ms) and recorded start
 │                                                                              │
 │Row 1 / 1                                                                     │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k move · Enter inspect · h hosts · a all · Esc back · ? help · q quit     
+↑/↓ j/k move · Enter inspect · h hosts · / search · a all · ? help · q quit     

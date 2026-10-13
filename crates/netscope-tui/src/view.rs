@@ -39,6 +39,8 @@ pub enum Action {
     AllRequests,
     /// Open a separate replay draft.
     Replay,
+    /// Edit the URL substring filter.
+    Search,
     /// End the application.
     Quit,
 }
@@ -59,7 +61,7 @@ pub enum Screen {
 pub struct App {
     /// Current view.
     pub screen: Screen,
-    /// Selected chronological row; none for an empty capture.
+    /// Selected row in the current request list; none when empty.
     pub selected: Option<usize>,
     /// First visible overview row.
     pub overview_offset: usize,
@@ -69,7 +71,7 @@ pub struct App {
     pub help: bool,
     /// Whether quitting was requested.
     pub quit: bool,
-    /// The active URL-host filter, or all requests when absent.
+    /// The active URL-host condition, or every host when absent.
     pub host_filter: Option<HostId>,
     /// Selected row in the alphabetical host list.
     pub host_selected: Option<usize>,
@@ -78,6 +80,9 @@ pub struct App {
     /// Local editor, present only while a replay draft is open.
     pub replay: Option<crate::replay_view::ReplayEditor>,
     notice: String,
+    query: String,
+    search: Option<(String, crate::text_edit::Cursor)>,
+    matches: Vec<RequestId>,
     // Allocation outlives editors; None means every available ID has been used.
     next_send_id: Option<u64>,
     all_requests_position: Option<(Option<usize>, usize)>,
@@ -114,6 +119,9 @@ impl App {
             host_offset: 0,
             replay: None,
             notice: String::new(),
+            query: String::new(),
+            search: None,
+            matches: Vec::new(),
             next_send_id: Some(1),
             all_requests_position: None,
             host_return: Screen::Overview,
@@ -122,7 +130,10 @@ impl App {
         }
     }
     /// Borrow the chronological source IDs visible through the current filter.
-    pub fn request_order<'a>(&self, session: &'a Session) -> &'a [RequestId] {
+    pub fn request_order<'a>(&'a self, session: &'a Session) -> &'a [RequestId] {
+        if !self.query.is_empty() {
+            return &self.matches;
+        }
         match self.host_filter {
             None => session.chronological(),
             Some(id) => session
@@ -130,6 +141,32 @@ impl App {
                 .map(|summary| summary.request_ids.as_slice())
                 .unwrap_or(&[]),
         }
+    }
+    fn selected_id(&self, session: &Session) -> Option<RequestId> {
+        self.selected
+            .and_then(|i| self.request_order(session).get(i))
+            .copied()
+    }
+    fn rebuild_search(&mut self, session: &Session, selected: Option<RequestId>) {
+        self.matches.clear();
+        if !self.query.is_empty() {
+            let order = match self.host_filter {
+                None => session.chronological(),
+                Some(id) => session
+                    .host_summary(id)
+                    .map_or(&[][..], |s| s.request_ids.as_slice()),
+            };
+            self.matches.extend(order.iter().copied().filter(|id| {
+                session
+                    .request(*id)
+                    .is_some_and(|r| r.url.contains(&self.query))
+            }));
+        }
+        self.selected = selected
+            .and_then(|id| self.request_order(session).iter().position(|r| *r == id))
+            .or_else(|| (!self.request_order(session).is_empty()).then_some(0));
+        self.overview_offset = 0;
+        self.clamp(session);
     }
     /// Record a resize; small terminals preserve selection and scroll state.
     pub fn resize(&mut self, width: u16, height: u16, session: &Session) {
@@ -172,8 +209,15 @@ impl App {
         }
         self.screen = Screen::Hosts;
     }
-    fn show_all(&mut self) {
+    fn show_all(&mut self, session: &Session) {
+        if self.host_filter.is_none() && self.query.is_empty() {
+            self.screen = Screen::Overview;
+            return;
+        }
+        let selected = self.selected_id(session);
         self.host_filter = None;
+        self.query.clear();
+        self.rebuild_search(session, selected);
         if let Some((selected, offset)) = self.all_requests_position.take() {
             self.selected = selected;
             self.overview_offset = offset;
@@ -188,6 +232,49 @@ impl App {
         }
         if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
             self.quit = true;
+            return;
+        }
+        if self.search.is_some() {
+            if !self.usable() {
+                return;
+            }
+            if key.code == KeyCode::Esc {
+                self.search = None;
+                return;
+            }
+            if key.code == KeyCode::Enter {
+                let selected = self.selected_id(session);
+                if let Some((query, _)) = self.search.take() {
+                    self.query = query;
+                    // A saved row belongs to the old query's list.
+                    self.all_requests_position = None;
+                    self.rebuild_search(session, selected);
+                }
+                return;
+            }
+            if let Some((text, cursor)) = self.search.as_mut() {
+                if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('u') {
+                    cursor.clear(text);
+                } else if !key
+                    .modifiers
+                    .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
+                {
+                    match key.code {
+                        KeyCode::Left => cursor.left(text),
+                        KeyCode::Right => cursor.right(text),
+                        KeyCode::Home => cursor.byte = 0,
+                        KeyCode::End => cursor.end(text),
+                        KeyCode::Backspace => cursor.backspace(text),
+                        KeyCode::Delete => cursor.delete(text),
+                        KeyCode::Char(c)
+                            if !c.is_control() && text.len() + c.len_utf8() <= 1024 =>
+                        {
+                            cursor.insert(text, c);
+                        }
+                        _ => {}
+                    }
+                }
+            }
             return;
         }
         if let Screen::Replay(id) = self.screen {
@@ -268,6 +355,11 @@ impl App {
             return;
         }
         match (self.screen, action) {
+            (Screen::Overview, Action::Search) => {
+                let mut cursor = crate::text_edit::Cursor::default();
+                cursor.end(&self.query);
+                self.search = Some((self.query.clone(), cursor));
+            }
             (Screen::Inspector(id), Action::Replay) => {
                 if let Some(request) = session.request(id) {
                     match netscope_core::ReplayDraft::from_request(id, request) {
@@ -282,7 +374,7 @@ impl App {
             }
             (Screen::Hosts, Action::Hosts | Action::Back) => self.screen = self.host_return,
             (_, Action::Hosts) => self.show_hosts(session),
-            (Screen::Overview | Screen::Hosts, Action::AllRequests) => self.show_all(),
+            (Screen::Overview | Screen::Hosts, Action::AllRequests) => self.show_all(session),
             (Screen::Hosts, Action::Up) => {
                 self.host_selected = self.host_selected.map(|i| i.saturating_sub(1))
             }
@@ -298,13 +390,17 @@ impl App {
                     .copied()
                 {
                     if self.host_filter != Some(id) {
-                        if self.host_filter.is_none() {
+                        if self.host_filter.is_none() && self.query.is_empty() {
                             self.all_requests_position =
                                 Some((self.selected, self.overview_offset));
                         }
+                        let selected = self.selected_id(session);
                         self.host_filter = Some(id);
                         self.selected = Some(0);
                         self.overview_offset = 0;
+                        if !self.query.is_empty() {
+                            self.rebuild_search(session, selected);
+                        }
                     }
                     self.screen = Screen::Overview;
                 }
@@ -674,6 +770,32 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             ),
             session.requests().len(),
             match app.screen {
+                Screen::Overview if app.search.is_some() => {
+                    app.search
+                        .as_ref()
+                        .map_or_else(String::new, |(text, cursor)| {
+                            let before = terminal_text(&text[..cursor.byte]);
+                            let after = terminal_text(&text[cursor.byte..]);
+                            let room = usize::from(area.width).saturating_sub(14);
+                            let mut tail = before.as_str();
+                            while tail.width() > room {
+                                tail = &tail[tail.graphemes(true).next().map_or(0, str::len)..];
+                            }
+                            format!(
+                                "URL search: {tail}│{}",
+                                clip(&after, room.saturating_sub(tail.width()))
+                            )
+                        })
+                }
+                Screen::Overview if !app.query.is_empty() => format!(
+                    "{} / {} requests · {} · URL contains: {}",
+                    app.request_order(session).len(),
+                    session.requests().len(),
+                    app.host_filter
+                        .and_then(|id| session.host(id))
+                        .map_or("All hosts".into(), |h| terminal_text(&h.name)),
+                    terminal_text(&app.query)
+                ),
                 Screen::Overview => match app.host_filter.and_then(|id| session.host(id)) {
                     Some(host) => format!(
                         "Host: {} · {} / {} requests",
@@ -712,9 +834,12 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         frame,
         footer,
         match app.screen {
+            Screen::Overview if app.search.is_some() => {
+                "Enter apply · Esc cancel · Ctrl+u clear · ←/→ edit · 1024 bytes max · Ctrl+c quit"
+            }
             Screen::Hosts => "↑/↓ j/k move · Enter filter · Esc back · a all · ? help · q quit",
             Screen::Overview => {
-                "↑/↓ j/k move · Enter inspect · h hosts · a all · Esc back · ? help · q quit"
+                "↑/↓ j/k move · Enter inspect · h hosts · / search · a all · ? help · q quit"
             }
             Screen::Inspector(_) => {
                 "↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit"
@@ -728,7 +853,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nPgUp/PgDn   move by visible rows\nHome/End    first/last row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\na           all requests (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nPgUp/PgDn   move by visible rows\nHome/End    first/last row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\n/           edit URL search (from requests)\na           clear host and URL filters (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {
@@ -746,7 +871,12 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                 line(
                     frame,
                     inner,
-                    "No requests recorded".into(),
+                    if session.requests().is_empty() {
+                        "No requests recorded"
+                    } else {
+                        "No requests match these filters · / edit search · a all requests"
+                    }
+                    .into(),
                     Style::default(),
                 );
                 return;

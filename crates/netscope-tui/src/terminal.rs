@@ -75,6 +75,7 @@ pub fn key_action(key: KeyEvent) -> Option<Action> {
         KeyCode::Char('h') => Some(Action::Hosts),
         KeyCode::Char('a') => Some(Action::AllRequests),
         KeyCode::Char('q') => Some(Action::Quit),
+        KeyCode::Char('/') => Some(Action::Search),
         KeyCode::Char('r') => Some(Action::Replay),
         _ => None,
     }
