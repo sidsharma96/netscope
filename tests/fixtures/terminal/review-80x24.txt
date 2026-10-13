@@ -21,4 +21,4 @@ Capture unchanged · only Review → Send starts network traffic
 │                                                                              │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit              
+↑/↓ scroll · v headers · Enter / s send · l review live SSE · Esc edit          

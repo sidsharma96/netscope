@@ -132,8 +132,14 @@ fn run_app(
                     editor.saved(crate::saved_file::save(std::path::Path::new(&path), &saved));
                 }
                 if let Some((id, active)) = &mut worker {
+                    if let Some(snapshot) = active.progress() {
+                        editor.progress(*id, snapshot);
+                    }
                     // Accept completed work before handling a later cancellation key.
                     if let Some(result) = active.poll() {
+                        if let Some(snapshot) = active.progress() {
+                            editor.progress(*id, snapshot);
+                        }
                         editor.complete(*id, result);
                         worker = None;
                     } else if editor.cancellation_requested() {
@@ -143,12 +149,15 @@ fn run_app(
                 if worker.is_none()
                     && let Some((id, review)) = editor.take_send()
                 {
-                    match netscope_net::Worker::start_at(
-                        review,
-                        editor
-                            .started_at()
-                            .ok_or_else(|| io::Error::other("Missing Send time"))?,
-                    ) {
+                    let started = editor
+                        .started_at()
+                        .ok_or_else(|| io::Error::other("Missing Send time"))?;
+                    let operation = if editor.streaming_requested() {
+                        netscope_net::Worker::start_stream_at(review, started)
+                    } else {
+                        netscope_net::Worker::start_at(review, started)
+                    };
+                    match operation {
                         Ok(active) => worker = Some((id, active)),
                         Err(_) => editor.start_failed(id),
                     }
@@ -165,11 +174,17 @@ fn run_app(
             }
             match event::read()? {
                 Event::Key(key) => {
-                    if let (Some(editor), Some((id, active))) = (&mut app.replay, &mut worker)
-                        && let Some(result) = active.poll()
-                    {
-                        editor.complete(*id, result);
-                        worker = None;
+                    if let (Some(editor), Some((id, active))) = (&mut app.replay, &mut worker) {
+                        if let Some(snapshot) = active.progress() {
+                            editor.progress(*id, snapshot);
+                        }
+                        if let Some(result) = active.poll() {
+                            if let Some(snapshot) = active.progress() {
+                                editor.progress(*id, snapshot);
+                            }
+                            editor.complete(*id, result);
+                            worker = None;
+                        }
                     }
                     app.handle_key(key, session);
                 }

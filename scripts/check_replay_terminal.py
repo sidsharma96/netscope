@@ -88,7 +88,9 @@ def check(mode):
                         assert part, 'body ended early'
                         body.extend(part)
                     assert bytes(body) == post_body, body
-                if mode in ('complete', 'post', 'saved'):
+                if mode == 'stream':
+                    stream.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: 1000\r\n\r\nid: live\ndata: first event\n\ndata: pending\n')
+                elif mode in ('complete', 'post', 'saved'):
                     stream.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: 14\r\n\r\nlocal response')
                 else:
                     stream.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\npartial')
@@ -140,9 +142,19 @@ def check(mode):
                         position = post_body.decode().index('café') + 3
                         correction = b'\x1b[H' + b'\x1b[C' * position + b'\x1b[3~' + 'é'.encode() + b'\x1b[F'
                         os.write(master, b'/local\r\rrmtb' + typed + correction + b'\rjjjj\rs')
+                    elif mode == 'stream':
+                        os.write(master, b'/local\r\rrjjjj\rl')
                     else:
                         os.write(master, b'/local\r\rrjjjj\rs')
                     stage = 1
+                if mode == 'stream' and stage == 1 and 'REVIEW LIVE SSE' in visible and '30 seconds total' in visible and 'Client-managed Accept: text/event-stream' in visible:
+                    assert not requests, 'reviewing live mode sent a request'
+                    os.write(master, b's')
+                    stage = 10
+                if mode == 'stream' and stage == 10 and 'first event' in visible and 'Observed +' in visible:
+                    assert received.is_set()
+                    os.write(master, b'\x1b')
+                    stage = 2
                 if stage == 1 and received.is_set():
                     if mode in ('complete', 'post', 'saved'):
                         if 'Outcome: Complete' not in visible or 'local response' not in visible:
@@ -165,10 +177,10 @@ def check(mode):
                 if mode in ('complete', 'post') and stage == 3 and 'NEW RESULT' in visible:
                     os.write(master, b'q')
                     stage = 4
-                if mode == 'cancel' and stage == 2 and 'Operation stopped' in visible:
+                if mode in ('cancel', 'stream') and stage == 2 and 'Operation stopped' in visible:
                     os.write(master, b'o')
                     stage = 3
-                if mode == 'cancel' and stage == 3 and 'Outcome: Cancelled' in visible:
+                if mode in ('cancel', 'stream') and stage == 3 and 'Outcome: Cancelled' in visible:
                     os.write(master, b'q')
                     stage = 4
                 if process.poll() is not None:
@@ -179,7 +191,7 @@ def check(mode):
                 Path('/tmp/netscope-replay-pty.log').write_bytes(output)
             assert process.poll() == 0, f'{mode}: process did not exit cleanly (stage {stage})'
             assert stage >= 2, 'live send was not reached'
-            if mode in ('complete', 'post'): assert stage == 4, 'comparison return was not exercised'
+            if mode in ('complete', 'post', 'stream'): assert stage == 4, 'comparison return was not exercised'
             thread.join(2)
             assert not thread.is_alive(), 'server did not observe socket disposal'
             assert not errors, errors
@@ -188,6 +200,7 @@ def check(mode):
             method = b'POST' if mode in ('post', 'saved') else b'GET'
             assert requests[0].startswith(method + b' /local?q=1 HTTP/1.1\r\n')
             assert b'accept-encoding: identity\r\n' in requests[0]
+            if mode == 'stream': assert b'accept: text/event-stream\r\n' in requests[0]
             after = termios.tcgetattr(slave)
             pending = getattr(termios, 'PENDIN', 0)
             before[3] &= ~pending
@@ -204,7 +217,7 @@ def check(mode):
         listener.close()
 
 
-for mode in ['complete', 'post', 'saved', 'cancel', 'quit', 'ctrl-c']:
+for mode in ['complete', 'post', 'saved', 'cancel', 'quit', 'ctrl-c', 'stream']:
     check(mode)
 
 

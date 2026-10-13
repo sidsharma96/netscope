@@ -135,3 +135,6 @@ pub use sse::{
 /// Captured event boundaries and joined data in a beginner example.
 #[doc = include_str!("../../../docs/chapters/25-reading-event-streams.md")]
 pub mod sse_lesson {}
+
+mod websocket;
+pub use websocket::{WebSocketEvidence, websocket_evidence};

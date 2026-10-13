@@ -26,7 +26,7 @@ owns editable draft                     owns reviewed request and response bytes
 
 The result body moves with the result; sending does not require making a second copy of its entire buffer. The channel coordinates the transfer so the receiver can use the value when it receives it. This does not mean channels have no internal synchronization. It means the application does not have to coordinate simultaneous edits to that body. See Rust's [message-passing explanation](https://doc.rust-lang.org/book/ch16-02-message-passing.html).
 
-The cost is visible: Netscope does not show a live body growing byte by byte. If we add that feature, we will need another decision. Sending periodic snapshots copies data. Sending chunks needs a bounded queue and a rule for what happens when rendering is slower than receiving. Sharing a buffer needs coordinated access. A channel is appropriate for today's one-result handoff, not automatically the best answer to every future update.
+The ordinary replay result arrives once. Showing progress while a response remains open needs another decision: periodic snapshots copy data; sending chunks needs a bounded queue and a rule for a slow receiver; sharing a buffer needs coordinated access. Netscope's separate live SSE mode publishes bounded cumulative snapshots, explained in the [live observation lesson](27-observing-live-events.md). The once-only result channel still carries the final outcome. A channel should be chosen for the information being transferred, rather than assumed to fit every update.
 
 ## Share lifetime only when lifetime is the problem
 

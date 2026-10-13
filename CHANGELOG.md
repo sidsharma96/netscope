@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- Inspect captured SSE text as ordered derived events, with persistent ID state, multiline data, retry instructions, unfinished tails, and explicit analysis limits. The original response remains available. This adds no live capture or reconnection.
+- Inspect captured SSE text as ordered derived events, with persistent ID state, multiline data, retry instructions, unfinished tails, and explicit analysis limits. The original response remains available.
+
+- Inspect native WebSocket upgrade metadata, including ws/wss URLs, with explicit header-shape and missing-frame limits. Add frozen Chrome/Firefox SSE and WebSocket exports.
+- Review and observe one live SSE GET with local boundary times, cancellation, verified HTTPS and explicit time/byte/event limits. No reconnection. Add beginner lessons on upgrades, live observations and HTTP/2 streams, flow control and HPACK.
 
 ## 0.1.0 — October 13, 2026
 

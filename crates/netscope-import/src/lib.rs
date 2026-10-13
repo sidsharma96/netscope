@@ -384,17 +384,17 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
     let parsed = url::Url::parse(&url).map_err(|_| {
         error(
             &format!("{rp}.url"),
-            "expected absolute HTTP(S) URL with host",
+            "expected absolute HTTP(S) or WS(S) URL with host",
         )
     })?;
-    if !matches!(parsed.scheme(), "http" | "https")
+    if !matches!(parsed.scheme(), "http" | "https" | "ws" | "wss")
         || parsed.host_str().is_none()
         || !url.contains("://")
         || url.chars().any(|c| c.is_control())
     {
         return Err(error(
             &format!("{rp}.url"),
-            "expected absolute HTTP(S) URL with host",
+            "expected absolute HTTP(S) or WS(S) URL with host",
         ));
     }
     let host = parsed
@@ -426,7 +426,16 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
     let response_headers = pairs(res, "headers", &sp)?;
     let response_cookies = cookies(res, &sp)?;
     let response_header_size = size(res, "headersSize", &sp)?;
-    let response_body_size = size(res, "bodySize", &sp)?;
+    // Chrome can subtract upgrade headers from a transfer with no HTTP body.
+    let upgrade_body_size = (status == 101 && matches!(parsed.scheme(), "ws" | "wss"))
+        .then(|| res.get("bodySize").and_then(Value::as_i64))
+        .flatten()
+        .filter(|n| *n < -1);
+    let response_body_size = if upgrade_body_size.is_some() {
+        ReportedSize::Unavailable
+    } else {
+        size(res, "bodySize", &sp)?
+    };
     let content = field(res, "content", &format!("{sp}.content"))?;
     let cp = format!("{sp}.content");
     object(content, &cp)?;
@@ -459,6 +468,7 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         )?,
     };
     let server_ip = optional_string(v, "serverIPAddress", p)?
+        .filter(|s| !(status == 101 && matches!(parsed.scheme(), "ws" | "wss") && s.is_empty()))
         .map(|s| {
             s.parse().map_err(|_| {
                 error(
@@ -470,6 +480,11 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         .transpose()?;
     let connection = optional_string(v, "connection", p)?;
     let mut warnings = Vec::new();
+    if let Some(value) = upgrade_body_size {
+        warnings.push(format!(
+            "Exporter recorded WebSocket bodySize {value}; treated as unavailable"
+        ));
+    }
     if missing_mime {
         warnings.push("Response MIME type not recorded".into());
     }

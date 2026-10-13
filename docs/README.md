@@ -11,7 +11,7 @@ python3 scripts/check_docs.py
 
 Run these commands from the repository root. `chapters.json` defines reading order, navigation labels, and aliases for previous section links. Its sequence follows the concepts a beginner needs, while chapter filenames and URLs remain stable. The generated reader is retained alongside its sources so it can be opened directly. The renderer supports paragraphs, headings, links, inline code, fenced code blocks, and explicit markers for the ownership, import, navigation, overlapping-duration, and redirect-evidence diagrams. Extend the renderer deliberately when adding other Markdown constructs.
 
-The book separates proposed architecture, illustrative teaching examples, and verified implementation. The application supports HAR inspection, host filtering and URL search, reviewed GET/POST replay, response comparison, saved drafts, and captured SSE event inspection. Lint and deterministic test rules are enforced by scripts/check.py. The [release notes](../CHANGELOG.md) describe the versioned scope; the [release-readiness record](RELEASE_READINESS.md) records checks and limits.
+The book separates proposed architecture, illustrative teaching examples, and verified implementation. The application supports HAR inspection, host filtering and URL search, reviewed GET/POST replay, response comparison, saved drafts, captured SSE and WebSocket upgrade inspection, and bounded live SSE observations. Lint and deterministic test rules are enforced by scripts/check.py. The [release notes](../CHANGELOG.md) describe the versioned scope; the [release-readiness record](RELEASE_READINESS.md) records checks and limits.
 
 Read [the writing principles](chapters/05-decisions.md) before editing prose. The reader's questions determine the explanation; code provides supporting examples after the idea is clear. Root AGENTS.md records this requirement for future chapters.
 
@@ -37,11 +37,14 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 18. [Submitting text](chapters/19-submitting-text.md)
 19. [Moving through text](chapters/21-moving-through-text.md)
 20. [Reading event streams](chapters/25-reading-event-streams.md)
-21. [Remembering a request](chapters/20-remembering-a-request.md)
-22. [Shaping the program](chapters/23-shaping-the-program.md)
-23. [Checking our work](chapters/04-quality-and-tests.md)
-24. [Try the first version](chapters/06-first-milestone.md)
-25. [Writing this book](chapters/05-decisions.md)
+21. [Switching protocols](chapters/26-switching-protocols.md)
+22. [Observing live events](chapters/27-observing-live-events.md)
+23. [Sharing a connection](chapters/28-sharing-a-connection.md)
+24. [Remembering a request](chapters/20-remembering-a-request.md)
+25. [Shaping the program](chapters/23-shaping-the-program.md)
+26. [Checking our work](chapters/04-quality-and-tests.md)
+27. [Try the first version](chapters/06-first-milestone.md)
+28. [Writing this book](chapters/05-decisions.md)
 
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.
 

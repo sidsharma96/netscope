@@ -2207,3 +2207,34 @@ fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::
     }
     Ok(())
 }
+
+#[test]
+fn native_upgrade_metadata_is_reachable_without_invented_frames()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = netscope_import::import_bytes(
+        include_bytes!("../../../tests/fixtures/har/browsers/chrome-155-streams.har"),
+        netscope_import::Limits::default(),
+    )?;
+    let mut app = App::new(&session);
+    app.selected = Some(2);
+    app.apply(Action::Open, &session);
+    let mut all = String::new();
+    for _ in 0..160 {
+        all.push_str(&render(&session, &mut app, 80, 24)?);
+        app.apply(Action::Down, &session);
+    }
+    let all = all
+        .replace('│', " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(all.contains("WEBSOCKET UPGRADE"));
+    assert!(all.contains("expected classic upgrade header shape"));
+    assert!(all.contains("Header shape only"));
+    assert!(all.contains("key/accept digest not verified"));
+    assert!(all.contains("Extensions and browser acceptance not verified"));
+    assert!(all.contains("HAR has no standard WebSocket frame history"));
+    app.apply(Action::Replay, &session);
+    assert!(app.replay.is_none());
+    Ok(())
+}

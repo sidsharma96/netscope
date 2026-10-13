@@ -365,6 +365,7 @@ fn worker_cancellation_and_channel_closure_finish_without_late_results() -> Test
         result: receiver,
         thread: None,
         fallback: Some(ReplayResult::empty(&review("127.0.0.1:1".parse()?))),
+        progress: None,
     };
     assert!(matches!(
         worker.poll().map(|r| r.outcome),
@@ -621,5 +622,156 @@ fn transport_rejects_invalid_bodies_without_io() -> TestResult {
     assert!(validate(&review).is_ok());
     review.body = "0".repeat(netscope_core::REQUEST_BODY_LIMIT + 1);
     assert!(validate(&review).is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn live_events_are_published_before_eof_and_cancel_disposes_the_socket() -> TestResult {
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let review = review(listener.local_addr()?);
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await?;
+        let head = read_head(&mut socket).await?;
+        assert!(head.lines().any(|line| line == "accept: text/event-stream"));
+        assert!(head.lines().any(|line| line == "accept-encoding: identity"));
+        socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nContent-Length: 1000\r\n\r\nid: first\ndata: caf\xc3").await?;
+        socket.write_all(b"\xa9\n\ndata: unfinished\n").await?;
+        let mut byte = [0];
+        assert_eq!(socket.read(&mut byte).await?, 0);
+        Ok::<_, io::Error>(())
+    });
+    let (tx, mut rx) = tokio::sync::watch::channel(None);
+    let mut capture = streaming::LiveCapture::new(Instant::now(), tx);
+    let mut result = ReplayResult::empty(&review);
+    let (cancel, cancelled) = oneshot::channel();
+    let operation = wait_for(
+        exchange_mode(&review, &mut result, configuration(), Some(&mut capture)),
+        cancelled,
+        tokio::time::Instant::now() + STREAM_TIME_LIMIT,
+    );
+    tokio::pin!(operation);
+    loop {
+        tokio::select! {
+            outcome = &mut operation => return Err(format!("Stopped before observation: {outcome:?}").into()),
+            changed = rx.changed() => {
+                changed?;
+                if rx.borrow().as_ref().is_some_and(|s| s.observed.len() == 1) { break; }
+            }
+        }
+    }
+    let snapshot = rx.borrow().clone().ok_or("Missing progress")?;
+    assert!(
+        snapshot
+            .body
+            .starts_with(b"id: first\ndata: caf\xc3\xa9\n\n")
+    );
+    cancel.send(()).map_err(|_| "Cancel channel closed")?;
+    assert_eq!(operation.await, Outcome::Cancelled);
+    tokio::time::timeout(TIME_LIMIT, server).await???;
+    Ok(())
+}
+
+#[tokio::test]
+async fn live_response_validation_and_utf8_eof_are_explicit() -> TestResult {
+    for (head, expected) in [
+        (
+            "HTTP/1.1 302 Found\r\nContent-Type: text/event-stream\r\n",
+            "Live SSE requires HTTP status 200",
+        ),
+        (
+            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n",
+            "Live SSE requires one text/event-stream Content-Type",
+        ),
+        (
+            "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Type: text/event-stream\r\n",
+            "Live SSE requires one text/event-stream Content-Type",
+        ),
+        (
+            "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Encoding: gzip\r\n",
+            "Live SSE does not decode compressed content",
+        ),
+    ] {
+        let (client, mut server) = tokio::io::duplex(4096);
+        let task = tokio::spawn(async move {
+            read_head(&mut server).await?;
+            server
+                .write_all(format!("{head}Content-Length: 0\r\n\r\n").as_bytes())
+                .await
+        });
+        let review = review("127.0.0.1:1".parse()?);
+        let (_, request) = request(&review)?;
+        let mut result = ReplayResult::empty(&review);
+        let (tx, _rx) = tokio::sync::watch::channel(None);
+        let mut capture = streaming::LiveCapture::new(Instant::now(), tx);
+        assert_eq!(
+            exchange_on_mode(Box::new(client), request, &mut result, Some(&mut capture)).await,
+            Err(expected)
+        );
+        task.await??;
+        assert!(result.status.is_some());
+        assert!(result.body.is_empty());
+    }
+    let (tx, _rx) = tokio::sync::watch::channel(None);
+    let mut capture = streaming::LiveCapture::new(Instant::now(), tx);
+    let mut body = vec![];
+    assert_eq!(
+        capture
+            .retain(Full::new(Bytes::from_static(b"data: x\n\n\xc3")), &mut body)
+            .await,
+        Err("Live SSE ended inside a UTF-8 character")
+    );
+    assert_eq!(body, b"data: x\n\n\xc3");
+    Ok(())
+}
+
+#[test]
+fn live_validation_rejects_post_and_selected_accept_without_io() -> TestResult {
+    let mut review = review("127.0.0.1:1".parse()?);
+    assert!(validate_stream(&review).is_ok());
+    review.method = netscope_core::ReplayMethod::Post;
+    assert_eq!(validate_stream(&review), Err("Live SSE requires GET"));
+    review.method = netscope_core::ReplayMethod::Get;
+    review.headers.push(netscope_core::NameValue {
+        name: "Accept".into(),
+        value: "application/json".into(),
+    });
+    assert!(validate_stream(&review).is_err());
+    Ok(())
+}
+
+#[tokio::test(start_paused = true)]
+async fn live_deadline_is_thirty_seconds_and_does_not_restart_on_progress() {
+    let (_cancel, cancelled) = oneshot::channel();
+    let start = tokio::time::Instant::now();
+    let work = async {
+        tokio::time::sleep(Duration::from_secs(29)).await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        Outcome::Complete
+    };
+    assert_eq!(
+        wait_for(work, cancelled, start + STREAM_TIME_LIMIT).await,
+        Outcome::TimedOut
+    );
+    assert_eq!(tokio::time::Instant::now() - start, Duration::from_secs(30));
+}
+
+#[tokio::test]
+async fn live_empty_and_unfinished_bodies_keep_transport_and_event_completion_distinct()
+-> TestResult {
+    for bytes in [b"".as_slice(), b"data: unfinished\n"] {
+        let (tx, rx) = tokio::sync::watch::channel(None);
+        let mut capture = streaming::LiveCapture::new(Instant::now(), tx);
+        let mut retained = vec![];
+        assert_eq!(
+            capture
+                .retain(Full::new(Bytes::copy_from_slice(bytes)), &mut retained)
+                .await?,
+            Outcome::Complete
+        );
+        assert_eq!(retained, bytes);
+        let snapshot = rx.borrow().clone().ok_or("Missing empty publication")?;
+        assert!(snapshot.observed.is_empty());
+        assert_eq!(snapshot.valid_bytes, bytes.len());
+    }
     Ok(())
 }

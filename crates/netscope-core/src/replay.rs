@@ -124,6 +124,9 @@ impl ReplayDraft {
     /// # Errors
     /// Rejects unsupported methods and missing or unsupported body representations.
     pub fn from_request(source: RequestId, request: &Request) -> Result<Self, &'static str> {
+        if url::Url::parse(&request.url).is_ok_and(|u| matches!(u.scheme(), "ws" | "wss")) {
+            return Err("WebSocket captures are inspection-only; replay supports HTTP(S)");
+        }
         let (method, format, body) = match request.method.as_str() {
             "GET"
                 if request.request_body_size == ReportedSize::Bytes(0)

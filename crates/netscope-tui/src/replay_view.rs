@@ -19,6 +19,7 @@ enum Mode {
     SavePath(String, String),
     SaveReview(String, netscope_core::SavedDraft),
     Review,
+    StreamReview,
     Running(u64),
     Result,
     Compare,
@@ -38,6 +39,8 @@ pub struct ReplayEditor {
     cancel: bool,
     started: Option<std::time::Instant>,
     result: Option<netscope_net::ReplayResult>,
+    streaming: bool,
+    stream: Option<netscope_net::StreamSnapshot>,
 }
 impl ReplayEditor {
     pub(crate) fn new(draft: ReplayDraft) -> Self {
@@ -54,6 +57,8 @@ impl ReplayEditor {
             cancel: false,
             started: None,
             result: None,
+            streaming: false,
+            stream: None,
         }
     }
     /// Whether ordinary characters belong to a text field.
@@ -73,9 +78,11 @@ impl ReplayEditor {
     }
     pub(crate) fn title(&self) -> &'static str {
         match self.mode {
+            Mode::Running(_) if self.streaming => "LIVE SSE",
             Mode::Running(_) => "SENDING",
             Mode::Result => "NEW RESULT",
             Mode::Compare => "RESPONSE COMPARISON",
+            Mode::StreamReview => "REVIEW LIVE SSE",
             Mode::Review => "REVIEW",
             _ => "REPLAY DRAFT",
         }
@@ -91,19 +98,38 @@ impl ReplayEditor {
             | Mode::SavePath(_, _) => {
                 "Text input · Ctrl+u clear · Enter save · Esc cancel · Ctrl+c quit"
             }
+            Mode::Running(_) if self.streaming => {
+                "↑/↓ scroll · Esc cancel · q / Ctrl+c quit and cancel"
+            }
             Mode::Running(_) => "Esc cancel · q / Ctrl+c quit and cancel",
             Mode::Result if !self.draft.has_capture() => {
                 "↑/↓ scroll · v reveal headers · Esc edit draft · q quit"
             }
             Mode::Result => "↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit",
             Mode::Compare => "↑/↓ scroll both · v reveal headers · c / Esc result · q quit",
-            Mode::Review => "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit",
+            Mode::StreamReview => {
+                "↑/↓ scroll · v headers · Enter / s start live SSE · Esc edit · q quit"
+            }
+            Mode::Review if self.draft.method() == ReplayMethod::Post => {
+                "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit"
+            }
+            Mode::Review => {
+                "↑/↓ scroll · v headers · Enter / s send · l review live SSE · Esc edit"
+            }
             _ => "m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit",
         }
     }
     /// Borrow the current draft for inspection and tests.
     pub fn draft(&self) -> &ReplayDraft {
         &self.draft
+    }
+    pub(crate) fn streaming_requested(&self) -> bool {
+        self.streaming
+    }
+    pub(crate) fn progress(&mut self, id: u64, snapshot: netscope_net::StreamSnapshot) {
+        if matches!(self.mode, Mode::Running(active) if active == id) {
+            self.stream = Some(snapshot);
+        }
     }
     /// Take a queued explicit Send. Drawing and editing never start I/O.
     pub fn take_send(&mut self) -> Option<(u64, ReplayReview)> {
@@ -151,7 +177,11 @@ impl ReplayEditor {
     /// Report a failure to start, retaining the review for correction.
     pub fn start_failed(&mut self, id: u64) {
         if matches!(self.mode, Mode::Running(active) if active == id) {
-            self.mode = Mode::Review;
+            self.mode = if self.streaming {
+                Mode::StreamReview
+            } else {
+                Mode::Review
+            };
             self.pending = None;
             self.message = "Could not start replay worker".into();
         }
@@ -177,8 +207,11 @@ impl ReplayEditor {
     }
     fn key_inner(&mut self, key: KeyEvent, next_send_id: &mut Option<u64>) -> bool {
         if matches!(self.mode, Mode::Running(_)) {
-            if key.code == KeyCode::Esc {
-                self.cancel = true;
+            match key.code {
+                KeyCode::Esc => self.cancel = true,
+                KeyCode::Up => self.offset = self.offset.saturating_sub(1),
+                KeyCode::Down => self.offset = self.offset.saturating_add(1),
+                _ => {}
             }
             return false;
         }
@@ -374,7 +407,7 @@ impl ReplayEditor {
             self.reveal = !self.reveal;
             return false;
         }
-        if matches!(self.mode, Mode::Review) {
+        if matches!(self.mode, Mode::Review | Mode::StreamReview) {
             match key.code {
                 KeyCode::Esc => {
                     self.mode = Mode::Draft;
@@ -383,9 +416,28 @@ impl ReplayEditor {
                 }
                 KeyCode::Up | KeyCode::Char('k') => self.offset = self.offset.saturating_sub(1),
                 KeyCode::Down | KeyCode::Char('j') => self.offset = self.offset.saturating_add(1),
+                KeyCode::Char('l') => {
+                    match self
+                        .draft
+                        .review()
+                        .and_then(|r| netscope_net::validate_stream(&r))
+                    {
+                        Ok(()) => {
+                            self.mode = Mode::StreamReview;
+                            self.offset = 0;
+                            self.message.clear();
+                        }
+                        Err(reason) => self.message = reason.into(),
+                    }
+                }
                 KeyCode::Enter | KeyCode::Char('s') => {
+                    let streaming = matches!(self.mode, Mode::StreamReview);
                     match self.draft.review().and_then(|r| {
-                        netscope_net::validate(&r)?;
+                        if streaming {
+                            netscope_net::validate_stream(&r)?;
+                        } else {
+                            netscope_net::validate(&r)?;
+                        }
                         Ok(r)
                     }) {
                         Ok(review) => {
@@ -397,6 +449,8 @@ impl ReplayEditor {
                             *next_send_id = id.checked_add(1);
                             self.started = Some(std::time::Instant::now());
                             self.pending = Some((id, review));
+                            self.streaming = streaming;
+                            self.stream = None;
                             self.mode = Mode::Running(id);
                             self.message.clear();
                             self.offset = 0;
@@ -510,6 +564,54 @@ impl ReplayEditor {
         rows.push("Review request".into());
         rows
     }
+    fn stream_lines(&self) -> Vec<String> {
+        let mut lines = vec![
+            "LIVE SSE · observed by Netscope, separate from the HAR".into(),
+            "Times start at accepted Send; frame batching can give events the same time.".into(),
+        ];
+        let Some(snapshot) = &self.stream else {
+            lines.push(
+                if matches!(self.mode, Mode::Result) {
+                    "No valid event-stream observations available"
+                } else {
+                    "Waiting for valid event-stream response data"
+                }
+                .into(),
+            );
+            return lines;
+        };
+        let text = std::str::from_utf8(&snapshot.body[..snapshot.valid_bytes]).unwrap_or_default();
+        let parsed = netscope_core::parse_sse(text);
+        lines.push(format!(
+            "{} complete events · {} raw bytes · {} comments",
+            snapshot.observed.len(),
+            snapshot.body.len(),
+            parsed.comments
+        ));
+        for (event, time) in parsed.events.iter().zip(&snapshot.observed) {
+            lines.push(format!(
+                "Observed +{:.3}s · type {:?} · id {:?}",
+                time.as_secs_f64(),
+                preview(event.event_type),
+                preview(event.id)
+            ));
+            lines.push(format!("  data {:?}", preview(&event.data)));
+        }
+        if let Some(pending) = parsed.pending {
+            lines.push(format!(
+                "Unfinished block (not an event): {:?}",
+                preview(pending)
+            ));
+        }
+        if snapshot.valid_bytes < snapshot.body.len() {
+            lines.push("Trailing bytes are not complete valid UTF-8".into());
+        }
+        lines.push(format!(
+            "Retry instruction: {:?}; no reconnect is scheduled",
+            parsed.retry_ms.map(preview)
+        ));
+        lines
+    }
     fn content(&self) -> Vec<String> {
         let (method, bytes) = if let Mode::Body(text) = &self.mode {
             (self.draft.method(), text.len())
@@ -615,7 +717,17 @@ impl ReplayEditor {
                     }
                     .into(),
                 );
-                lines.push("10 seconds total · 2 MiB body limit · no redirects or retries".into());
+                lines.push(
+                    if self.streaming {
+                        "30 seconds total · 64 KiB · 100 events · no reconnection"
+                    } else {
+                        "10 seconds total · 2 MiB body limit · no redirects or retries"
+                    }
+                    .into(),
+                );
+                if self.streaming {
+                    lines.extend(self.stream_lines());
+                }
                 lines.push(
                     "Cancellation stops local I/O; the server may already have acted.".into(),
                 );
@@ -636,6 +748,7 @@ impl ReplayEditor {
                         netscope_net::Outcome::SizeLimited => {
                             "Size limited; partial response retained"
                         }
+                        netscope_net::Outcome::CaptureLimited(reason) => reason,
                         netscope_net::Outcome::Failed(reason) => reason,
                     };
                     lines.push(format!(
@@ -651,6 +764,9 @@ impl ReplayEditor {
                         result.elapsed.as_secs_f64(),
                         result.body.len()
                     ));
+                    if self.streaming {
+                        lines.extend(self.stream_lines());
+                    }
                     if let Some(status) = result.status {
                         lines.push(format!(
                             "Response: {} · {status}",
@@ -692,7 +808,7 @@ impl ReplayEditor {
                     }
                 }
             }
-            Mode::Review => {
+            Mode::Review | Mode::StreamReview => {
                 if let Ok(r) = self.draft.review() {
                     lines.push(format!(
                         "Effective destination: {}",
@@ -704,7 +820,21 @@ impl ReplayEditor {
                             terminal_text(&fragment)
                         ));
                     }
-                    lines.push("Limits: 10 seconds total · 2 MiB response body".into());
+                    if matches!(self.mode, Mode::StreamReview) {
+                        lines
+                            .push("LIVE SSE · GET · HTTP/1.1 · verified HTTPS certificates".into());
+                        lines.push(
+                            "Limits: 30 seconds total · 64 KiB raw body · 100 complete events"
+                                .into(),
+                        );
+                        lines.push("Client-managed Accept: text/event-stream".into());
+                        lines.push(
+                            "Local boundary observation times; no redirects or reconnection".into(),
+                        );
+                        lines.push("Requires 200, text/event-stream and uncompressed UTF-8".into());
+                    } else {
+                        lines.push("Limits: 10 seconds total · 2 MiB response body".into());
+                    }
                     if r.method == ReplayMethod::Post {
                         lines.push(format!(
                             "Client-managed Content-Type: {}",
@@ -782,7 +912,7 @@ impl ReplayEditor {
         }
         let title = if matches!(self.mode, Mode::SaveReview(_, _)) {
             " Save preview · Enter writes file · Esc cancels "
-        } else if matches!(self.mode, Mode::Review) {
+        } else if matches!(self.mode, Mode::Review | Mode::StreamReview) {
             " Review · Esc edits · Enter or s sends "
         } else if matches!(self.mode, Mode::Running(_)) {
             " Sending · Esc cancels "
@@ -856,5 +986,83 @@ impl ReplayEditor {
                 inner.y + (row - self.offset) as u16,
             ));
         }
+    }
+}
+
+fn preview(text: &str) -> String {
+    let mut end = text.len().min(512);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    let mut value = text[..end].to_owned();
+    if end < text.len() {
+        value.push_str("… [preview shortened]");
+    }
+    value
+}
+
+#[cfg(test)]
+mod stream_tests {
+    use super::*;
+    fn editor() -> Result<ReplayEditor, &'static str> {
+        let saved = netscope_core::SavedDraft::decode(br#"{"version":1,"name":"Local","url":"http://127.0.0.1:1/events","method":"GET","format":"plain","body":"","headers":[]}"#)?;
+        let mut editor = ReplayEditor::new(saved.to_draft()?);
+        editor.mode = Mode::Review;
+        Ok(editor)
+    }
+    #[test]
+    fn live_review_is_separate_and_stale_progress_cannot_replace_it() -> Result<(), &'static str> {
+        let mut editor = editor()?;
+        let mut counter = Some(7);
+        editor.key(KeyEvent::from(KeyCode::Char('l')), &mut counter);
+        assert!(matches!(editor.mode, Mode::StreamReview));
+        assert!(editor.take_send().is_none());
+        assert_eq!(counter, Some(7));
+        let review = editor.content().join("\n");
+        assert!(review.contains("30 seconds total"));
+        assert!(review.contains("Client-managed Accept: text/event-stream"));
+        editor.key(KeyEvent::from(KeyCode::Enter), &mut counter);
+        assert!(editor.streaming_requested());
+        assert_eq!(editor.take_send().ok_or("No send")?.0, 7);
+        editor.key(KeyEvent::from(KeyCode::Char('s')), &mut counter);
+        assert!(editor.take_send().is_none());
+        editor.progress(6, netscope_net::StreamSnapshot::default());
+        assert!(editor.stream.is_none());
+        editor.progress(
+            7,
+            netscope_net::StreamSnapshot {
+                body: b"data: first\n\ndata: pending\n".to_vec(),
+                valid_bytes: b"data: first\n\ndata: pending\n".len(),
+                observed: vec![std::time::Duration::from_millis(12)],
+            },
+        );
+        let live = editor.content().join("\n");
+        assert!(live.contains("Observed +0.012s"));
+        assert!(live.contains("Unfinished block"));
+        editor.key(KeyEvent::from(KeyCode::Esc), &mut counter);
+        assert!(editor.cancellation_requested());
+        assert!(editor.stream.is_some());
+        Ok(())
+    }
+    #[test]
+    fn post_and_selected_accept_stay_in_review_without_send() -> Result<(), &'static str> {
+        for post in [true, false] {
+            let mut editor = editor()?;
+            if post {
+                editor.draft.toggle_method();
+            } else {
+                editor.draft.add(NameValue {
+                    name: "Accept".into(),
+                    value: "text/plain".into(),
+                })?;
+            }
+            let mut counter = Some(1);
+            editor.key(KeyEvent::from(KeyCode::Char('l')), &mut counter);
+            assert!(matches!(editor.mode, Mode::Review));
+            assert!(!editor.message.is_empty());
+            assert!(editor.take_send().is_none());
+            assert_eq!(counter, Some(1));
+        }
+        Ok(())
     }
 }

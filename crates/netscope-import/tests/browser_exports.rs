@@ -223,3 +223,141 @@ fn native_connection_timings_keep_unavailable_and_zero_distinct()
     assert_eq!(omitted.requests()[1].timings.connect, Timing::Missing);
     Ok(())
 }
+
+#[test]
+fn native_sse_and_websocket_exports_preserve_content_and_evidence()
+-> Result<(), Box<dyn std::error::Error>> {
+    use netscope_core::{SseInspection, inspect_sse, websocket_evidence};
+    for (bytes, firefox) in [
+        (
+            include_bytes!("../../../tests/fixtures/har/browsers/chrome-155-streams.har")
+                .as_slice(),
+            false,
+        ),
+        (
+            include_bytes!("../../../tests/fixtures/har/browsers/firefox-146-streams.har")
+                .as_slice(),
+            true,
+        ),
+    ] {
+        let session = import_bytes(bytes, Limits::default())?;
+        assert_eq!(session.requests().len(), 3);
+        let stream = session
+            .requests()
+            .iter()
+            .find(|r| r.url.ends_with("/events"))
+            .ok_or("SSE entry missing")?;
+        let Some(SseInspection::Parsed(parsed)) = inspect_sse(stream) else {
+            panic!("native stream text must be available");
+        };
+        assert_eq!(parsed.events.len(), 3);
+        assert_eq!(parsed.events[0].data, "café\nshelf 3");
+        assert_eq!(parsed.events[0].event_type, "added");
+        assert_eq!(parsed.events[1].id, "book-1");
+        assert_eq!(parsed.events[2].data, "[DONE]");
+        assert_eq!(parsed.pending, None);
+        assert_eq!(parsed.retry_ms, Some("1500"));
+        let socket = session
+            .requests()
+            .iter()
+            .find(|r| r.url.starts_with("ws:"))
+            .ok_or("WebSocket entry missing")?;
+        let evidence = websocket_evidence(socket).ok_or("upgrade missing")?;
+        assert_eq!(
+            evidence.summary,
+            "Recorded 101 with expected classic upgrade header shape"
+        );
+        assert!(evidence.notes.is_empty());
+        assert_eq!(
+            socket.body,
+            if firefox {
+                Body::Text(String::new())
+            } else {
+                Body::NotRecorded
+            }
+        );
+        assert!(ReplayDraft::from_request(RequestId(2), socket).is_err());
+        assert_eq!(
+            session.requests(),
+            import_bytes(bytes, Limits::default())?.requests()
+        );
+    }
+    Ok(())
+}
+#[test]
+fn recorded_upgrade_shape_is_limited_and_headers_keep_their_meaning()
+-> Result<(), Box<dyn std::error::Error>> {
+    use netscope_core::{NameValue, websocket_evidence};
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/browsers/chrome-155-streams.har"),
+        Limits::default(),
+    )?;
+    let mut r = session.requests()[2].clone();
+    r.headers.push(NameValue {
+        name: "Connection".into(),
+        value: "keep-alive, UpGrAdE".into(),
+    });
+    assert!(websocket_evidence(&r).is_some_and(|e| e.notes.is_empty()));
+    r.response_headers.push(NameValue {
+        name: "Sec-WebSocket-Protocol".into(),
+        value: "chat".into(),
+    });
+    assert!(websocket_evidence(&r).is_some_and(|e| {
+        e.notes
+            .contains(&"Selected subprotocol is not one exact offered value")
+    }));
+    r.headers.push(NameValue {
+        name: "Sec-WebSocket-Protocol".into(),
+        value: "Chat, chat".into(),
+    });
+    assert!(websocket_evidence(&r).is_some_and(|e| e.notes.is_empty()));
+    r.response_headers
+        .retain(|h| !h.name.eq_ignore_ascii_case("Sec-WebSocket-Accept"));
+    assert!(websocket_evidence(&r).is_some_and(|e| {
+        e.notes
+            .contains(&"Response accept value is missing, empty, or repeated")
+    }));
+    r.status = 403;
+    assert!(websocket_evidence(&r).is_some_and(|e| e.summary.contains("no 101")));
+    r.status = 0;
+    assert!(websocket_evidence(&r).is_some_and(|e| e.summary.starts_with("No HTTP status")));
+    r.response_version = "HTTP/2".into();
+    assert!(websocket_evidence(&r).is_some_and(|e| e.summary.starts_with("Outside classic")));
+    r.request_version = "HTTP/1.1".into();
+    r.response_version = "HTTP/1.1".into();
+    r.headers.clear();
+    r.response_headers.clear();
+    r.url = "https://example.test/plain".into();
+    assert!(websocket_evidence(&r).is_none());
+    Ok(())
+}
+
+#[test]
+fn upgrade_tolerances_do_not_relax_other_size_or_address_validation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let bytes = include_bytes!("../../../tests/fixtures/har/browsers/chrome-155-streams.har");
+    let native: Value = serde_json::from_slice(bytes)?;
+    let session = import_bytes(bytes, Limits::default())?;
+    let ws = &session.requests()[2];
+    assert_eq!(
+        ws.response_body_size,
+        netscope_core::ReportedSize::Unavailable
+    );
+    assert!(ws.server_ip.is_none());
+    assert!(ws.warnings.iter().any(|s| s.contains("bodySize -202")));
+    for (field, value) in [("bodySize", json!(-2)), ("serverIPAddress", json!(""))] {
+        let mut changed = native.clone();
+        if field == "bodySize" {
+            changed["log"]["entries"][0]["response"][field] = value;
+        } else {
+            changed["log"]["entries"][0][field] = value;
+        }
+        assert!(import_bytes(&serde_json::to_vec(&changed)?, Limits::default()).is_err());
+    }
+    let mut changed = native.clone();
+    changed["log"]["entries"][2]["request"]["url"] = json!("wss://localhost/socket");
+    assert!(import_bytes(&serde_json::to_vec(&changed)?, Limits::default()).is_ok());
+    changed["log"]["entries"][2]["response"]["status"] = json!(403);
+    assert!(import_bytes(&serde_json::to_vec(&changed)?, Limits::default()).is_err());
+    Ok(())
+}

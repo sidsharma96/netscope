@@ -41,6 +41,8 @@ pub enum Outcome {
     TimedOut,
     /// At least one byte existed beyond the retained limit.
     SizeLimited,
+    /// A live capture stopped at its explicit observation budget.
+    CaptureLimited(&'static str),
     /// Connection, TLS, or HTTP processing failed. Messages contain no request data.
     Failed(&'static str),
 }
@@ -159,6 +161,10 @@ pub fn validate(review: &ReplayReview) -> Result<(), &'static str> {
     request(review).map(|_| ())
 }
 
+/// Live event-stream observations and validation.
+pub mod streaming;
+pub use streaming::{STREAM_TIME_LIMIT, StreamSnapshot, validate_stream};
+
 trait Stream: AsyncRead + AsyncWrite + Unpin + Send {}
 impl<T: AsyncRead + AsyncWrite + Unpin + Send> Stream for T {}
 
@@ -167,7 +173,15 @@ async fn exchange(
     result: &mut ReplayResult,
     tls: Arc<ClientConfig>,
 ) -> Outcome {
-    match exchange_inner(review, result, tls).await {
+    exchange_mode(review, result, tls, None).await
+}
+async fn exchange_mode(
+    review: &ReplayReview,
+    result: &mut ReplayResult,
+    tls: Arc<ClientConfig>,
+    live: Option<&mut streaming::LiveCapture>,
+) -> Outcome {
+    match exchange_inner(review, result, tls, live).await {
         Ok(outcome) => outcome,
         Err(reason) => Outcome::Failed(reason),
     }
@@ -176,8 +190,15 @@ async fn exchange_inner(
     review: &ReplayReview,
     result: &mut ReplayResult,
     tls: Arc<ClientConfig>,
+    live: Option<&mut streaming::LiveCapture>,
 ) -> Result<Outcome, &'static str> {
-    let (url, request) = request(review)?;
+    let (url, mut request) = request(review)?;
+    if live.is_some() {
+        validate_stream(review)?;
+        request
+            .headers_mut()
+            .insert("accept", HeaderValue::from_static("text/event-stream"));
+    }
     let host = url
         .host_str()
         .ok_or("Missing host")?
@@ -197,12 +218,21 @@ async fn exchange_inner(
     } else {
         Box::new(tcp)
     };
-    exchange_on(stream, request, result).await
+    exchange_on_mode(stream, request, result, live).await
 }
+#[cfg(test)]
 async fn exchange_on(
     stream: Box<dyn Stream>,
     request: Request<Full<Bytes>>,
     result: &mut ReplayResult,
+) -> Result<Outcome, &'static str> {
+    exchange_on_mode(stream, request, result, None).await
+}
+async fn exchange_on_mode(
+    stream: Box<dyn Stream>,
+    request: Request<Full<Bytes>>,
+    result: &mut ReplayResult,
+    live: Option<&mut streaming::LiveCapture>,
 ) -> Result<Outcome, &'static str> {
     let (mut sender, connection) = http1::Builder::new()
         .max_headers(100)
@@ -224,7 +254,12 @@ async fn exchange_on(
             .iter()
             .map(|(n, v)| (n.to_string(), v.as_bytes().to_vec()))
             .collect();
-        retain_body(response.into_body(), &mut result.body).await
+        if let Some(live) = live {
+            streaming::validate_response(result)?;
+            live.retain(response.into_body(), &mut result.body).await
+        } else {
+            retain_body(response.into_body(), &mut result.body).await
+        }
     };
     tokio::pin!(response, connection);
     tokio::select! {
@@ -279,6 +314,7 @@ pub struct Worker {
     result: mpsc::Receiver<ReplayResult>,
     thread: Option<thread::JoinHandle<()>>,
     fallback: Option<ReplayResult>,
+    progress: Option<tokio::sync::watch::Receiver<Option<StreamSnapshot>>>,
 }
 impl Worker {
     /// Start only after explicit Send. The deadline starts here, before thread setup.
@@ -291,7 +327,27 @@ impl Worker {
     /// # Errors
     /// Returns validation or thread-creation errors without sending.
     pub fn start_at(review: ReplayReview, started: Instant) -> io::Result<Self> {
-        validate(&review).map_err(io::Error::other)?;
+        Self::start_mode(review, started, false)
+    }
+    /// Start a separately reviewed GET event stream with bounded observations.
+    /// # Errors
+    /// Returns validation or thread-creation errors without sending.
+    pub fn start_stream_at(review: ReplayReview, started: Instant) -> io::Result<Self> {
+        Self::start_mode(review, started, true)
+    }
+    fn start_mode(review: ReplayReview, started: Instant, stream: bool) -> io::Result<Self> {
+        if stream {
+            validate_stream(&review)
+        } else {
+            validate(&review)
+        }
+        .map_err(io::Error::other)?;
+        let (publisher, progress) = if stream {
+            let (tx, rx) = tokio::sync::watch::channel(None);
+            (Some(tx), Some(rx))
+        } else {
+            (None, None)
+        };
         let fallback = Some(ReplayResult::empty(&review));
         let (cancel, cancelled) = oneshot::channel();
         let (sent, result) = mpsc::sync_channel(1);
@@ -303,12 +359,32 @@ impl Worker {
                     .build()
                 {
                     Ok(runtime) => {
-                        let result = runtime.block_on(execute(
-                            &review,
-                            cancelled,
-                            (started + TIME_LIMIT).into(),
-                            configuration(),
-                        ));
+                        let result = runtime.block_on(async {
+                            if let Some(publisher) = publisher {
+                                let mut capture = streaming::LiveCapture::new(started, publisher);
+                                let mut result = ReplayResult::empty(&review);
+                                result.outcome = wait_for(
+                                    exchange_mode(
+                                        &review,
+                                        &mut result,
+                                        configuration(),
+                                        Some(&mut capture),
+                                    ),
+                                    cancelled,
+                                    (started + STREAM_TIME_LIMIT).into(),
+                                )
+                                .await;
+                                result
+                            } else {
+                                execute(
+                                    &review,
+                                    cancelled,
+                                    (started + TIME_LIMIT).into(),
+                                    configuration(),
+                                )
+                                .await
+                            }
+                        });
                         // OS DNS resolution can outlive cancellation; it cannot access UI state.
                         runtime.shutdown_timeout(Duration::ZERO);
                         result
@@ -323,7 +399,17 @@ impl Worker {
             result,
             thread: Some(thread),
             fallback,
+            progress,
         })
+    }
+    /// Read the newest cumulative state without blocking or queueing every update.
+    pub fn progress(&mut self) -> Option<StreamSnapshot> {
+        let receiver = self.progress.as_mut()?;
+        if receiver.has_changed().unwrap_or(true) {
+            receiver.borrow_and_update().clone()
+        } else {
+            None
+        }
     }
     /// Ask the worker to stop. Repeated cancellation is harmless.
     pub fn cancel(&mut self) {

@@ -160,6 +160,21 @@
     "subtitle": "Boundaries, remembered state, and missing arrival times"
   },
   {
+    "slug": "26-switching-protocols",
+    "title": "Switching protocols",
+    "subtitle": "The agreement and the conversation after it"
+  },
+  {
+    "slug": "27-observing-live-events",
+    "title": "Observing live events",
+    "subtitle": "Local times, partial characters, and bounded progress"
+  },
+  {
+    "slug": "28-sharing-a-connection",
+    "title": "Sharing a connection",
+    "subtitle": "HTTP/2 streams, flow control, and remembered headers"
+  },
+  {
     "slug": "20-remembering-a-request",
     "title": "Remembering a request",
     "subtitle": "Values, files, and careful replacement"

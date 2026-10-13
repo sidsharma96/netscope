@@ -612,6 +612,19 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     ]);
     pairs(&mut lines, "Response headers", &request.response_headers);
     cookies(&mut lines, "Response cookies", &request.response_cookies);
+    if let Some(evidence) = netscope_core::websocket_evidence(request) {
+        lines.extend([
+            String::new(),
+            "WEBSOCKET UPGRADE · recorded metadata".into(),
+            evidence.summary.into(),
+        ]);
+        lines.extend(evidence.notes.into_iter().map(str::to_owned));
+        lines.push("Header shape only · key/accept digest not verified".into());
+        lines.push("Extensions and browser acceptance not verified".into());
+        lines.push("HAR has no standard WebSocket frame history".into());
+        lines.push("Body size is not a frame count".into());
+        lines.push(String::new());
+    }
     lines.extend(crate::sse_view::lines(request));
     lines.push("Response body".into());
     lines.push(match &request.body {

@@ -1,0 +1,9 @@
+# M5 completion: native SSE and WebSocket upgrade evidence
+
+October 13, 2026. Complements [captured SSE](m5-captured-sse.md).
+
+Import native ws/wss URLs for inspection only; preserve scheme/recording and refuse replay. Candidate evidence is ws/wss or recorded Upgrade:websocket/Sec-WebSocket-* fields. Apply classic header checks only when both versions are HTTP/1.1. Check GET, request/response Upgrade and Connection tokens (comma-separated, case-insensitive), single nonempty key/accept, single version 13, and optional selected subprotocol against case-sensitive offered tokens. A 101 status and expected header shape are explicitly weaker than validated client acceptance. No key decoding/accept digest, extension semantics, browser policy or frame history is claimed. Non-101, zero status, missing fields and out-of-scope versions have distinct explanations. Original fields remain available.
+
+Native Chrome 155 and Firefox 146 HAR fixtures contain finite SSE text and classic 101 metadata. Their original values are retained, with two narrow tolerances: a ws/wss 101 negative bodySize below -1 becomes Unavailable with its exact value in a warning; an empty ws/wss 101 serverIPAddress becomes absent. Other malformed byte counts and addresses remain errors. No fixture normalization. HAR response sizes and body text are never interpreted as frame counts/history.
+
+The [browser provenance](../../tests/fixtures/har/browsers/README.md), [compatibility reference](../HAR_COMPATIBILITY.md), [regression tests](../../crates/netscope-import/tests/browser_exports.rs) and [lesson](../chapters/26-switching-protocols.md) record evidence and limits. M5 includes the captured SSE parser, native compatibility coverage and upgrade metadata view. A complete WebSocket client or frame inspection requires another input/network contract.

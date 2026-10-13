@@ -64,7 +64,7 @@ A parser can also stop because the application deliberately limits its work. Net
 
 The captured body already owns its text. Event types and IDs can refer to portions of those existing bytes while inspection is in progress. Joining several data values with newlines creates a different string, so that result needs its own storage. Borrowing and ownership therefore serve different needs in the same event.
 
-Keeping this interpretation temporary avoids storing another event list for every response in a large capture. It costs repeated bounded parsing when the inspector draws or adjusts its scroll position. Caching a list would trade that repeated work for retained memory and additional ownership arrangements. The current choice is deliberately small; live input would need to preserve unfinished state between arriving pieces instead of restarting from a fixed body.
+Keeping this interpretation temporary avoids storing another event list for every response in a large capture. It costs repeated bounded parsing when the inspector draws or adjusts its scroll position. Caching a list would trade that repeated work for retained memory and additional ownership arrangements. The current choice is deliberately small; live input also needs to preserve unfinished bytes and observation times between arriving pieces. The [live observation lesson](27-observing-live-events.md) explains how a bounded cumulative prefix can reuse these parsing rules.
 
 Here is a small example using the parser after those rules are understood:
 
@@ -82,6 +82,6 @@ assert_eq!(stream.events[0].data, "first\nsecond");
 
 Open the supplied SSE example described in the [development guide](../DEVELOPMENT.md#inspect-retained-sse-text). Inspect its first request and scroll to the derived events. Explain why two data lines become one event and why the final block remains unfinished. Then inspect the response whose text was not recorded. Explain why unavailable text must not be reported as zero events.
 
-Could the request's total duration tell you the pause between those two events? It cannot: one duration covers the request, while the body preserves content order. A live capture with suitable observations would be needed to answer the timing question.
+Could the request's total duration tell you the pause between those two events? It cannot: one duration covers the request, while the body preserves content order. A [new live observation](27-observing-live-events.md) can measure when Netscope sees each complete boundary; it cannot recover the original browser's missing times.
 
 The [parser](../../crates/netscope-core/src/sse.rs), [parser tests](../../crates/netscope-core/tests/sse.rs), and [display](../../crates/netscope-tui/src/sse_view.rs) support the rules explained here. The [contract](../contracts/m5-captured-sse.md) records exact recognition, budgets, and unavailable states; the [decision record](../ARCHITECTURE.md) keeps the alternatives and reasons to revisit them.

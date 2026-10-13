@@ -56,6 +56,7 @@ fn outcome(outcome: Outcome) -> &'static str {
         Outcome::Cancelled => "Cancelled / partial",
         Outcome::TimedOut => "Timed out / partial",
         Outcome::SizeLimited => "Size limited / partial",
+        Outcome::CaptureLimited(_) => "Capture limited / partial",
         Outcome::Failed(_) => "Failed / possibly partial",
     }
 }
