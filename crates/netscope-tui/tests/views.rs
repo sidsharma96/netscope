@@ -1787,3 +1787,77 @@ fn large_lists_page_and_jump_without_losing_filter_return_position()
     }
     Ok(())
 }
+
+#[test]
+fn send_ids_survive_editor_replacement_and_ignore_old_completion()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Char('s'));
+    let first = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?
+        .0;
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(first, new_replay_result(netscope_net::Outcome::Complete));
+    press(&mut app, &session, KeyCode::Esc);
+    press(&mut app, &session, KeyCode::Esc);
+    assert!(app.replay.is_none());
+    app.apply(Action::Replay, &session);
+    for _ in 0..4 {
+        press(&mut app, &session, KeyCode::Down);
+    }
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('s'));
+    let second = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?
+        .0;
+    assert_ne!(first, second);
+    let editor = app.replay.as_mut().ok_or("editor")?;
+    editor.complete(first, new_replay_result(netscope_net::Outcome::Complete));
+    editor.start_failed(first);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Sending a new request"));
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(second, new_replay_result(netscope_net::Outcome::Complete));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Outcome: Complete"));
+    press(&mut app, &session, KeyCode::Esc);
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('s'));
+    let third = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("repeat send")?
+        .0;
+    assert_ne!(second, third);
+    let editor = app.replay.as_mut().ok_or("editor")?;
+    editor.complete(second, new_replay_result(netscope_net::Outcome::Cancelled));
+    editor.start_failed(second);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Sending a new request"));
+    // Each App owns its allocation; another app does not consume this one's IDs.
+    let mut other = reviewed_app(&session);
+    press(&mut other, &session, KeyCode::Char('s'));
+    assert_eq!(
+        other
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .ok_or("send")?
+            .0,
+        first
+    );
+    Ok(())
+}

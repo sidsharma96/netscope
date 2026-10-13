@@ -167,15 +167,15 @@ impl ReplayEditor {
             _ => None,
         }
     }
-    pub(crate) fn key(&mut self, key: KeyEvent) -> bool {
+    pub(crate) fn key(&mut self, key: KeyEvent, next_send_id: &mut Option<u64>) -> bool {
         let was_editing = self.editing();
-        let leave = self.key_inner(key);
+        let leave = self.key_inner(key, next_send_id);
         if (!was_editing || key.code == KeyCode::Enter) && self.editing() {
             self.cursor.byte = self.edit_text().map_or(0, str::len);
         }
         leave
     }
-    fn key_inner(&mut self, key: KeyEvent) -> bool {
+    fn key_inner(&mut self, key: KeyEvent, next_send_id: &mut Option<u64>) -> bool {
         if matches!(self.mode, Mode::Running(_)) {
             if key.code == KeyCode::Esc {
                 self.cancel = true;
@@ -389,9 +389,12 @@ impl ReplayEditor {
                         Ok(r)
                     }) {
                         Ok(review) => {
-                            static NEXT: std::sync::atomic::AtomicU64 =
-                                std::sync::atomic::AtomicU64::new(1);
-                            let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            let Some(id) = *next_send_id else {
+                                self.message =
+                                    "Send IDs exhausted; restart Netscope to send again".into();
+                                return false;
+                            };
+                            *next_send_id = id.checked_add(1);
                             self.started = Some(std::time::Instant::now());
                             self.pending = Some((id, review));
                             self.mode = Mode::Running(id);

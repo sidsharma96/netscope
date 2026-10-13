@@ -78,6 +78,8 @@ pub struct App {
     /// Local editor, present only while a replay draft is open.
     pub replay: Option<crate::replay_view::ReplayEditor>,
     notice: String,
+    // Allocation outlives editors; None means every available ID has been used.
+    next_send_id: Option<u64>,
     all_requests_position: Option<(Option<usize>, usize)>,
     host_return: Screen,
     width: u16,
@@ -112,6 +114,7 @@ impl App {
             host_offset: 0,
             replay: None,
             notice: String::new(),
+            next_send_id: Some(1),
             all_requests_position: None,
             host_return: Screen::Overview,
             width: 100,
@@ -196,7 +199,7 @@ impl App {
                 if (self.width < 80 || self.height < 24) && !editor.waiting() {
                     return;
                 }
-                if editor.key(key) {
+                if editor.key(key, &mut self.next_send_id) {
                     if editor.draft().has_capture() {
                         self.replay = None;
                         self.screen = Screen::Inspector(id);
@@ -1029,5 +1032,68 @@ fn reported_label(value: &str) -> String {
         "Not recorded (empty label)".into()
     } else {
         terminal_text(value)
+    }
+}
+
+#[cfg(test)]
+mod operation_id_tests {
+    use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[test]
+    fn final_id_can_be_used_once_then_send_stays_in_review()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let session = netscope_import::import_bytes(
+            include_bytes!("../../../tests/fixtures/har/single-request.har"),
+            netscope_import::Limits::default(),
+        )?;
+        let mut app = App::new(&session);
+        app.next_send_id = Some(u64::MAX);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Replay, &session);
+        let press =
+            |app: &mut App, code| app.handle_key(KeyEvent::new(code, KeyModifiers::NONE), &session);
+        for _ in 0..4 {
+            press(&mut app, KeyCode::Down);
+        }
+        press(&mut app, KeyCode::Enter);
+        press(&mut app, KeyCode::Char('s'));
+        let id = app
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .ok_or("last send")?
+            .0;
+        assert_eq!(id, u64::MAX);
+        assert_eq!(app.next_send_id, None);
+        app.replay.as_mut().ok_or("editor")?.start_failed(id);
+        for _ in 0..2 {
+            press(&mut app, KeyCode::Char('s'));
+        }
+        let editor = app.replay.as_mut().ok_or("editor")?;
+        assert!(editor.take_send().is_none());
+        assert_eq!(editor.title(), "REVIEW");
+        assert_eq!(editor.draft().url(), session.requests()[0].url);
+        let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 30))?;
+        terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+        let buffer = terminal.backend().buffer();
+        let text: String = (0..30)
+            .flat_map(|y| (0..100).map(move |x| buffer[(x, y)].symbol()))
+            .collect();
+        assert!(text.contains("Send IDs exhausted"));
+        assert_eq!(app.next_send_id, None);
+        press(&mut app, KeyCode::Esc);
+        press(&mut app, KeyCode::Esc);
+        app.apply(Action::Replay, &session);
+        for _ in 0..4 {
+            press(&mut app, KeyCode::Down);
+        }
+        press(&mut app, KeyCode::Enter);
+        press(&mut app, KeyCode::Char('s'));
+        let editor = app.replay.as_mut().ok_or("editor")?;
+        assert!(editor.take_send().is_none());
+        assert_eq!(editor.title(), "REVIEW");
+        Ok(())
     }
 }

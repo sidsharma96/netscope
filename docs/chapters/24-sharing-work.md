@@ -52,7 +52,7 @@ For our current final-result display, sharing a mutable body would introduce tha
 
 Consider two callers asking for the next operation number. A separate read followed by a separate write is not enough coordination. Both could read 7, both compute 8, and both believe they reserved the same number.
 
-An atomic operation makes its change indivisible with respect to other atomic operations on that value. An atomic read-modify-write operation reads a value, changes it, and returns a result as one operation. Here is an isolated example of the increment used by Netscope. The example runs sequentially so its result is repeatable; it is not a stress test of competing threads.
+An atomic operation makes its change indivisible with respect to other atomic operations on that value. An atomic read-modify-write operation reads a value, changes it, and returns a result as one operation. Here is an isolated example of an increment suitable for callers sharing a counter. The example runs sequentially so its result is repeatable; it is not a stress test of competing threads.
 
 ```rust
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -70,9 +70,11 @@ Memory ordering answers a separate question: what does this operation establish 
 
 If an atomic flag were instead used to announce that other shared data was ready, `Relaxed` alone would not establish the needed ordering. Release and Acquire can form such a relationship when an acquiring read observes the releasing write. That relationship still needs a correct ownership and access design for the other data. Stronger ordering on a counter does not automatically make a mutable buffer safe to share.
 
-Netscope's counter is a `static`: one value with a lifetime spanning the process, shared across editor instances. It labels sends so a completion can be checked against the active operation. It does not identify a saved request across program runs. Atomic addition also wraps after the integer's maximum value, so the implementation does not provide unlimited unique numbers.
+Netscope gives each send a number so a completion can be checked against the active operation. But only the terminal thread allocates those numbers. The current implementation therefore uses an ordinary counter owned by the application, not the atomic counter in the illustration. An editor can be closed and replaced while the application remains alive, so the counter belongs to that longer-lived owner. Starting the sequence again in each editor could let an old result carry the same number as a newer send.
 
-Does the current UI require an atomic here? No demonstrated requirement says it does. The terminal currently allocates send IDs on one thread and keeps only one worker active. An ordinary counter owned by the application could make that ownership clearer. It would need to survive replacing an editor and define what happens at its maximum value. The [architecture audit](../ARCHITECTURE.md#operation-identity) records this as an open simplification, not a historical justification for the global counter.
+The counter also needs an end-of-range rule. Its next value is an `Option<u64>`: either a number remains available, or the sequence is exhausted. Accepting Send reserves the current number and uses checked addition to prepare the next. Checked addition returns no value if the result would exceed the integer's range. The largest number can consequently be used once; a later Send stays in Review with an explanation and queues no work. It does not wrap back to an earlier number.
+
+These IDs only distinguish operations within one application instance. They are not persistent request identities, and separate instances may allocate the same numbers because they own separate workers and results. If allocation later moves to several threads, we must reconsider how those threads coordinate it. The [decision record](../ARCHITECTURE.md#operation-identity) explains the change from the earlier global atomic and the tests protecting this ownership rule.
 
 ## Change a value only if the assumption still holds
 
