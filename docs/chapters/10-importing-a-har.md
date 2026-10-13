@@ -58,6 +58,12 @@ After every entry passes, the session can support a chronological view. A separa
 
 In the implementation, `Result` expresses whether import produced a session or an error. The `?` operator stops a sequence of checks when a required step fails. Those language features make the policy visible in code; the policy comes from what we need the inspector to mean.
 
+## Why finish validation before opening the list?
+
+Another design could show valid entries immediately and skip those it cannot read. That could be useful for a damaged file, but the interface would then need to explain what was omitted. A missing redirect candidate might mean no matching request was recorded, or that a matching entry was discarded during import. Without that distinction, partial recovery could look more certain than it is.
+
+Netscope currently builds the complete accepted session before displaying it. That keeps rejection clear, but costs initial waiting and memory. The parser first constructs a tree of JSON values, then builds the request values that the rest of the program uses. A streaming parser could consume entries more gradually; it would need to preserve our duplicate-field checks, useful error paths, and whole-capture acceptance rule. Streaming input and allowing partial results are separate decisions: either can exist without the other.
+
 ## Put a limit on the work
 
 A local file can still be too large to process comfortably. Netscope limits input bytes, the number of entries, and the amount of decoded body data. Checking during reading also handles a file whose size changes after it is opened.

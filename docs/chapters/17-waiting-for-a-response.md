@@ -89,6 +89,20 @@ The body limit introduces another boundary. Receiving exactly the allowed number
 
 That distinction matters when examining partial data. “We retained these bytes” and “this is the whole response” are separate claims.
 
+## Why keep a separate worker at all?
+
+We could make the entire terminal program asynchronous and run input, drawing, and network operations on one long-lived runtime. That could avoid creating a thread and runtime for each send. It would also move cancellation, terminal input, and shutdown into a different coordination scheme. Asynchronous I/O does not by itself require an extra operating-system thread.
+
+The current design keeps the existing terminal loop in charge of input and gives each send a bounded lifetime elsewhere. This is a choice about separation of responsibilities, not evidence that one thread per operation is always faster. It has setup cost, and waiting for worker cleanup on exit can still occupy the terminal thread briefly. Many concurrent sends would be a reason to reconsider it. The [sharing chapter](24-sharing-work.md) compares handing over a result with sharing a mutable buffer.
+
+## Why let a library interpret HTTP?
+
+A response can arrive in pieces that do not line up with a header or body boundary. Handling those pieces correctly is separate from deciding how much data Netscope should retain. Hyper, our HTTP library, interprets the protocol; the application sets its limits and decides what the result means. Rustls handles the encrypted connection and certificate checks for HTTPS, while Tokio coordinates waiting.
+
+Writing our own HTTP parser would add another large correctness problem to a learning inspector. A higher-level client library could do more of the connection management for us, but we would need to check its redirect, retry, cookie, proxy, and decompression behaviour against the reviewed-send promise. Such libraries can be configured; they are not inherently unsuitable. Our current lower-level connection API makes the one-connection lifetime explicit, at the cost of more code to manage it.
+
+The resulting replay deliberately differs from a browser: it sends one reviewed operation using HTTP/1.1, does not follow a redirect or retry an HTTP request, and keeps the received body without automatic decompression. Seeing HTTP/2 in an imported recording does not change that replay capability. The [transport decision](../contracts/replay-transport.md) states the exact limits, and the [architecture audit](../ARCHITECTURE.md#http-stack-and-replay-scope) records the alternative assessment without claiming a client-library benchmark.
+
 ## Cancellation follows ownership
 
 Imagine that the worker has copied three response bytes into its result when you cancel. We want to stop waiting without throwing those three bytes away. The value collecting the result therefore lives outside the future performing the exchange. The exchange borrows it while receiving data. Dropping that future ends the borrow, leaving the collected data available to return.

@@ -33,3 +33,5 @@ Editable fields support Left/Right, Home/End, Backspace, and Delete, with a visi
 Native Chrome and Firefox HAR exports are covered by frozen, offline regression fixtures. See [browser compatibility](docs/HAR_COMPATIBILITY.md) for tested versions, observed variations, and local reproduction.
 
 Use Page Up/Page Down and Home/End in request lists, Hosts, and the inspector. See [large-capture checks](docs/LARGE_CAPTURES.md) for tested limits and local measurements.
+
+The [architecture decision record](docs/ARCHITECTURE.md) explains current boundaries, alternatives, evidence, and unresolved questions, with beginner lessons on program structure and sharing work.

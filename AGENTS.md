@@ -16,3 +16,5 @@ Before editing a chapter, read `docs/chapters/05-decisions.md`. Review the draft
 `docs/chapters.json` defines the learning order. Existing chapter URLs are stable identifiers, not an instruction to order chapters by their numeric filename prefixes. Preserve valid deep links when changing headings or navigation.
 
 Edit chapter sources and regenerate `docs/index.html` with `python3 scripts/build_docs.py`. Run `python3 scripts/check_docs.py` after documentation changes. When Rust examples change, also run `cargo test --workspace --doc --locked --offline`. These automated checks establish link and example correctness; they do not substitute for an editorial review.
+
+For material architecture choices, maintain `docs/ARCHITECTURE.md` with constraints, alternatives, consequences, evidence, and revisit conditions. Distinguish contemporaneous records from later assessments. Update the relevant reader-led lesson when the reasoning changes; do not invent historical deliberation or justify complexity merely because it exists.

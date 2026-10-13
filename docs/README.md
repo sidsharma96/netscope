@@ -32,12 +32,16 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 13. [Reading protocol labels](chapters/15-reading-protocol-labels.md)
 14. [Preparing a request](chapters/16-preparing-a-request.md)
 15. [Waiting for a response](chapters/17-waiting-for-a-response.md)
-16. [Comparing responses](chapters/18-comparing-responses.md)
-17. [Submitting text](chapters/19-submitting-text.md)
-18. [Moving through text](chapters/21-moving-through-text.md)
-19. [Remembering a request](chapters/20-remembering-a-request.md)
-20. [Checking our work](chapters/04-quality-and-tests.md)
-21. [Try the first version](chapters/06-first-milestone.md)
-22. [Writing this book](chapters/05-decisions.md)
+16. [Sharing work](chapters/24-sharing-work.md)
+17. [Comparing responses](chapters/18-comparing-responses.md)
+18. [Submitting text](chapters/19-submitting-text.md)
+19. [Moving through text](chapters/21-moving-through-text.md)
+20. [Remembering a request](chapters/20-remembering-a-request.md)
+21. [Shaping the program](chapters/23-shaping-the-program.md)
+22. [Checking our work](chapters/04-quality-and-tests.md)
+23. [Try the first version](chapters/06-first-milestone.md)
+24. [Writing this book](chapters/05-decisions.md)
 
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.
+
+The [architecture audit and decision record](ARCHITECTURE.md) distinguishes previously recorded choices from current assessments, links evidence, and records alternatives and open questions. The teaching chapters explain the reasoning in context.

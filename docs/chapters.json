@@ -135,6 +135,11 @@
     "subtitle": "Keep input responsive and retain unfinished results"
   },
   {
+    "slug": "24-sharing-work",
+    "title": "Sharing work",
+    "subtitle": "Ownership, channels, locks, and atomic operations"
+  },
+  {
     "slug": "18-comparing-responses",
     "title": "Comparing responses",
     "subtitle": "Separate matching bytes from missing evidence"
@@ -153,6 +158,11 @@
     "slug": "20-remembering-a-request",
     "title": "Remembering a request",
     "subtitle": "Values, files, and careful replacement"
+  },
+  {
+    "slug": "23-shaping-the-program",
+    "title": "Shaping the program",
+    "subtitle": "Responsibilities, alternatives, and reasons to revisit a choice"
   },
   {
     "slug": "04-quality-and-tests",

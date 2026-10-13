@@ -128,3 +128,7 @@ The HTTPS extension uses `scripts/har_https_fixture_server.mjs` with disposable 
 ## Large-capture checks
 
 `python3 scripts/probe_large_capture.py` builds the release measurement example, creates temporary deterministic HAR workloads at 1,000 and 10,000 entries, and reports three import/render samples per workload. It requires no network after dependencies are cached. Elapsed times are observations, not pass/fail assertions. The [measurement reference](LARGE_CAPTURES.md) describes scope and limitations. Normal workspace tests cover the 10,000-entry boundary, relationship matching equivalence, and page/end navigation without wall-clock thresholds.
+
+## Architecture decisions
+
+Keep [the architecture record](ARCHITECTURE.md) alongside material changes. Record the problem, current choice, plausible alternatives, costs, evidence, and conditions for reconsideration. Label retrospective assessments separately from previously recorded decisions. Put the learner-facing explanation in the relevant chapter; a new chapter is justified by a new reader question, not each implementation patch. Open audit questions remain open until implementation and verification support a new status.

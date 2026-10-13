@@ -44,6 +44,12 @@ Then check the technical claims against the implementation. This second pass cat
 
 Exercises should follow naturally from the explanation. Ask the reader to predict a result, make a small change, or explain a choice. Provide enough setup to attempt the exercise without guessing how to run the example. Compilation checks can catch broken snippets; they cannot establish whether the prose teaches well.
 
+## Explain why a design fits, and when it would not
+
+A material architecture choice needs more than a description of the implementation. Explain the concrete constraint, a plausible alternative, and the consequence of choosing one. Distinguish a reason documented at the time from an assessment made during a later audit. Do not invent a rejected alternative or a performance result to make existing code sound inevitable.
+
+Teach the reasoning in the chapter where the reader needs it. Keep dates, evidence links, and revisit conditions in the [architecture decision record](../ARCHITECTURE.md). Record unresolved choices honestly; an unnecessary atomic or an awkward ownership boundary is a reason to investigate, not an obligation to defend it. A code change should update the relevant decision and lesson when it changes the explanation, while preserving the reader's sequence.
+
 ## References and maintenance
 
 Receipt's local prose guide, [pstack technical writing](https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md), and [unslop](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) informed the original style discussion. We adapt those references to this audience. Rules designed for a terse working reference should not remove explanations a beginner needs.

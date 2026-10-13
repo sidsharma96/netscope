@@ -121,3 +121,7 @@ pub use saved::{SAVED_FILE_LIMIT, SavedDraft, sensitive_saved_header};
 /// Serialization reconstructs independently owned values.
 #[doc = include_str!("../../../docs/chapters/20-remembering-a-request.md")]
 pub mod persistence_lesson {}
+
+/// Ownership and synchronization choices, with isolated atomic examples.
+#[doc = include_str!("../../../docs/chapters/24-sharing-work.md")]
+pub mod sharing_lesson {}

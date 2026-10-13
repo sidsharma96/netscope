@@ -65,6 +65,12 @@ A version field gives the format an explicit identity. Version 1 tells the reade
 
 Netscope checks the file's size, structure, version, and request values before opening an editor. It rejects unexpected fields rather than quietly ignoring a possible misspelling. Those checks make failure recoverable: the original file remains available to inspect, and no network operation has begun.
 
+## Why use a file instead of a database?
+
+For one named request, a versioned JSON file is easy to inspect, copy, and reopen without starting another service. A database could also run locally and would become useful if we needed to search a large saved collection or update several records together. It would introduce a schema, the rules for stored records, and a migration policy for changing those rules.
+
+The current file format makes a smaller promise. It carries one request's values between runs. It does not coordinate two people editing that request, remember a history of revisions, or guarantee that an unknown future format can be read. The version field lets us reject a format we do not understand instead of guessing its meaning. If saved collections or concurrent editing become requirements, the storage decision should change with them.
+
 ## Replacing a file has a vulnerable middle
 
 Imagine that yesterday's file is valid. Today you save an edited body, but a write fails halfway through. If the program had erased the old file first, you could be left with neither yesterday's request nor today's complete replacement.

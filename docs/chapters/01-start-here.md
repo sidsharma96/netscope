@@ -20,6 +20,8 @@ Start by reading a capture and deciding what you can conclude from it. Then meet
 
 Once those ideas are familiar, missing values and errors become easier to describe. We then follow a file into the program and a selected request onto the screen. Grouping and redirect evidence show how to calculate useful summaries while preserving uncertainty. Later chapters explain how we check our work and define the first useful version.
 
+The later [sharing lesson](24-sharing-work.md) asks when ownership, channels, locks, and atomics fit a problem. [Shaping the program](23-shaping-the-program.md) connects those choices to the package boundaries and alternatives. The [decision record](../ARCHITECTURE.md) keeps the evidence and open questions beside the lessons.
+
 You can also use the Rust index to return to a concept. Source links appear after the explanation they support. Reading the implementation is a useful next step, but it is not a prerequisite for understanding a chapter.
 
 ## What you can try today

@@ -78,6 +78,12 @@ Keeping the request records in one place lets the inspector borrow the same data
 
 Timing bars retain the complete capture's scale when a host filter is applied. A request therefore does not appear longer merely because you hid requests to other hosts.
 
+## Why calculate a group before drawing it?
+
+The captured requests stay unchanged while you browse. We can therefore calculate host counts and ID lists once and reuse them on later screens. This spends memory on the summaries but avoids repeating the same count for every keypress. The lists contain request IDs, so grouping does not make another copy of every response body.
+
+Calculating only when Hosts is first opened would defer that work for readers who never need it. Recounting each time would avoid keeping a summary but repeat the work. If requests arrived continuously, a once-built summary would become stale; we would need to update it or rebuild it. The present choice depends on an offline, unchanging session, not on a rule that caching is always better. A cache is retained information that avoids calculating or fetching the same answer again.
+
 ## Try the host view
 
 From the project directory, run:
