@@ -1,7 +1,9 @@
 NETSCOPE / REVIEW                                                               
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-┌ Review · Esc edits · Enter or s sends ───────────────────────────────────────┐
+  Edit  [ Review ]  Send    Result                                              
+                                                                                
+┌ Review · s sends ────────────────────────────────────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes                           │
 │Only Enter or s from Review sends a request                                   │
 │Effective destination: https://example.test/api/books                         │
@@ -18,7 +20,5 @@ Capture unchanged · only Review → Send starts network traffic
 │Semantic preview; header spelling/order may differ                            │
 │Captured headers left out:                                                    │
 │  X-Example                                                                   │
-│  X-Example                                                                   │
-│                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit              

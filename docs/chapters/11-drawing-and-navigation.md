@@ -1,6 +1,6 @@
 # Keeping your place on screen
 
-You select the second request, open its details, and scroll to the response body. When you press Esc, you expect to return to the same request in the list. If the window becomes smaller, you still expect the program to remember what you were inspecting.
+You select the second request, open its details, and choose Body. When you press Esc, you expect to return to the same request in the list. If the window becomes smaller, you still expect the program to remember what you were inspecting.
 
 Those expectations tell us what the interface needs to remember. The capture itself stays the same while your place within it changes.
 
@@ -23,6 +23,28 @@ The host view introduced in the next chapter adds another screen variant using t
 The parentheses mean that the inspector variant carries a request ID. This keeps the fact that we are inspecting a request together with the identity of that request. A separate true-or-false flag would still need another value to say which request it meant.
 
 The same key can have different meanings in those two states. Down selects the next request in the overview and scrolls one line in the inspector. A `match` on the current screen and action makes that decision explicit. The result is another state we can inspect in a test.
+
+## Which pane should a key change?
+
+Imagine keeping the request list visible beside its details. You can now see both at once, but pressing Down still needs one meaning. Should it select the next request or scroll the current body? Visibility alone cannot answer that question.
+
+Focus identifies the part of the interface receiving navigation keys. Selection identifies the request whose details are shown. They are different: switching focus to the inspector should keep the same request selected. In a wide Netscope window, the bright pane border marks focus and the filled request row marks selection. Tab switches focus; Enter focuses the selected request's details.
+
+Read the following drawing as changes to navigation responsibility. Both sides refer to the same captured request. The arrows do not represent a network exchange.
+
+```text
+Illustrative focus change; captured request #2 stays unchanged
+
+List has focus                     Details have focus
+Down selects another request  ─Tab→ Down scrolls request #2
+                              ←Tab─
+```
+
+The overview and inspector alternatives therefore still have a purpose even when both panes are drawn. They identify what a movement key should change. When the window is narrower, the same alternatives show one pane at a time. That lets the program adapt its presentation without inventing a second navigation model.
+
+Choosing Headers or Body answers another question: which information about this request do you want to examine? That section choice belongs to view state too. An enum can name the available sections, while the captured header and body values stay in the session. Changing sections begins at the top of the newly chosen content, so a scroll position from a long body cannot hide a shorter summary.
+
+The optional journey adds explanations without replacing the recorded values. Its arrows illustrate HTTP direction, and its stage descriptions explain what a reported measurement means. They do not recover handshake messages missing from HAR. Keeping that learning view separate leaves routine inspection compact while making an explanation available when a field is unfamiliar.
 
 ## Borrow data, change selection
 
@@ -113,12 +135,12 @@ Cleanup can also fail, so the explicit restoration path reports errors. A separa
 
 ## Try returning to the same request
 
-Use the supplied capture with several entries, select source ID 2, open it, and scroll. Before pressing Esc, predict which row should remain selected. Then shrink and enlarge the terminal. Explain which values need to change and which recorded data can stay as it is.
+Use the supplied capture with several entries, select source ID 2, open it, choose All with 6, and scroll. Before pressing Esc, predict which row should remain selected. Then shrink and enlarge the terminal. Explain which values need to change and which recorded data can stay as it is.
 
 Finally, explain why drawing takes a shared reference to the session but a mutable reference to view state. You should be able to describe the permissions without listing the fields of either struct.
 
 ## Follow the implementation when ready
 
-The [view code](../../crates/netscope-tui/src/view.rs) contains state changes and drawing. Its [tests](../../crates/netscope-tui/tests/views.rs) exercise navigation and fixed screen buffers. The [terminal code](../../crates/netscope-tui/src/terminal.rs) manages input and cleanup, with a separate [restoration check](../../scripts/check_terminal.py).
+The [view code](../../crates/netscope-tui/src/view.rs) contains state changes, and the [workspace renderer](../../crates/netscope-tui/src/workspace_view.rs) composes the list and sections. Their [tests](../../crates/netscope-tui/tests/views.rs) exercise navigation and fixed screen buffers. The [terminal code](../../crates/netscope-tui/src/terminal.rs) manages input and cleanup, with a separate [restoration check](../../scripts/check_terminal.py).
 
 The [first version walkthrough](06-first-milestone.md) provides the command to run the sample. The [verification record](../VERIFICATION.md) describes completed checks and their limits. [Ratatui's documentation](https://docs.rs/ratatui/0.29.0/ratatui/) is the implementation reference for frames and drawing.

@@ -6,7 +6,6 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
     widgets::{Block, Borders, Paragraph},
 };
 use unicode_segmentation::UnicodeSegmentation;
@@ -15,6 +14,12 @@ use unicode_width::UnicodeWidthStr;
 /// A keyboard action, independent of terminal event types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
+    /// Move between the request list and its details.
+    Focus,
+    /// Choose a section of the captured request.
+    Section(crate::InspectorTab),
+    /// Toggle the explanatory request journey.
+    Journey,
     /// Move up one request or inspector line.
     Up,
     /// Move down one request or inspector line.
@@ -59,6 +64,10 @@ pub enum Screen {
 /// Small mutable view state. The session remains separately owned.
 #[derive(Debug)]
 pub struct App {
+    /// Selected inspector section, shared by preview and focused details.
+    pub inspector_tab: crate::InspectorTab,
+    /// Whether the explanatory journey is open.
+    pub journey: bool,
     /// Current view.
     pub screen: Screen,
     /// Selected row in the current request list; none when empty.
@@ -108,6 +117,8 @@ impl App {
     /// Initialise selections from the session rather than inventing empty rows.
     pub fn new(session: &Session) -> Self {
         Self {
+            inspector_tab: crate::InspectorTab::Summary,
+            journey: false,
             screen: Screen::Overview,
             selected: (!session.requests().is_empty()).then_some(0),
             overview_offset: 0,
@@ -196,10 +207,20 @@ impl App {
         if let Screen::Inspector(id) = self.screen
             && let Some(request) = session.request(id)
         {
-            let len = wrapped_inspector(session, request, id, self.width.saturating_sub(2)).len();
+            let (width, rows) =
+                crate::workspace_view::detail_size(self.width, self.height, self.journey);
+            let len = crate::workspace_view::detail_lines(
+                session,
+                request,
+                id,
+                self.inspector_tab,
+                self.journey,
+                width,
+            )
+            .len();
             self.inspector_offset = self
                 .inspector_offset
-                .min(len.saturating_sub(usize::from(self.height.saturating_sub(6))));
+                .min(len.saturating_sub(usize::from(rows)));
         }
     }
     fn show_hosts(&mut self, session: &Session) {
@@ -323,6 +344,43 @@ impl App {
             }
             return;
         }
+        if matches!(self.screen, Screen::Overview | Screen::Inspector(_)) {
+            match action {
+                Action::Section(tab) => {
+                    self.inspector_tab = tab;
+                    self.inspector_offset = 0;
+                    self.journey = false;
+                    self.clamp(session);
+                    return;
+                }
+                Action::Journey => {
+                    if let Some(id) = self.selected_id(session) {
+                        self.screen = Screen::Inspector(id);
+                        self.journey = !self.journey;
+                        self.inspector_offset = 0;
+                    }
+                    self.clamp(session);
+                    return;
+                }
+                Action::Focus => {
+                    if matches!(self.screen, Screen::Inspector(_)) {
+                        self.screen = Screen::Overview;
+                        self.journey = false;
+                    } else if let Some(id) = self.selected_id(session) {
+                        self.screen = Screen::Inspector(id);
+                    }
+                    self.clamp(session);
+                    return;
+                }
+                Action::Back if self.journey => {
+                    self.journey = false;
+                    self.inspector_offset = 0;
+                    self.clamp(session);
+                    return;
+                }
+                _ => {}
+            }
+        }
         if matches!(
             action,
             Action::PageUp | Action::PageDown | Action::First | Action::Last
@@ -409,11 +467,13 @@ impl App {
                 self.show_hosts(session)
             }
             (Screen::Overview, Action::Down) => {
+                self.inspector_offset = 0;
                 self.selected = self
                     .selected
                     .map(|i| (i + 1).min(self.request_order(session).len().saturating_sub(1)))
             }
             (Screen::Overview, Action::Up) => {
+                self.inspector_offset = 0;
                 self.selected = self.selected.map(|i| i.saturating_sub(1))
             }
             (Screen::Overview, Action::Open) => {
@@ -456,14 +516,14 @@ fn clamp_list(selected: &mut Option<usize>, offset: &mut usize, count: usize, ro
     *offset = (*offset).min(count.saturating_sub(rows));
 }
 
-fn status(request: &Request) -> String {
+pub(super) fn status(request: &Request) -> String {
     if request.status == 0 {
         "No HTTP status recorded".into()
     } else {
         format!("{} {}", request.status, terminal_text(&request.status_text))
     }
 }
-fn timing(value: Timing) -> String {
+pub(super) fn timing(value: Timing) -> String {
     match value {
         Timing::Missing => "Not recorded".into(),
         Timing::Unavailable => "Unavailable (-1)".into(),
@@ -478,7 +538,7 @@ fn size(value: ReportedSize) -> String {
         ReportedSize::Bytes(n) => format!("{n} bytes"),
     }
 }
-fn pairs(lines: &mut Vec<String>, title: &str, values: &[NameValue]) {
+pub(super) fn pairs(lines: &mut Vec<String>, title: &str, values: &[NameValue]) {
     lines.push(title.into());
     if values.is_empty() {
         lines.push("  No captured fields".into());
@@ -491,7 +551,7 @@ fn pairs(lines: &mut Vec<String>, title: &str, values: &[NameValue]) {
         ));
     }
 }
-fn cookies(lines: &mut Vec<String>, title: &str, values: &[Cookie]) {
+pub(super) fn cookies(lines: &mut Vec<String>, title: &str, values: &[Cookie]) {
     lines.push(title.into());
     if values.is_empty() {
         lines.push("  No captured cookies".into());
@@ -539,6 +599,69 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     pairs(&mut lines, "Request headers", &request.headers);
     pairs(&mut lines, "Query fields", &request.query);
     cookies(&mut lines, "Request cookies", &request.cookies);
+    lines.extend(request_body_lines(request));
+    lines.extend([
+        String::new(),
+        "RESPONSE · exporter-reported".into(),
+        format!("Status: {}", status(request)),
+        format!(
+            "HTTP version: {}",
+            reported_label(&request.response_version)
+        ),
+        format!("Header size: {}", size(request.response_header_size)),
+        format!("Body size: {}", size(request.response_body_size)),
+        format!("Content size: {} bytes (reported)", request.content_size),
+        format!("MIME type: {}", reported_label(&request.mime_type)),
+    ]);
+    pairs(&mut lines, "Response headers", &request.response_headers);
+    cookies(&mut lines, "Response cookies", &request.response_cookies);
+    if let Some(evidence) = netscope_core::websocket_evidence(request) {
+        lines.extend([
+            String::new(),
+            "WEBSOCKET UPGRADE · recorded metadata".into(),
+            evidence.summary.into(),
+        ]);
+        lines.extend(evidence.notes.into_iter().map(str::to_owned));
+        lines.push("Header shape only · key/accept digest not verified".into());
+        lines.push("Extensions and browser acceptance not verified".into());
+        lines.push("HAR has no standard WebSocket frame history".into());
+        lines.push("Body size is not a frame count".into());
+        lines.push(String::new());
+    }
+    lines.extend(crate::sse_view::lines(request));
+    lines.extend(response_body_lines(request));
+    lines.extend([
+        String::new(),
+        "TIMINGS · exporter-reported".into(),
+        format!("Blocked: {}", timing(request.timings.blocked)),
+        format!("DNS: {}", timing(request.timings.dns)),
+        format!("Connect: {}", timing(request.timings.connect)),
+        format!("  SSL (within connect): {}", timing(request.timings.ssl)),
+        format!("Send: {} ms", request.timings.send),
+        format!("Waiting for response: {} ms", request.timings.wait),
+        format!("Receive: {} ms", request.timings.receive),
+    ]);
+    if let Some(ip) = request.server_ip {
+        lines.push(format!("Server IP (exporter-reported): {ip}"));
+    }
+    if let Some(connection) = &request.connection {
+        lines.push(format!(
+            "Connection (exporter-reported): {:?}",
+            terminal_text(connection)
+        ));
+    }
+    lines.push("WARNINGS".into());
+    if request.warnings.is_empty() {
+        lines.push("No import consistency warnings".into());
+    }
+    for warning in &request.warnings {
+        lines.push(terminal_text(warning));
+    }
+    lines.extend(protocol_lines(request));
+    lines
+}
+pub(super) fn request_body_lines(request: &Request) -> Vec<String> {
+    let mut lines = Vec::new();
     lines.push("Request body".into());
     if matches!(request.request_body, RequestBody::NotRecorded) {
         lines.push("Request body not recorded".into());
@@ -598,37 +721,11 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
             }
         }
     }
-    lines.extend([
-        String::new(),
-        "RESPONSE · exporter-reported".into(),
-        format!("Status: {}", status(request)),
-        format!(
-            "HTTP version: {}",
-            reported_label(&request.response_version)
-        ),
-        format!("Header size: {}", size(request.response_header_size)),
-        format!("Body size: {}", size(request.response_body_size)),
-        format!("Content size: {} bytes (reported)", request.content_size),
-        format!("MIME type: {}", reported_label(&request.mime_type)),
-    ]);
-    pairs(&mut lines, "Response headers", &request.response_headers);
-    cookies(&mut lines, "Response cookies", &request.response_cookies);
-    if let Some(evidence) = netscope_core::websocket_evidence(request) {
-        lines.extend([
-            String::new(),
-            "WEBSOCKET UPGRADE · recorded metadata".into(),
-            evidence.summary.into(),
-        ]);
-        lines.extend(evidence.notes.into_iter().map(str::to_owned));
-        lines.push("Header shape only · key/accept digest not verified".into());
-        lines.push("Extensions and browser acceptance not verified".into());
-        lines.push("HAR has no standard WebSocket frame history".into());
-        lines.push("Body size is not a frame count".into());
-        lines.push(String::new());
-    }
-    lines.extend(crate::sse_view::lines(request));
-    lines.push("Response body".into());
-    lines.push(match &request.body {
+    lines
+}
+
+pub(super) fn response_body_label(request: &Request) -> String {
+    match &request.body {
         Body::NotRecorded => "Response body not recorded".into(),
         Body::Text(s) if s.is_empty() => "Captured body is empty".into(),
         Body::Text(_) => "Exported text".into(),
@@ -640,7 +737,13 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
         Body::Undecoded { reason, .. } => {
             format!("Body could not be decoded: {}", terminal_text(reason))
         }
-    });
+    }
+}
+
+pub(super) fn response_body_lines(request: &Request) -> Vec<String> {
+    let mut lines = Vec::new();
+    lines.push("Response body".into());
+    lines.push(response_body_label(request));
     let preview = request.body.preview();
     if !matches!(request.body, Body::NotRecorded) {
         lines.push(preview.text);
@@ -648,36 +751,9 @@ pub fn inspector_lines(request: &Request, id: RequestId) -> Vec<String> {
     if preview.truncated {
         lines.push("Preview truncated (16 KiB text / 256 binary bytes)".into());
     }
-    lines.extend([
-        String::new(),
-        "TIMINGS · exporter-reported".into(),
-        format!("Blocked: {}", timing(request.timings.blocked)),
-        format!("DNS: {}", timing(request.timings.dns)),
-        format!("Connect: {}", timing(request.timings.connect)),
-        format!("  SSL (within connect): {}", timing(request.timings.ssl)),
-        format!("Send: {} ms", request.timings.send),
-        format!("Waiting for response: {} ms", request.timings.wait),
-        format!("Receive: {} ms", request.timings.receive),
-    ]);
-    if let Some(ip) = request.server_ip {
-        lines.push(format!("Server IP (exporter-reported): {ip}"));
-    }
-    if let Some(connection) = &request.connection {
-        lines.push(format!(
-            "Connection (exporter-reported): {:?}",
-            terminal_text(connection)
-        ));
-    }
-    lines.push("WARNINGS".into());
-    if request.warnings.is_empty() {
-        lines.push("No import consistency warnings".into());
-    }
-    for warning in &request.warnings {
-        lines.push(terminal_text(warning));
-    }
-    lines.extend(protocol_lines(request));
     lines
 }
+
 pub(super) fn wrap(text: &str, width: usize) -> Vec<String> {
     let mut lines = Vec::new();
     let mut line = String::new();
@@ -695,7 +771,31 @@ pub(super) fn wrap(text: &str, width: usize) -> Vec<String> {
     lines.push(line);
     lines
 }
-fn wrapped_inspector(
+pub(super) fn wrap_words(text: &str, width: usize) -> Vec<String> {
+    let mut remaining = text;
+    let mut lines = Vec::new();
+    while remaining.width() > width {
+        let mut end = 0;
+        let mut columns = 0;
+        for grapheme in remaining.graphemes(true) {
+            if columns + grapheme.width() > width && end > 0 {
+                break;
+            }
+            columns += grapheme.width();
+            end += grapheme.len();
+        }
+        if let Some(space) = remaining[..end].rfind(' ')
+            && !remaining[..space].trim().is_empty()
+        {
+            end = space + 1;
+        }
+        lines.push(remaining[..end].into());
+        remaining = &remaining[end..];
+    }
+    lines.push(remaining.into());
+    lines
+}
+pub(super) fn wrapped_inspector(
     session: &Session,
     request: &Request,
     id: RequestId,
@@ -825,7 +925,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                 },
                 Screen::Inspector(_) =>
                     if app.notice.is_empty() {
-                        "Captured data · Up/Down scroll".into()
+                        "Captured data · 1–6 sections · g journey · Tab changes focus".into()
                     } else {
                         app.notice.clone()
                     },
@@ -854,10 +954,10 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             }
             Screen::Hosts => "↑/↓ j/k move · Enter filter · Esc back · a all · ? help · q quit",
             Screen::Overview => {
-                "↑/↓ j/k move · Enter inspect · h hosts · / search · a all · ? help · q quit"
+                "↑/↓ move · Enter inspect · Tab focus · / search · h hosts · a all · ? · q quit"
             }
             Screen::Inspector(_) => {
-                "↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit"
+                "↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit"
             }
             Screen::Replay(_) => app
                 .replay
@@ -868,10 +968,13 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\nUp / k      previous row or inspector line\nDown / j    next row or inspector line\nPgUp/PgDn   move by visible rows\nHome/End    first/last row or inspector line\nEnter       inspect request / filter by selected host\nh           open Hosts / return from Hosts\n/           edit URL search (from requests)\na           clear host and URL filters (from lists)\nEsc         return to previous view / close help\nr           replay draft (from inspector)\n?           toggle help\nq           quit and restore terminal\n\nBars show reported starts and totals, not inferred connections.\nSSL is contained within connect.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("KEYS\n\n↑/↓ or j/k  move in the focused pane\nPgUp/PgDn   move by visible rows · Home/End first/last\nEnter / Tab focus details · Tab / Esc returns to list\n1 Summary · 2 Headers · 3 Body\n4 Timing · 5 Evidence · 6 All (complete report)\ng           journey explanation / return to section\nh           Hosts / return from Hosts\n/           URL search (from list)\na           clear host and URL filters (from lists)\nr           replay draft (from details)\nEsc         back / close help\n?           help · q / Ctrl+c quit and restore terminal\n\nCaptured values remain unchanged.\nJourney arrows illustrate direction, not recorded packets.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {
+        Screen::Overview if area.width >= 100 => {
+            crate::workspace_view::draw(frame, body, session, app)
+        }
         Screen::Replay(_) => {
             if let Some(editor) = app.replay.as_mut() {
                 editor.draw(frame, body, session);
@@ -1009,24 +1112,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                 Style::default().fg(Color::Gray),
             );
         }
-        Screen::Inspector(id) => {
-            if let Some(request) = session.request(id) {
-                let block = Block::default().borders(Borders::ALL).title(format!(
-                    " Request #{} · line {} ",
-                    id.0,
-                    app.inspector_offset + 1
-                ));
-                let inner = block.inner(body);
-                frame.render_widget(block, body);
-                let content = wrapped_inspector(session, request, id, inner.width)
-                    .into_iter()
-                    .skip(app.inspector_offset)
-                    .take(usize::from(inner.height))
-                    .map(Line::from)
-                    .collect::<Vec<_>>();
-                frame.render_widget(Paragraph::new(content), inner);
-            }
-        }
+        Screen::Inspector(_) => crate::workspace_view::draw(frame, body, session, app),
     }
 }
 

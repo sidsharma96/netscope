@@ -1,30 +1,30 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 8 requests                                                                          
-Captured data · Up/Down scroll                                                                      
-┌ Request #0 · line 42 ────────────────────────────────────────────────────────────────────────────┐
-│Receive: 1 ms                                                                                     │
-│WARNINGS                                                                                          │
-│No import consistency warnings                                                                    │
-│PROTOCOL NOTES · exporter labels                                                                  │
-│Request label: "HTTP/1.1" -> HTTP/1.1                                                             │
-│Response label: "HTTP/1.1" -> HTTP/1.1                                                            │
-│Labels agree on a recognized version; this is exporter evidence                                   │
-│General protocol behaviour, not observed messages:                                                │
-│HTTP/1.1 uses textual start lines and headers; bodies can contain binary data                     │
-│These HAR fields provide no packet/frame trace or stream IDs                                      │
-│No compression savings or connection reuse are established                                        │
-│REDIRECT EVIDENCE                                                                                 │
-│Not analyzed: only statuses 301, 302, 303, 307, 308                                               │
-│RETRY EVIDENCE                                                                                    │
-│Recorded source: GET · status 503                                                                 │
-│Rule: same URL/method and exact captured headers, query fields, cookies                           │
-│Both report body size 0 with no captured request body                                             │
-│Later start, 0..30 s after reported end (start + total duration)                                  │
-│Retry-After is not interpreted; longer delays may be missed                                       │
-│Ambiguous: multiple possible retries; no request chosen                                           │
-│Polling, a refresh, or another tab can produce the same evidence                                  │
-│Candidate #1: GET 2026-10-09T12:00:00.020Z                                                        │
-│Candidate #2: GET 2026-10-09T12:00:00.030Z                                                        │
-│Esc returns to the list; candidate numbers are source IDs                                         │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    
+Captured data · 1–6 sections · g journey · Tab changes focus                                        
+┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Verb   Code   Path              ││#0 GET · 503                                              │
+│                                      ││URL: https://example.test/books                           │
+│> 0    GET    503  /books             ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
+│  1    GET    200  /books             ││contain binary data                                       │
+│  2    GET    503  /books             ││These HAR fields provide no packet/frame trace or stream I│
+│  3    HEAD   429  /availability      ││Ds                                                        │
+│  4    HEAD   503  /availability      ││No compression savings or connection reuse are established│
+│  5    POST   503  /submit            ││REDIRECT EVIDENCE                                         │
+│  6    GET    none /unknown           ││Not analyzed: only statuses 301, 302, 303, 307, 308       │
+│  7    GET    502  /alone             ││RETRY EVIDENCE                                            │
+│                                      ││Recorded source: GET · status 503                         │
+│                                      ││Rule: same URL/method and exact captured headers, query fi│
+│                                      ││elds, cookies                                             │
+│                                      ││Both report body size 0 with no captured request body     │
+│                                      ││Later start, 0..30 s after reported end (start + total dur│
+│                                      ││ation)                                                    │
+│                                      ││Retry-After is not interpreted; longer delays may be misse│
+│                                      ││d                                                         │
+│                                      ││Ambiguous: multiple possible retries; no request chosen   │
+│                                      ││Polling, a refresh, or another tab can produce the same ev│
+│                                      ││idence                                                    │
+│                                      ││Candidate #1: GET 2026-10-09T12:00:00.020Z                │
+│                                      ││Candidate #2: GET 2026-10-09T12:00:00.030Z                │
+│Row 1 / 8                             ││Esc returns to the list; candidate numbers are source IDs │
+└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

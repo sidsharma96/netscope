@@ -1,30 +1,30 @@
 NETSCOPE / SENDING                                                                                  
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-┌ Sending · Esc cancels ───────────────────────────────────────────────────────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body                                                              │
-│Only Enter or s from Review sends a request                                                       │
-│Destination: https://example.test/api/books                                                       │
-│Sending a new request · Esc cancels                                                               │
-│10 seconds total · 2 MiB body limit · no redirects or retries                                     │
-│Cancellation stops local I/O; the server may already have acted.                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+  Edit    Review  [ Send ]  Result                                                                  
+                                                                                                    
+┌ Request · separate from capture ──────────┐┌ Sending · Esc cancels ──────────────────────────────┐
+│GET https://example.test/api/books         ││Source #0 · GET · HTTP/1.1 · no body                 │
+│0 request body bytes · HTTP/1.1            ││Only Enter or s from Review sends a request          │
+│                                           ││Destination: https://example.test/api/books          │
+│Capture unchanged                          ││Sending a new request · Esc cancels                  │
+│A replay result belongs to this send, not  ││10 seconds total · 2 MiB body limit · no redirects   │
+│the imported capture.                      ││or retries                                           │
+│Esc returns to editing; editing requires a ││Cancellation stops local I/O; the server may already │
+│fresh review.                              ││have acted.                                          │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘
 Esc cancel · q / Ctrl+c quit and cancel                                                             

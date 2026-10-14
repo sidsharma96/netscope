@@ -2,13 +2,163 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use netscope_core::{Body, RequestId, Session};
 use netscope_import::{Limits, import_bytes};
-use netscope_tui::{Action, App, Screen, draw, inspector_lines, terminal::key_action};
+use netscope_tui::{
+    Action, App, InspectorTab, Screen, draw, inspector_lines, terminal::key_action,
+};
 use ratatui::{Terminal, backend::TestBackend, style::Color};
 fn session() -> Result<Session, Box<dyn std::error::Error>> {
     Ok(import_bytes(
         include_bytes!("../../../tests/fixtures/har/single-request.har"),
         Limits::default(),
     )?)
+}
+
+#[test]
+fn workspace_focus_sections_and_resize_preserve_capture_identity()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/multi-host.har"),
+        Limits::default(),
+    )?;
+    let original = session.requests().to_vec();
+    let mut app = App::new(&session);
+    app.apply(Action::Down, &session);
+    let position = (app.selected, app.overview_offset);
+    let id = app.request_order(&session)[1];
+    let preview = render(&session, &mut app, 120, 30)?;
+    assert!(preview.contains("Preview · Summary"));
+    press(&mut app, &session, KeyCode::Tab);
+    assert_eq!(app.screen, Screen::Inspector(id));
+    press(&mut app, &session, KeyCode::Char('2'));
+    assert_eq!(app.inspector_tab, InspectorTab::Headers);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Request headers"));
+    let narrow = render(&session, &mut app, 80, 24)?;
+    assert!(narrow.contains("Inspector · Headers"));
+    assert!(!narrow.contains("Requests · focus"));
+    press(&mut app, &session, KeyCode::Tab);
+    assert_eq!(app.screen, Screen::Overview);
+    assert_eq!((app.selected, app.overview_offset), position);
+    assert!(render(&session, &mut app, 120, 30)?.contains("Preview · Headers"));
+    assert_eq!(session.requests(), original);
+    Ok(())
+}
+
+#[test]
+fn journey_keeps_missing_values_and_explanations_separate_from_observed_messages()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let original = session.requests()[0].clone();
+    let mut app = App::new(&session);
+    app.apply(Action::Section(InspectorTab::Body), &session);
+    press(&mut app, &session, KeyCode::Char('g'));
+    assert!(app.journey);
+    let top = render(&session, &mut app, 100, 30)?;
+    for label in [
+        "REQUEST JOURNEY",
+        "Illustrative arrows",
+        "DNS lookup: Unavailable (-1)",
+        "TLS within connect: 20 ms",
+        "HAR does not provide certificate",
+    ] {
+        assert!(top.contains(label), "{label}\n{top}");
+    }
+    press(&mut app, &session, KeyCode::End);
+    let bottom = render(&session, &mut app, 100, 30)?;
+    assert!(bottom.contains("Network travel contributes"));
+    assert!(bottom.contains("does not prove"));
+    press(&mut app, &session, KeyCode::Esc);
+    assert!(!app.journey);
+    assert_eq!(app.inspector_tab, InspectorTab::Body);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Response body"));
+    assert_eq!(session.requests()[0], original);
+    Ok(())
+}
+
+#[test]
+fn workspace_shortcuts_remain_ordinary_text_inside_editors()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = App::new(&session);
+    search(&mut app, &session, "g123456");
+    assert!(!app.journey);
+    assert_eq!(app.inspector_tab, InspectorTab::Summary);
+    app.apply(Action::AllRequests, &session);
+    app.apply(Action::Open, &session);
+    app.apply(Action::Replay, &session);
+    for code in [KeyCode::Char('m'), KeyCode::Char('b')] {
+        press(&mut app, &session, code);
+    }
+    for c in "g123456".chars() {
+        press(&mut app, &session, KeyCode::Char(c));
+    }
+    press(&mut app, &session, KeyCode::Tab);
+    press(&mut app, &session, KeyCode::Enter);
+    let editor = app.replay.as_mut().ok_or("editor")?;
+    assert_eq!(editor.draft().body(), "g123456\t");
+    assert!(editor.take_send().is_none());
+    Ok(())
+}
+
+#[test]
+fn workbench_render_and_resize_never_queue_send_or_save() -> Result<(), Box<dyn std::error::Error>>
+{
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    for (width, height) in [(120, 30), (80, 24), (100, 30)] {
+        let text = render(&session, &mut app, width, height)?;
+        assert!(text.contains("[ Review ]"));
+        assert!(text.contains("Enter / s send"));
+        assert_eq!(
+            text.contains("Request · separate from capture"),
+            width >= 100
+        );
+        let editor = app.replay.as_mut().ok_or("editor")?;
+        assert!(editor.take_send().is_none());
+        assert!(editor.take_save().is_none());
+    }
+    press(&mut app, &session, KeyCode::Esc);
+    assert!(render(&session, &mut app, 100, 30)?.contains("[ Edit ]"));
+    assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+    Ok(())
+}
+
+#[test]
+fn workspace_fixed_buffers_cover_sections_and_journey_at_three_widths()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for width in [80, 100, 120] {
+        let height = if width == 80 { 24 } else { 30 };
+        for (name, action) in [
+            ("headers", Action::Section(InspectorTab::Headers)),
+            ("body", Action::Section(InspectorTab::Body)),
+            ("journey", Action::Journey),
+        ] {
+            let mut app = App::new(&session);
+            app.apply(Action::Open, &session);
+            app.apply(action, &session);
+            let actual = render(&session, &mut app, width, height)?;
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+                "../../tests/fixtures/terminal/{name}-{width}x{height}.txt"
+            ));
+            assert_eq!(
+                actual,
+                std::fs::read_to_string(path)?.trim_end_matches('\n')
+            );
+        }
+    }
+    for width in [100, 120] {
+        let mut app = App::new(&session);
+        app.apply(Action::Open, &session);
+        let actual = render(&session, &mut app, width, 30)?;
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../tests/fixtures/terminal/inspector-{width}x30.txt"
+        ));
+        assert_eq!(
+            actual,
+            std::fs::read_to_string(path)?.trim_end_matches('\n')
+        );
+    }
+    Ok(())
 }
 fn render(
     session: &Session,
@@ -41,6 +191,7 @@ fn navigation_retains_overview_selection_and_scroll() -> Result<(), Box<dyn std:
     let saved = (app.selected, app.overview_offset);
     assert_eq!(saved, (Some(30), 16));
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     assert_eq!(app.screen, Screen::Inspector(RequestId(30)));
     for _ in 0..10 {
         app.apply(Action::Down, &session);
@@ -60,6 +211,7 @@ fn navigation_retains_overview_selection_and_scroll() -> Result<(), Box<dyn std:
     assert_eq!(app.screen, Screen::Overview);
     assert_eq!((app.selected, app.overview_offset), saved);
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     assert_eq!(app.inspector_offset, 0);
     app.apply(Action::Quit, &session);
     assert!(app.quit);
@@ -92,23 +244,33 @@ fn fixed_overviews_keep_labels_selection_and_bars() -> Result<(), Box<dyn std::e
             "synthetic.har",
             "1 requests",
             "Reported total",
-            "Timeline",
             "> 0",
             "GET",
-            "example.test/api/books",
             "200",
-            "45.00 ms",
-            "━",
             "Enter inspect",
             "q quit",
         ] {
             assert!(text.contains(expected), "Missing {expected}\n{text}");
         }
+        if width == 80 {
+            assert!(text.contains("Timeline"));
+            assert!(text.contains("example.test/api/books"));
+            assert!(text.contains("45.00 ms"));
+            assert!(text.contains("━"));
+        } else {
+            assert!(text.contains("Preview · Summary"));
+            assert!(text.contains("https://example.test/api/books"));
+            assert!(text.contains("Reported total: 45 ms"));
+        }
         let mut terminal = Terminal::new(TestBackend::new(width, height))?;
         terminal.draw(|f| draw(f, &session, &mut app, "synthetic.har"))?;
         assert_eq!(
             terminal.backend().buffer()[(1, 6)].bg,
-            Color::Rgb(128, 225, 178)
+            if width == 80 {
+                Color::Rgb(128, 225, 178)
+            } else {
+                Color::Rgb(32, 65, 54)
+            }
         );
     }
     Ok(())
@@ -119,6 +281,7 @@ fn inspector_scrolls_to_every_section_and_preserves_duplicate_headers()
     let session = session()?;
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     let top = render(&session, &mut app, 80, 24)?;
     assert!(top.contains("INSPECTOR"));
     assert!(top.contains("URL: https://example.test/api/books"));
@@ -196,6 +359,7 @@ fn unicode_and_hostile_capture_text_wrap_without_controls() -> Result<(), Box<dy
     let session = Session::new(vec![request]);
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     let mut rendered = String::new();
     for _ in 0..30 {
         rendered.push_str(&render(&session, &mut app, 80, 24)?);
@@ -430,7 +594,11 @@ fn host_buffers_and_filter_labels_match_reviewed_fixtures() -> Result<(), Box<dy
         terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
         assert_eq!(
             terminal.backend().buffer()[(1, 6)].bg,
-            Color::Rgb(128, 225, 178)
+            if width == 80 || !filtered {
+                Color::Rgb(128, 225, 178)
+            } else {
+                Color::Rgb(32, 65, 54)
+            }
         );
     }
     Ok(())
@@ -487,6 +655,7 @@ fn redirect_evidence_is_visible_after_scrolling_and_preserves_selection()
         let height = if width == 80 { 24 } else { 30 };
         app.resize(width, height, &session);
         app.apply(Action::Open, &session);
+        app.apply(Action::Section(InspectorTab::All), &session);
         for _ in 0..1000 {
             app.apply(Action::Down, &session);
         }
@@ -542,6 +711,7 @@ fn retry_evidence_shows_ambiguity_and_unknowns_without_losing_selection()
         let mut app = App::new(&session);
         app.resize(width, height, &session);
         app.apply(Action::Open, &session);
+        app.apply(Action::Section(InspectorTab::All), &session);
         for _ in 0..1000 {
             app.apply(Action::Down, &session);
         }
@@ -624,6 +794,7 @@ fn protocol_notes_are_reachable_in_fixed_terminal_buffers() -> Result<(), Box<dy
         let mut app = App::new(&session);
         app.resize(width, height, &session);
         app.apply(Action::Open, &session);
+        app.apply(Action::Section(InspectorTab::All), &session);
         for _ in 0..1000 {
             app.apply(Action::Down, &session);
         }
@@ -704,7 +875,7 @@ fn replay_review_is_masked_and_invalidated_by_editing() -> Result<(), Box<dyn st
     let review = render(&session, &mut app, 100, 30)?;
     assert!(review.contains("Effective destination:"));
     assert!(review.contains("[hidden; v reveals all values]"));
-    assert!(review.contains("Enter or s sends"));
+    assert!(review.contains("Enter / s send"));
     assert!(!app.quit);
     assert_eq!(app.screen, Screen::Replay(RequestId(0)));
     press(&mut app, &session, KeyCode::Char('v'));
@@ -992,7 +1163,7 @@ fn cancel_waits_for_cleanup_and_preserves_a_separate_result()
         .as_mut()
         .ok_or("editor")?
         .complete(id, new_replay_result(netscope_net::Outcome::Cancelled));
-    assert!(render(&session, &mut app, 100, 30)?.contains("o opens its retained result"));
+    assert!(render(&session, &mut app, 100, 30)?.contains("o opens the retained result"));
     press(&mut app, &session, KeyCode::Char('o'));
     assert!(render(&session, &mut app, 100, 30)?.contains("Outcome: Cancelled"));
     assert_eq!(session.requests()[0].url, "https://example.test/api/books");
@@ -1739,6 +1910,7 @@ fn large_lists_page_and_jump_without_losing_filter_return_position()
         assert!(render(&session, &mut app, width, height)?.contains("9999"));
         let position = (app.selected, app.overview_offset);
         press(&mut app, &session, KeyCode::Enter);
+        app.apply(Action::Section(InspectorTab::All), &session);
         assert_eq!(app.screen, Screen::Inspector(RequestId(9999)));
         press(&mut app, &session, KeyCode::PageDown);
         assert!(app.inspector_offset > 0);
@@ -2092,6 +2264,7 @@ fn retained_sse_fixture_derives_events_without_changing_recorded_bodies()
     assert!(lines.contains("Response body\nExported text"));
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     for (width, height) in [(80, 24), (100, 30)] {
         app.inspector_offset = 0;
         let mut found = false;
@@ -2182,11 +2355,12 @@ fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::
     for (width, height) in [(80, 24), (100, 30)] {
         let mut app = App::new(&session);
         app.apply(Action::Open, &session);
+        app.apply(Action::Section(InspectorTab::All), &session);
         let mut output = render(&session, &mut app, width, height)?;
         for _ in 0..100 {
             if output
                 .lines()
-                .nth(4)
+                .nth(7)
                 .is_some_and(|line| line.contains("SSE EVENTS"))
             {
                 break;
@@ -2197,7 +2371,7 @@ fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::
         assert!(
             output
                 .lines()
-                .nth(4)
+                .nth(7)
                 .is_some_and(|line| line.contains("SSE EVENTS"))
         );
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
@@ -2218,6 +2392,7 @@ fn native_upgrade_metadata_is_reachable_without_invented_frames()
     let mut app = App::new(&session);
     app.selected = Some(2);
     app.apply(Action::Open, &session);
+    app.apply(Action::Section(InspectorTab::All), &session);
     let mut all = String::new();
     for _ in 0..160 {
         all.push_str(&render(&session, &mut app, 80, 24)?);

@@ -1,0 +1,24 @@
+NETSCOPE / INSPECTOR                                                            
+synthetic.har · 1 requests                                                      
+Captured data · 1–6 sections · g journey · Tab changes focus                    
+┌ Journey · g or Esc returns ──────────────────────────────────────────────────┐
+│#0 GET · 200 OK                                                               │
+│URL: https://example.test/api/books                                           │
+│                                                                              │
+│REQUEST JOURNEY · reported values + explanation                               │
+│Illustrative arrows show HTTP direction, not recorded packets.                │
+│                                                                              │
+│Browser -- GET --> example.test                                               │
+│Browser <-- 200 OK -- server                                                  │
+│                                                                              │
+│Blocked: Not recorded · waiting before the exchange                           │
+│                                                                              │
+│DNS lookup: Unavailable (-1)                                                  │
+│Find an address for a host name. HAR does not retain the DNS exchange.        │
+│                                                                              │
+│Connection: 30 ms                                                             │
+│Prepare a connection. TLS time, when reported, is included here.              │
+│                                                                              │
+│TLS within connect: 20 ms                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

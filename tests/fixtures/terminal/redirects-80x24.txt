@@ -1,10 +1,10 @@
 NETSCOPE / INSPECTOR                                                            
 synthetic.har · 6 requests                                                      
-Captured data · Up/Down scroll                                                  
-┌ Request #0 · line 44 ────────────────────────────────────────────────────────┐
-│No import consistency warnings                                                │
-│PROTOCOL NOTES · exporter labels                                              │
-│Request label: "HTTP/1.1" -> HTTP/1.1                                         │
+Captured data · 1–6 sections · g journey · Tab changes focus                    
+┌ Inspector · All ─────────────────────────────────────────────────────────────┐
+│#0 GET · 302 Found                                                            │
+│URL: https://example.test/old                                                 │
+│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
 │Response label: "HTTP/1.1" -> HTTP/1.1                                        │
 │Labels agree on a recognized version; this is exporter evidence               │
 │General protocol behaviour, not observed messages:                            │
@@ -21,4 +21,4 @@ Captured data · Up/Down scroll
 │Esc returns to the list; candidate numbers are source IDs                     │
 │From the list, a clears a host filter to show other hosts                     │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

@@ -63,6 +63,14 @@ pub fn key_action(key: KeyEvent) -> Option<Action> {
         return None;
     }
     match key.code {
+        KeyCode::Tab => Some(Action::Focus),
+        KeyCode::Char('g') => Some(Action::Journey),
+        KeyCode::Char('1') => Some(Action::Section(crate::InspectorTab::Summary)),
+        KeyCode::Char('2') => Some(Action::Section(crate::InspectorTab::Headers)),
+        KeyCode::Char('3') => Some(Action::Section(crate::InspectorTab::Body)),
+        KeyCode::Char('4') => Some(Action::Section(crate::InspectorTab::Timing)),
+        KeyCode::Char('5') => Some(Action::Section(crate::InspectorTab::Evidence)),
+        KeyCode::Char('6') => Some(Action::Section(crate::InspectorTab::All)),
         KeyCode::Up | KeyCode::Char('k') => Some(Action::Up),
         KeyCode::Down | KeyCode::Char('j') => Some(Action::Down),
         KeyCode::PageUp => Some(Action::PageUp),

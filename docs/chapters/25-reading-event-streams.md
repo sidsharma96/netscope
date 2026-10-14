@@ -82,7 +82,7 @@ assert_eq!(stream.events[0].data, "first\nsecond");
 
 ## Try separating content from time
 
-Open the supplied SSE example described in the [development guide](../DEVELOPMENT.md#inspect-retained-sse-text). Inspect its first request and scroll to the derived events. Explain why two data lines become one event and why the final block remains unfinished. Then inspect the response whose text was not recorded. Explain why unavailable text must not be reported as zero events.
+Open the supplied SSE example described in the [development guide](../DEVELOPMENT.md#inspect-retained-sse-text). Inspect its first request, choose Body with 3, and scroll to the derived events. Explain why two data lines become one event and why the final block remains unfinished. Then inspect the response whose text was not recorded. Explain why unavailable text must not be reported as zero events.
 
 Could the request's total duration tell you the pause between those two events? It cannot: one duration covers the request, while the body preserves content order. A [new live observation](27-observing-live-events.md) can measure when Netscope sees each complete boundary; it cannot recover the original browser's missing times.
 

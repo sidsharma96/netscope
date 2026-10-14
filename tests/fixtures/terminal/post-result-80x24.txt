@@ -1,7 +1,9 @@
 NETSCOPE / NEW RESULT                                                           
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-┌ New result · ↑/↓ scroll · v reveals · Esc edits ─────────────────────────────┐
+  Edit    Review    Send  [ Result ]                                            
+                                                                                
+┌ New result · scroll for details ─────────────────────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes                           │
 │Only Enter or s from Review sends a request                                   │
 │New request: https://example.test/api/books                                   │
@@ -12,8 +14,6 @@ Capture unchanged · only Review → Send starts network traffic
 │  content-type: [hidden; v reveals all values]                                │
 │Body preview (content encoding is not decoded):                               │
 │hello                                                                         │
-│                                                                              │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │

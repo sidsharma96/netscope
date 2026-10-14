@@ -14,23 +14,25 @@ cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-reques
 
 Cargo is Rust's build tool. This command builds and starts the terminal application, then passes it the sample file. The [development guide](../DEVELOPMENT.md) covers toolchain and dependency setup if this is your first run on another machine.
 
-In an interactive terminal, you should see one request for `https://example.test/api/books`, status 200, and a reported total of 45 ms. A marker identifies the selected row. The bar shows the recorded start and total; it does not identify a particular network connection.
+In an interactive terminal, you should see one request for `https://example.test/api/books`, status 200, and a reported total of 45 ms. A marker and filled row identify the selection. On a window at least 100 columns wide, its summary appears beside the list. At narrower supported widths, Enter opens the details on their own screen. The narrow list's bar shows recorded start and total; it does not identify a particular network connection.
 
 If you redirect the output to a file or pipe, the program prints a text summary instead of opening the interactive screen.
 
 ## Read one request
 
-Press Enter to open the selected request. The inspector starts with its method, URL, timestamp, and reported total. Below that, it shows request fields, response fields, body previews, timings, and warnings.
+Press Enter to focus the selected request's inspector. Summary answers the first questions: what was requested, which status was recorded, and what kind of response representation remains? The selected request stays visible in the list when the window has room for both panes.
 
-Find the two `X-Example` headers. Both remain present and in their original order. This is a useful check that the display has not quietly replaced repeated fields with one value.
+Press 2 for Headers and find the two `X-Example` fields. Both remain present and in their original order. This is a useful check that the display has not quietly replaced repeated fields with one value.
 
-Use Down or j to scroll. Up or k moves back. Find the response body `[]`, the JSON representation of an empty list. This body contains text; it is different from a captured empty string and from a body that was not recorded.
+Press 3 for Body. Find `[]`, the JSON representation of an empty list. This body contains text; it is different from a captured empty string and from a body that was not recorded. Down or j scrolls the focused details; Up or k moves back.
 
-In the timing section, connecting takes 30 ms and SSL takes 20 ms within that interval. The [capture chapter](02-reading-a-capture.md) explains why those numbers are not added as separate stages.
+Press 4 for Timing. Connecting takes 30 ms and SSL takes 20 ms within that interval. The [capture chapter](02-reading-a-capture.md) explains why those numbers are not added as separate stages. Press g for a journey that explains each reported stage. Its arrows illustrate HTTP direction; they are not recovered handshake messages. Press g or Esc to return to the section.
+
+Evidence, under 5, gathers warnings and qualified interpretations. All, under 6, keeps the complete report available when you need fields outside the shorter sections. Choosing a section changes your place in the interface, not the captured request.
 
 ## Return to where you were
 
-Press Esc to return to the overview. The same row remains selected. Press ? to see the keys, and press Esc again to close help. Press q from either screen to quit and restore the terminal.
+Press Esc to return to list navigation. The same row remains selected. Tab also switches between the list and details; the bright border identifies which pane receives movement keys. Press ? to see the keys, and press Esc again to close help. Press q from either screen to quit and restore the terminal.
 
 To try selection between several requests, repeat the command with `tests/fixtures/har/stable-order.har`. The displayed source IDs are 1, 2, and 0 because the list is chronological. IDs 1 and 2 name the same start instant and keep their source order. Move with the arrow keys, open a request, then return.
 

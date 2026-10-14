@@ -1,10 +1,10 @@
 NETSCOPE / INSPECTOR                                                            
 synthetic.har · 6 requests                                                      
-Captured data · Up/Down scroll                                                  
-┌ Request #0 · line 37 ────────────────────────────────────────────────────────┐
-│DNS: Unavailable (-1)                                                         │
-│Connect: 30 ms                                                                │
-│  SSL (within connect): 20 ms                                                 │
+Captured data · 1–6 sections · g journey · Tab changes focus                    
+┌ Inspector · All ─────────────────────────────────────────────────────────────┐
+│#0 GET · 200 OK                                                               │
+│URL: https://example.test/api/books                                           │
+│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
 │Send: 0 ms                                                                    │
 │Waiting for response: 10 ms                                                   │
 │Receive: 5 ms                                                                 │
@@ -21,4 +21,4 @@ Captured data · Up/Down scroll
 │REDIRECT EVIDENCE                                                             │
 │Not analyzed: only statuses 301, 302, 303, 307, 308                           │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

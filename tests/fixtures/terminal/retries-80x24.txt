@@ -1,10 +1,10 @@
 NETSCOPE / INSPECTOR                                                            
 synthetic.har · 8 requests                                                      
-Captured data · Up/Down scroll                                                  
-┌ Request #0 · line 48 ────────────────────────────────────────────────────────┐
-│Labels agree on a recognized version; this is exporter evidence               │
-│General protocol behaviour, not observed messages:                            │
-│HTTP/1.1 uses textual start lines and headers; bodies can contain binary data │
+Captured data · 1–6 sections · g journey · Tab changes focus                    
+┌ Inspector · All ─────────────────────────────────────────────────────────────┐
+│#0 GET · 503                                                                  │
+│URL: https://example.test/books                                               │
+│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
 │These HAR fields provide no packet/frame trace or stream IDs                  │
 │No compression savings or connection reuse are established                    │
 │REDIRECT EVIDENCE                                                             │
@@ -21,4 +21,4 @@ Captured data · Up/Down scroll
 │Candidate #2: GET 2026-10-09T12:00:00.030Z                                    │
 │Esc returns to the list; candidate numbers are source IDs                     │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

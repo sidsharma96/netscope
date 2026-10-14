@@ -273,19 +273,21 @@ def check_captured_sse():
                 output.extend(os.read(master, 65536))
             visible = screen_text(output)
             if stage == 0 and 'NETSCOPE' in visible:
-                os.write(master, b'\r\x1b[6~')
+                os.write(master, b'\r3')
                 stage = 1
-            if stage == 1 and all(marker in visible for marker in (
-                'SSE EVENTS', 'first line\\ncafé', 'Unfinished trailing block',
-                'instruction, not an observed retry')):
-                assert 'first line\\ncafé' in visible, visible
-                assert 'Unfinished trailing block' in visible, visible
-                assert 'instruction, not an observed retry' in visible, visible
-                os.write(master, b'q')
+            if stage == 1 and 'SSE EVENTS' in visible and 'first line\\ncafé' in visible:
+                os.write(master, b'jjjjjj')
                 stage = 2
+            # Join the right pane's wrapped rows; metadata now has fewer columns.
+            detail = ''.join(line[41:99].rstrip() for line in visible.splitlines()[7:28])
+            if stage == 2 and all(marker in detail for marker in (
+                'first line\\ncafé', 'Unfinished trailing block',
+                'instruction, not an observed retry')):
+                os.write(master, b'q')
+                stage = 3
             if process.poll() is not None:
                 break
-        assert stage == 2, 'captured SSE inspection was not reached'
+        assert stage == 3, 'captured SSE inspection was not reached'
         assert process.wait(timeout=3) == 0
         while select.select([master], [], [], 0)[0]:
             output.extend(os.read(master, 65536))

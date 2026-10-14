@@ -1,30 +1,30 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 6 requests                                                                          
-Captured data · Up/Down scroll                                                                      
-┌ Request #0 · line 31 ────────────────────────────────────────────────────────────────────────────┐
-│Response body                                                                                     │
-│Exported text                                                                                     │
-│[]                                                                                                │
-│                                                                                                  │
-│TIMINGS · exporter-reported                                                                       │
-│Blocked: Not recorded                                                                             │
-│DNS: Unavailable (-1)                                                                             │
-│Connect: 30 ms                                                                                    │
-│  SSL (within connect): 20 ms                                                                     │
-│Send: 0 ms                                                                                        │
-│Waiting for response: 10 ms                                                                       │
-│Receive: 5 ms                                                                                     │
-│WARNINGS                                                                                          │
-│No import consistency warnings                                                                    │
-│PROTOCOL NOTES · exporter labels                                                                  │
-│Request label: "HTTP/2" -> HTTP/2                                                                 │
-│Response label: "h2" -> HTTP/2                                                                    │
-│Labels agree on a recognized version; this is exporter evidence                                   │
-│General protocol behaviour, not observed messages:                                                │
-│HTTP/2 can interleave frames from different streams on one TCP connection                         │
-│These HAR fields provide no packet/frame trace or stream IDs                                      │
-│No compression savings or connection reuse are established                                        │
-│REDIRECT EVIDENCE                                                                                 │
-│Not analyzed: only statuses 301, 302, 303, 307, 308                                               │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    
+Captured data · 1–6 sections · g journey · Tab changes focus                                        
+┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Verb   Code   Path              ││#0 GET · 200 OK                                           │
+│                                      ││URL: https://example.test/api/books                       │
+│> 0    GET    200  /api/books         ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
+│  1    GET    200  /api/books         ││DNS: Unavailable (-1)                                     │
+│  2    GET    200  /api/books         ││Connect: 30 ms                                            │
+│  3    GET    200  /api/books         ││  SSL (within connect): 20 ms                             │
+│  4    GET    200  /api/books         ││Send: 0 ms                                                │
+│  5    GET    200  /api/books         ││Waiting for response: 10 ms                               │
+│                                      ││Receive: 5 ms                                             │
+│                                      ││WARNINGS                                                  │
+│                                      ││No import consistency warnings                            │
+│                                      ││PROTOCOL NOTES · exporter labels                          │
+│                                      ││Request label: "HTTP/2" -> HTTP/2                         │
+│                                      ││Response label: "h2" -> HTTP/2                            │
+│                                      ││Labels agree on a recognized version; this is exporter evi│
+│                                      ││dence                                                     │
+│                                      ││General protocol behaviour, not observed messages:        │
+│                                      ││HTTP/2 can interleave frames from different streams on one│
+│                                      ││ TCP connection                                           │
+│                                      ││These HAR fields provide no packet/frame trace or stream I│
+│                                      ││Ds                                                        │
+│                                      ││No compression savings or connection reuse are established│
+│                                      ││REDIRECT EVIDENCE                                         │
+│Row 1 / 6                             ││Not analyzed: only statuses 301, 302, 303, 307, 308       │
+└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

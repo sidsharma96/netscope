@@ -1,7 +1,9 @@
 NETSCOPE / REPLAY DRAFT                                                         
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-┌ Draft · w save file · Enter chooses · o last result · Esc returns ───────────┐
+[ Edit ]  Review    Send    Result                                              
+                                                                                
+┌ Draft · Enter chooses ───────────────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
 │Only Enter or s from Review sends a request                                   │
 │m: method GET · t: bodyless · b: edit body                                    │
@@ -18,7 +20,5 @@ Capture unchanged · only Review → Send starts network traffic
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
-│                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
-m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit       
+m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c qu

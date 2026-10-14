@@ -1,30 +1,30 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 6 requests                                                                          
-Captured data · Up/Down scroll                                                                      
-┌ Request #0 · line 38 ────────────────────────────────────────────────────────────────────────────┐
-│Connect: Not recorded                                                                             │
-│  SSL (within connect): Not recorded                                                              │
-│Send: 1 ms                                                                                        │
-│Waiting for response: 8 ms                                                                        │
-│Receive: 1 ms                                                                                     │
-│WARNINGS                                                                                          │
-│No import consistency warnings                                                                    │
-│PROTOCOL NOTES · exporter labels                                                                  │
-│Request label: "HTTP/1.1" -> HTTP/1.1                                                             │
-│Response label: "HTTP/1.1" -> HTTP/1.1                                                            │
-│Labels agree on a recognized version; this is exporter evidence                                   │
-│General protocol behaviour, not observed messages:                                                │
-│HTTP/1.1 uses textual start lines and headers; bodies can contain binary data                     │
-│These HAR fields provide no packet/frame trace or stream IDs                                      │
-│No compression savings or connection reuse are established                                        │
-│REDIRECT EVIDENCE                                                                                 │
-│Resolved Location (without fragment): https://example.test/new                                    │
-│Rule: same URL, compatible method, later start, 0..30 s after reported end                        │
-│Reported end = recorded start + total duration; early follow-ups may be missed                    │
-│Ambiguous: multiple candidates; no request chosen                                                 │
-│Candidate #1: GET 2026-10-09T12:00:00.020Z                                                        │
-│Candidate #2: GET 2026-10-09T12:00:00.030Z                                                        │
-│Esc returns to the list; candidate numbers are source IDs                                         │
-│From the list, a clears a host filter to show other hosts                                         │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    
+Captured data · 1–6 sections · g journey · Tab changes focus                                        
+┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Verb   Code   Path              ││#0 GET · 302 Found                                        │
+│                                      ││URL: https://example.test/old                             │
+│> 0    GET    302  /old               ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
+│  1    GET    200  /new               ││Response label: "HTTP/1.1" -> HTTP/1.1                    │
+│  2    GET    200  /new               ││Labels agree on a recognized version; this is exporter evi│
+│  3    GET    307  /unique            ││dence                                                     │
+│  4    GET    200  /final             ││General protocol behaviour, not observed messages:        │
+│  5    GET    302  /missing           ││HTTP/1.1 uses textual start lines and headers; bodies can │
+│                                      ││contain binary data                                       │
+│                                      ││These HAR fields provide no packet/frame trace or stream I│
+│                                      ││Ds                                                        │
+│                                      ││No compression savings or connection reuse are established│
+│                                      ││REDIRECT EVIDENCE                                         │
+│                                      ││Resolved Location (without fragment): https://example.test│
+│                                      ││/new                                                      │
+│                                      ││Rule: same URL, compatible method, later start, 0..30 s af│
+│                                      ││ter reported end                                          │
+│                                      ││Reported end = recorded start + total duration; early foll│
+│                                      ││ow-ups may be missed                                      │
+│                                      ││Ambiguous: multiple candidates; no request chosen         │
+│                                      ││Candidate #1: GET 2026-10-09T12:00:00.020Z                │
+│                                      ││Candidate #2: GET 2026-10-09T12:00:00.030Z                │
+│                                      ││Esc returns to the list; candidate numbers are source IDs │
+│Row 1 / 6                             ││From the list, a clears a host filter to show other hosts │
+└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

@@ -30,7 +30,8 @@ Examples:
   netscope -- ./captures/session.har
 
 In a terminal: Enter inspects, / searches URLs, h shows hosts, a clears filters.
-Use r to prepare a replay, ? for keys, and q to quit.
+Tab switches list/detail focus; 1–6 choose sections; g explains the journey.
+Use r from details to prepare a replay, ? for keys, and q to quit.
 Drafts: m changes method, b edits body, w previews a saved file.
 Only Review followed by Send starts network traffic. Opening never sends.
 Redirected output prints a capture summary or saved-request name.

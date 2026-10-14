@@ -1,0 +1,30 @@
+NETSCOPE / INSPECTOR                                                                                                    
+synthetic.har · 1 requests                                                                                              
+Captured data · 1–6 sections · g journey · Tab changes focus                                                            
+┌ Requests · focus: Tab ───────────────────────┐┌ Inspector · Summary ─────────────────────────────────────────────────┐
+│ ID   Verb   Code   Path                      ││#0 GET · 200 OK                                                       │
+│                                              ││URL: https://example.test/api/books                                   │
+│> 0    GET    200  /api/books                 ││1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                  │
+│                                              ││Status: 200 OK                                                        │
+│                                              ││Reported total: 45 ms                                                 │
+│                                              ││Started: 2026-10-09T12:00:00Z                                         │
+│                                              ││Reported content: 2 bytes                                             │
+│                                              ││Content type: application/json                                        │
+│                                              ││                                                                      │
+│                                              ││Response representation                                               │
+│                                              ││Exported text                                                         │
+│                                              ││                                                                      │
+│                                              ││Capture boundaries                                                    │
+│                                              ││Body text may differ from transferred bytes.                          │
+│                                              ││Reported timing does not retain handshake messages.                   │
+│                                              ││Import warnings: 0 · see Evidence                                     │
+│                                              ││                                                                      │
+│                                              ││2 Headers · 3 Body · 4 Timing · 5 Evidence                            │
+│                                              ││6 All keeps the complete captured report available.                   │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│Row 1 / 1                                     ││                                                                      │
+└──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                                         

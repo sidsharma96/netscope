@@ -1,24 +1,24 @@
 NETSCOPE / INSPECTOR                                                            
 synthetic.har · 1 requests                                                      
-Captured data · Up/Down scroll                                                  
-┌ Request #0 · line 1 ─────────────────────────────────────────────────────────┐
-│Request #0 · GET · 200 OK                                                     │
+Captured data · 1–6 sections · g journey · Tab changes focus                    
+┌ Inspector · Summary ─────────────────────────────────────────────────────────┐
+│#0 GET · 200 OK                                                               │
 │URL: https://example.test/api/books                                           │
-│Started: 2026-10-09T12:00:00Z                                                 │
+│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
+│Status: 200 OK                                                                │
 │Reported total: 45 ms                                                         │
+│Started: 2026-10-09T12:00:00Z                                                 │
+│Reported content: 2 bytes                                                     │
+│Content type: application/json                                                │
 │                                                                              │
-│REQUEST · exporter-reported                                                   │
-│HTTP version: HTTP/1.1                                                        │
-│Header size: Unavailable (-1)                                                 │
-│Body size: 0 bytes                                                            │
-│Request headers                                                               │
-│  X-Example: one                                                              │
-│  X-Example: two                                                              │
-│Query fields                                                                  │
-│  No captured fields                                                          │
-│Request cookies                                                               │
-│  No captured cookies                                                         │
-│Request body                                                                  │
-│Request body not recorded                                                     │
+│Response representation                                                       │
+│Exported text                                                                 │
+│                                                                              │
+│Capture boundaries                                                            │
+│Body text may differ from transferred bytes.                                  │
+│Reported timing does not retain handshake messages.                           │
+│Import warnings: 0 · see Evidence                                             │
+│                                                                              │
+│2 Headers · 3 Body · 4 Timing · 5 Evidence                                    │
 └──────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

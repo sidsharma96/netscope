@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a default split request inspector on wide terminals, focused sections, an optional explanatory journey, and a replay workbench with a persistent operation strip. Keep one-pane navigation on smaller supported terminals and the complete captured report under All. Update the beginner walkthrough and lessons on focus, ownership, and review.
+
 - Inspect captured SSE text as ordered derived events, with persistent ID state, multiline data, retry instructions, unfinished tails, and explicit analysis limits. The original response remains available.
 
 - Inspect native WebSocket upgrade metadata, including ws/wss URLs, with explicit header-shape and missing-frame limits. Add frozen Chrome/Firefox SSE and WebSocket exports.

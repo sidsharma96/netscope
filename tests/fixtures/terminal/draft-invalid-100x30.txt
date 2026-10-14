@@ -1,30 +1,30 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-┌ Draft · w save file · Enter chooses · o last result · Esc returns ───────────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body                                                              │
-│Only Enter or s from Review sends a request                                                       │
-│URL changed; all header choices cleared; body cleared                                             │
-│m: method GET · t: bodyless · b: edit body                                                        │
-│Draft: Use an absolute HTTP(S) URL without whitespace, controls, or backslashes                   │
-│> Edit URL:                                                                                       │
-│  [ ] X-Example: [hidden; v reveals all values]                                                   │
-│  [ ] X-Example: [hidden; v reveals all values]                                                   │
-│  Add a header                                                                                    │
-│  Review request                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit                           
+[ Edit ]  Review    Send    Result                                                                  
+                                                                                                    
+┌ Draft · Enter chooses ────────────────────┐┌ Context / retained result ──────────────────────────┐
+│Source #0 · GET · HTTP/1.1 · no body       ││No request is sent while editing.                    │
+│Only Enter or s from Review sends a request││Review the destination, headers and body before Send.│
+│URL changed; all header choices cleared;   ││                                                     │
+│body cleared                               ││Changing the destination clears body and header      │
+│m: method GET · t: bodyless · b: edit body ││choices.                                             │
+│Draft: Use an absolute HTTP(S) URL without ││Enter saves a field; Esc discards an unfinished edit.│
+│whitespace, controls, or backslashes       ││Header values remain masked until v reveals them.    │
+│> Edit URL:                                ││                                                     │
+│  [ ] X-Example: [hidden; v reveals all    ││No retained result yet.                              │
+│values]                                    ││                                                     │
+│  [ ] X-Example: [hidden; v reveals all    ││                                                     │
+│values]                                    ││                                                     │
+│  Add a header                             ││                                                     │
+│  Review request                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+│                                           ││                                                     │
+└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘
+m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c quit                  

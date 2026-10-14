@@ -1,30 +1,30 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 4 requests                                                                          
-Captured data · Up/Down scroll                                                                      
-┌ Request #0 · line 32 ────────────────────────────────────────────────────────────────────────────┐
-│SSE EVENTS · derived from retained text                                                           │
-│Order only · event arrival times and actual browser delivery are not recorded                     │
-│2 complete events in examined text                                                                │
-│ID buffer starts empty here; earlier connection state is unknown                                  │
-│Event 1 · type: "added"                                                                           │
-│  ID buffer: "book-7"                                                                             │
-│  Data: "first line\ncafé"                                                                        │
-│Event 2 · type: "message"                                                                         │
-│  ID buffer: "book-7"                                                                             │
-│  Data: ""                                                                                        │
-│Examined comments: 1 · ignored fields/values: 0                                                   │
-│Last examined ID buffer: "book-7"                                                                 │
-│Last retry setting: "1500" ms · instruction, not an observed retry                                │
-│Unfinished trailing block · no event emitted from this block                                      │
-│  Retained tail: "event: pending\ndata: unfinished"                                               │
-│Blank-line boundaries do not establish that the capture is complete                               │
-│                                                                                                  │
-│Response body                                                                                     │
-│Exported text                                                                                     │
-│: capture example\r\nid: book-7\r\nevent: added\r\ndata: first line\r\ndata: café\r\nretry: 1500\r│
-│\n\r\ndata\n\nevent: pending\ndata: unfinished                                                    │
-│                                                                                                  │
-│TIMINGS · exporter-reported                                                                       │
-│Blocked: Not recorded                                                                             │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-↑/↓ j/k scroll · r replay · h hosts · Esc back · ? help · q quit                                    
+Captured data · 1–6 sections · g journey · Tab changes focus                                        
+┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Verb   Code   Path              ││#0 GET · 200 OK                                           │
+│                                      ││URL: https://example.test/stream/0                        │
+│> 0    GET    200  /stream/0          ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
+│  1    GET    200  /stream/1          ││SSE EVENTS · derived from retained text                   │
+│  2    GET    200  /stream/2          ││Order only · event arrival times and actual browser delive│
+│  3    GET    200  /stream/3          ││ry are not recorded                                       │
+│                                      ││2 complete events in examined text                        │
+│                                      ││ID buffer starts empty here; earlier connection state is u│
+│                                      ││nknown                                                    │
+│                                      ││Event 1 · type: "added"                                   │
+│                                      ││  ID buffer: "book-7"                                     │
+│                                      ││  Data: "first line\ncafé"                                │
+│                                      ││Event 2 · type: "message"                                 │
+│                                      ││  ID buffer: "book-7"                                     │
+│                                      ││  Data: ""                                                │
+│                                      ││Examined comments: 1 · ignored fields/values: 0           │
+│                                      ││Last examined ID buffer: "book-7"                         │
+│                                      ││Last retry setting: "1500" ms · instruction, not an observ│
+│                                      ││ed retry                                                  │
+│                                      ││Unfinished trailing block · no event emitted from this blo│
+│                                      ││ck                                                        │
+│                                      ││  Retained tail: "event: pending\ndata: unfinished"       │
+│                                      ││Blank-line boundaries do not establish that the capture is│
+│Row 1 / 4                             ││ complete                                                 │
+└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

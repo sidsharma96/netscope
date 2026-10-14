@@ -9,6 +9,7 @@ import struct
 import subprocess
 import termios
 import time
+from terminal_cells import screen_text
 
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path(os.environ.get('NETSCOPE_CHECK_BINARY', ROOT / 'target/debug/netscope'))
@@ -76,3 +77,58 @@ capture = str(ROOT / 'tests/fixtures/har/multi-host.har')
 check([str(BINARY), capture], 0, True)
 check([str(BINARY), capture], 0, True, small=True)
 check([str(ROOT / 'target/debug/examples/terminal_probe')], 1, False)
+
+
+def check_workspace(width, height):
+    """Wait for each real frame before routing the next navigation key."""
+    master, slave = pty.openpty()
+    process = None
+    try:
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', height, width, 0, 0))
+        before = termios.tcgetattr(slave)
+        process = subprocess.Popen([str(BINARY), str(ROOT / 'tests/fixtures/har/single-request.har')],
+                                   cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave,
+                                   start_new_session=True)
+        output = bytearray()
+        stages = [
+            ('NETSCOPE / CAPTURE', b'\t2'),
+            ('Inspector · Headers', b'g'),
+            ('REQUEST JOURNEY', b'\x1b'),
+            ('Inspector · Headers', b'3'),
+            ('Response body', b'r'),
+            ('[ Edit ]', b'\x1b'),
+            ('Inspector · Body', b'\t'),
+            ('NETSCOPE / CAPTURE', b'q'),
+        ]
+        stage = 0
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            if select.select([master], [], [], .1)[0]:
+                output.extend(os.read(master, 65536))
+            visible = screen_text(output)
+            if stage < len(stages) and stages[stage][0] in visible:
+                os.write(master, stages[stage][1])
+                stage += 1
+            if process.poll() is not None:
+                while select.select([master], [], [], 0)[0]:
+                    output.extend(os.read(master, 65536))
+                break
+        assert process.poll() == 0, f'workspace {width}x{height} stopped at {stage}'
+        assert stage == len(stages), 'workspace navigation was not completed'
+        after = termios.tcgetattr(slave)
+        pending = getattr(termios, 'PENDIN', 0)
+        before[3] &= ~pending
+        after[3] &= ~pending
+        assert after == before, 'workspace did not restore terminal modes'
+        assert b'\x1b[?1049l' in output and b'\x1b[?25h' in output
+        print(f'PASS: workspace {width}x{height}; focus, sections, journey, draft return, terminal restored')
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+        os.close(slave)
+
+
+check_workspace(100, 30)
+check_workspace(80, 24)

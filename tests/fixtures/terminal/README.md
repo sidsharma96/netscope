@@ -16,4 +16,6 @@ The retries fixtures show the bottom of request #0 from retries.har, including a
 
 The protocols fixtures show request #0 from protocols.har after scrolling to its protocol notes. The labels HTTP/2 and h2 agree while their original text remains visible. Regenerate with screen_fixture protocols mode at widths 80 and 100.
 
-The draft, draft-invalid, and review fixtures show the replay editor with Send disabled at 80 × 24 and 100 × 30. The screen_fixture modes with those names regenerate them. Inspector fixtures also disclose the r replay shortcut.
+The draft, draft-invalid, and review fixtures show the current editor and explicitly reviewed send boundary at 80 × 24 and 100 × 30. The screen_fixture modes with those names regenerate them. Wide replay uses a workbench; narrow replay keeps one active pane. Comparison and exact save previews use the full width beneath the operation strip.
+
+The October 13 layout pass adds headers, body, and journey modes at 80, 100, and 120 columns, and default inspector buffers at the wider sizes. Wide overviews preview the selected request beside the list. The original full-report scrolling tests now deliberately choose All (6). The sse mode scrolls All until its derived-event heading reaches the first content row; SSE fixtures omit the final newline to match their test's buffer representation. Do not count these generated examples as native browser captures.

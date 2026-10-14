@@ -1,0 +1,30 @@
+NETSCOPE / INSPECTOR                                                                                                    
+synthetic.har · 1 requests                                                                                              
+Captured data · 1–6 sections · g journey · Tab changes focus                                                            
+┌ Requests · focus: Tab ───────────────────────┐┌ Inspector · Body ────────────────────────────────────────────────────┐
+│ ID   Verb   Code   Path                      ││#0 GET · 200 OK                                                       │
+│                                              ││URL: https://example.test/api/books                                   │
+│> 0    GET    200  /api/books                 ││1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                  │
+│                                              ││Request body                                                          │
+│                                              ││Request body not recorded                                             │
+│                                              ││                                                                      │
+│                                              ││Response body                                                         │
+│                                              ││Exported text                                                         │
+│                                              ││[]                                                                    │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│Row 1 / 1                                     ││                                                                      │
+└──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
+↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                                         

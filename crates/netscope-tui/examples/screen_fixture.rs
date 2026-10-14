@@ -1,6 +1,6 @@
 //! Print a fixed in-memory screen for review and golden fixture regeneration.
 use netscope_import::{Limits, import_bytes};
-use netscope_tui::{Action, App, draw};
+use netscope_tui::{Action, App, InspectorTab, draw};
 use ratatui::{Terminal, backend::TestBackend};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
@@ -9,6 +9,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mode = args.get(1).map(String::as_str).unwrap_or("overview");
     let bytes: &[u8] = if matches!(mode, "hosts" | "filtered") {
         include_bytes!("../../../tests/fixtures/har/multi-host.har")
+    } else if mode == "sse" {
+        include_bytes!("../../../tests/fixtures/har/sse.har")
     } else if mode == "protocols" {
         include_bytes!("../../../tests/fixtures/har/protocols.har")
     } else if mode == "retries" {
@@ -132,9 +134,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         "redirects" | "retries" | "protocols" => {
             app.apply(Action::Open, &session);
+            app.apply(Action::Section(InspectorTab::All), &session);
             for _ in 0..1000 {
                 app.apply(Action::Down, &session);
             }
+        }
+        "journey" => app.apply(Action::Journey, &session),
+        "headers" => {
+            app.apply(Action::Open, &session);
+            app.apply(Action::Section(InspectorTab::Headers), &session);
+        }
+        "body" => {
+            app.apply(Action::Open, &session);
+            app.apply(Action::Section(InspectorTab::Body), &session);
+        }
+        "sse" => {
+            app.apply(Action::Open, &session);
+            app.apply(Action::Section(InspectorTab::All), &session);
         }
         "inspector" => app.apply(Action::Open, &session),
         "hosts" => app.apply(Action::Hosts, &session),
@@ -146,6 +162,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut terminal = Terminal::new(TestBackend::new(width, height))?;
     terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+    if mode == "sse" {
+        for _ in 0..100 {
+            let text = (0..width)
+                .map(|x| terminal.backend().buffer()[(x, 7)].symbol())
+                .collect::<String>();
+            if text.contains("SSE EVENTS") {
+                break;
+            }
+            app.apply(Action::Down, &session);
+            terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
+        }
+    }
     let buffer = terminal.backend().buffer();
     for y in 0..height {
         println!(

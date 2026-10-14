@@ -69,6 +69,10 @@ A review is a freshly validated view of the current draft. It names the source r
 
 Returning to edit leaves the review. You must review again after changing the draft; there is no old approval carried into a new destination. Only Enter or s from a valid review starts sending. Opening the review itself does no network work.
 
+Keeping a draft beside its review makes the relationship easier to see, but two visible panes do not grant two kinds of authority. The workbench's Edit → Review → Send → Result strip describes the current operation. It is not permission to jump past review. In a wide window, the active editor or review occupies one pane and the other supplies context; a narrower window shows the active pane alone. Neither drawing a pane nor resizing the window queues a request.
+
+After sending, the result belongs to the accepted request. If you return to editing and change the draft, an older retained result must still name its own destination. Otherwise the screen could suggest that an answer came from a server which has not been contacted. This is the same ownership distinction as the two independent URL strings: equal-looking values can have different responsibilities and different lifetimes.
+
 This separation matters during sending. A draft can change while someone is preparing it. An accepted operation needs a definite set of values to work with. The next chapter follows that operation through waiting and cancellation.
 
 ## Try the boundary yourself

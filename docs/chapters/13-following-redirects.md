@@ -74,7 +74,7 @@ This is why the choice of a type matters to the explanation on screen. Keeping t
 
 ## Try changing the evidence
 
-Open the supplied `tests/fixtures/har/redirects.har` capture using the command pattern in the [walkthrough](06-first-milestone.md). Open request #0 and scroll to REDIRECT EVIDENCE. You should find two candidates. Return to the list and inspect #3: this time there is one candidate, on another host. Request #5 has no recorded Location header.
+Open the supplied `tests/fixtures/har/redirects.har` capture using the command pattern in the [walkthrough](06-first-milestone.md). Open request #0, choose Evidence with 5, and scroll to REDIRECT EVIDENCE. You should find two candidates. Return to the list and inspect #3: this time there is one candidate, on another host. Request #5 has no recorded Location header.
 
 Before editing a copy of the capture, predict what would happen if you removed one of #0's candidates, moved both before its reported end, or removed its Location header. Those changes should produce three different explanations. In none of them does the tool learn what the browser intended.
 

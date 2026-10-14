@@ -1,6 +1,8 @@
 NETSCOPE / RESPONSE COMPARISON                                                  
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
+  Edit    Review    Send  [ Result ]                                            
+                                                                                
 ┌ Captured response ───────────────────┐┌ Replay response ─────────────────────┐
 │Captured method: GET                  ││Reviewed: GET; 0 body bytes           │
 │Source #0                             ││New request; capture unchanged        │
@@ -18,7 +20,5 @@ Capture unchanged · only Review → Send starts network traffic
 │RESPONSE HEADERS                      ││Names ignore case; values/order exact │
 │content-type                          ││Stored values differ                  │
 │[hidden; v reveals values]            ││[hidden; v reveals values]            │
-│                                      ││                                      │
-│                                      ││                                      │
 └──────────────────────────────────────┘└──────────────────────────────────────┘
 ↑/↓ scroll both · v reveal headers · c / Esc result · q quit                    

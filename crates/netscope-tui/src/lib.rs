@@ -2,9 +2,11 @@
 /// Real-terminal setup, input, and restoration.
 pub mod terminal;
 mod view;
+mod workspace_view;
 pub use view::{
     Action, App, Screen, draw, inspector_lines, protocol_lines, redirect_lines, retry_lines,
 };
+pub use workspace_view::InspectorTab;
 
 mod host_view;
 

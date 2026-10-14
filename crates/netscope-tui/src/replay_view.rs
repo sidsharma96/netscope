@@ -3,8 +3,10 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use netscope_core::{NameValue, ReplayDraft, ReplayMethod, ReplayReview, terminal_text};
 use ratatui::{
     Frame,
-    layout::Rect,
-    widgets::{Block, Borders, Paragraph},
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Style},
+    text::Line,
+    widgets::Paragraph,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -116,7 +118,9 @@ impl ReplayEditor {
             Mode::Review => {
                 "↑/↓ scroll · v headers · Enter / s send · l review live SSE · Esc edit"
             }
-            _ => "m method · t format · b body · Enter choose/save · Esc back · Ctrl+c quit",
+            _ => {
+                "m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c quit"
+            }
         }
     }
     /// Borrow the current draft for inspection and tests.
@@ -895,6 +899,102 @@ impl ReplayEditor {
         lines
     }
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
+        let [steps, content] =
+            Layout::vertical([Constraint::Length(2), Constraint::Min(1)]).areas(area);
+        let active = match self.mode {
+            Mode::Review | Mode::StreamReview => 1,
+            Mode::Running(_) => 2,
+            Mode::Result | Mode::Compare => 3,
+            _ => 0,
+        };
+        let spans = ["Edit", "Review", "Send", "Result"]
+            .iter()
+            .enumerate()
+            .map(|(i, name)| {
+                ratatui::text::Span::styled(
+                    if i == active {
+                        format!("[ {name} ]")
+                    } else {
+                        format!("  {name}  ")
+                    },
+                    Style::default().fg(if i == active {
+                        crate::workspace_view::MINT
+                    } else {
+                        Color::Gray
+                    }),
+                )
+            })
+            .collect::<Vec<_>>();
+        frame.render_widget(Paragraph::new(Line::from(spans)), steps);
+        if content.width < 100 || matches!(self.mode, Mode::Compare | Mode::SaveReview(_, _)) {
+            self.draw_panel(frame, content, session);
+            return;
+        }
+        let [left, right] =
+            Layout::horizontal([Constraint::Percentage(45), Constraint::Min(1)]).areas(content);
+        let editing = active == 0;
+        self.draw_panel(frame, if editing { left } else { right }, session);
+        let passive = if editing { right } else { left };
+        let title = if editing {
+            " Context / retained result "
+        } else {
+            " Request · separate from capture "
+        };
+        let block = crate::workspace_view::block(title.into(), false);
+        let inner = block.inner(passive);
+        frame.render_widget(block, passive);
+        let mut lines = if editing {
+            vec![
+                "No request is sent while editing.".into(),
+                "Review the destination, headers and body before Send.".into(),
+                String::new(),
+                "Changing the destination clears body and header choices.".into(),
+                "Enter saves a field; Esc discards an unfinished edit.".into(),
+                "Header values remain masked until v reveals them.".into(),
+            ]
+        } else {
+            let (method, destination, bytes) = self
+                .result
+                .as_ref()
+                .filter(|_| matches!(self.mode, Mode::Result))
+                .map(|r| (r.method, r.destination.as_str(), r.request_body_bytes))
+                .unwrap_or((
+                    self.draft.method(),
+                    self.draft.url(),
+                    self.draft.body().len(),
+                ));
+            vec![
+                format!("{} {}", method.as_str(), terminal_text(destination)),
+                format!("{bytes} request body bytes · HTTP/1.1"),
+                String::new(),
+                "Capture unchanged".into(),
+                "A replay result belongs to this send, not the imported capture.".into(),
+                "Esc returns to editing; editing requires a fresh review.".into(),
+            ]
+        };
+        if editing {
+            if let Some(result) = &self.result {
+                lines.extend([
+                    String::new(),
+                    "LAST RETAINED RESULT · may describe an older draft".into(),
+                    terminal_text(&result.destination),
+                    format!(
+                        "{:?} · {} retained bytes",
+                        result.outcome,
+                        result.body.len()
+                    ),
+                    "o opens the retained result".into(),
+                ]);
+            } else {
+                lines.extend([String::new(), "No retained result yet.".into()]);
+            }
+        }
+        frame.render_widget(
+            Paragraph::new(lines.join("\n")).wrap(ratatui::widgets::Wrap { trim: false }),
+            inner,
+        );
+    }
+    fn draw_panel(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
         if matches!(self.mode, Mode::Compare) {
             if let Some(result) = &self.result
                 && let Some(captured) = session.request(result.source)
@@ -913,25 +1013,30 @@ impl ReplayEditor {
         let title = if matches!(self.mode, Mode::SaveReview(_, _)) {
             " Save preview · Enter writes file · Esc cancels "
         } else if matches!(self.mode, Mode::Review | Mode::StreamReview) {
-            " Review · Esc edits · Enter or s sends "
+            " Review · s sends "
         } else if matches!(self.mode, Mode::Running(_)) {
             " Sending · Esc cancels "
         } else if matches!(self.mode, Mode::Result) {
-            " New result · ↑/↓ scroll · v reveals · Esc edits "
+            " New result · scroll for details "
         } else if self.editing() {
-            " Editing · Enter saves · Esc cancels "
-        } else if !self.draft.has_capture() {
-            " Draft · w save file · Enter chooses · o last result · Esc quits "
+            " Editing · Enter saves "
         } else {
-            " Draft · w save file · Enter chooses · o last result · Esc returns "
+            " Draft · Enter chooses "
         };
-        let block = Block::default().borders(Borders::ALL).title(title);
+        let block = crate::workspace_view::block(title.into(), true);
         let inner = block.inner(area);
         frame.render_widget(block, area);
         let content = self.content();
         let mut lines: Vec<String> = content
             .iter()
-            .flat_map(|s| crate::view::wrap(s, usize::from(inner.width).max(2)))
+            .flat_map(|s| {
+                let width = usize::from(inner.width).max(2);
+                if self.editing() {
+                    crate::view::wrap(s, width)
+                } else {
+                    crate::view::wrap_words(s, width)
+                }
+            })
             .collect();
         let height = usize::from(inner.height);
         let cursor = self.edit_text().map(|text| {
