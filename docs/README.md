@@ -54,3 +54,5 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.
 
 The [architecture audit and decision record](ARCHITECTURE.md) distinguishes previously recorded choices from current assessments, links evidence, and records alternatives and open questions. The teaching chapters explain the reasoning in context.
+
+The [120-scenario compatibility campaign](COMPATIBILITY_CAMPAIGN.md) records native browser traffic, production probes, fixes and evidence differences. Its frozen corpus is checked offline.

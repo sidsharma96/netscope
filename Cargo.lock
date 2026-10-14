@@ -651,11 +651,13 @@ dependencies = [
 name = "netscope-tui"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "crossterm",
  "netscope-core",
  "netscope-import",
  "netscope-net",
  "ratatui",
+ "serde_json",
  "unicode-segmentation",
  "unicode-width 0.2.0",
 ]

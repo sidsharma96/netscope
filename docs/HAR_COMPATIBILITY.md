@@ -76,3 +76,11 @@ Frozen Chrome 155.0.8059.40 and Firefox 146.0.1 exports add three-entry loopback
 Native WS URLs required widening inspection to ws/wss, while replay remains HTTP(S). Chrome's 101 entry reports bodySize -202 and empty serverIPAddress. Only ws/wss 101 entries permit negative bodySize below -1 as unavailable with exact-value warning and empty address as absent. Firefox's 202-byte reported size and empty text do not establish later frame bytes. The helper sent a frame; neither export retained a usable frame history. Classic upgrade header shape is inspected without acceptance-digest, extension or browser-policy validation.
 
 To record again, run `python3 scripts/stream_fixture_server.py`, use an isolated browser profile, open Network Monitor before visiting the printed URL, and wait for the completion title and three settled entries before exporting with content. Stop the helper with Ctrl+C. Dynamic port/timestamps/durations are observations rather than regression expectations. Frozen fixtures, not new browser processes, drive deterministic regression tests.
+
+## Broad native campaign — October 13, 2026
+
+The [120-scenario campaign](COMPATIBILITY_CAMPAIGN.md) adds 240 native Chrome/Firefox browser runs across REST, GraphQL-shaped HTTP, SSE and WebSocket, including HTTPS/H2 and WSS. Actual payload observations and server request logs remain separate from HAR fields. Frozen captures are rechecked offline in the normal suite.
+
+Two compatibility fixes followed native evidence: finite blocked values strictly between -1 and zero are retained as non-duration exporter observations with warnings; empty ws/wss server addresses are treated as absent for status zero as well as 101. Other timing fields, blocked values below -1 and malformed ordinary addresses remain strict. The raw native values are not repaired.
+
+The report records exported-text/Unicode differences, Firefox dispatch/open-event differences and expected capture budgets. Imported retained text is not proof of original wire bytes or browser dispatch. Production live SSE uses its own observed raw bytes. TLS exceptions were limited to disposable browsers; production-client certificate rejections remained enforced.

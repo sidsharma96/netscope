@@ -361,3 +361,31 @@ fn upgrade_tolerances_do_not_relax_other_size_or_address_validation()
     assert!(import_bytes(&serde_json::to_vec(&changed)?, Limits::default()).is_err());
     Ok(())
 }
+
+#[test]
+fn observed_negative_blocked_values_remain_non_durations_and_other_fields_stay_strict()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut native: Value = serde_json::from_slice(CHROME)?;
+    native["log"]["entries"][0]["timings"]["blocked"] = json!(-0.787);
+    let session = import_bytes(&serde_json::to_vec(&native)?, Limits::default())?;
+    assert_eq!(
+        session.requests()[0].timings.blocked,
+        netscope_core::Timing::ExporterNegative(-0.787)
+    );
+    assert!(
+        session.requests()[0]
+            .warnings
+            .iter()
+            .any(|s| s.contains("blocked -0.787"))
+    );
+    for field in ["dns", "connect", "ssl", "send", "wait", "receive"] {
+        let mut changed = native.clone();
+        changed["log"]["entries"][0]["timings"][field] = json!(-0.787);
+        assert!(import_bytes(&serde_json::to_vec(&changed)?, Limits::default()).is_err());
+    }
+    for value in [-1.001, -2.0] {
+        native["log"]["entries"][0]["timings"]["blocked"] = json!(value);
+        assert!(import_bytes(&serde_json::to_vec(&native)?, Limits::default()).is_err());
+    }
+    Ok(())
+}

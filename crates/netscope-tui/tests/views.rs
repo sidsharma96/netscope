@@ -2238,3 +2238,15 @@ fn native_upgrade_metadata_is_reachable_without_invented_frames()
     assert!(app.replay.is_none());
     Ok(())
 }
+
+#[test]
+fn nonstandard_exporter_timing_is_not_displayed_as_a_duration()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut request = session.requests()[0].clone();
+    request.timings.blocked = netscope_core::Timing::ExporterNegative(-0.787);
+    let text = netscope_tui::inspector_lines(&request, RequestId(0)).join("\n");
+    assert!(text.contains("Exporter value -0.787 · not a duration"));
+    assert!(!text.contains("-0.787 ms"));
+    Ok(())
+}

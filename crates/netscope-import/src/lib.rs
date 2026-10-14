@@ -358,6 +358,15 @@ fn optional_timing(v: &Value, key: &str, p: &str) -> Result<Timing> {
                 .ok_or_else(|| error(&p, "expected numeric timing"))
         })
         .transpose()?;
+    // Keep the exporter observation without presenting negative elapsed time.
+    if let Some(number) = value
+        && key == "blocked"
+        && number.is_finite()
+        && number > -1.0
+        && number < 0.0
+    {
+        return Ok(Timing::ExporterNegative(number));
+    }
     Timing::from_optional_har(value)
         .map_err(|_| error(&p, "expected -1 or finite non-negative duration"))
 }
@@ -468,7 +477,9 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         )?,
     };
     let server_ip = optional_string(v, "serverIPAddress", p)?
-        .filter(|s| !(status == 101 && matches!(parsed.scheme(), "ws" | "wss") && s.is_empty()))
+        .filter(|s| {
+            !(matches!(status, 0 | 101) && matches!(parsed.scheme(), "ws" | "wss") && s.is_empty())
+        })
         .map(|s| {
             s.parse().map_err(|_| {
                 error(
@@ -483,6 +494,11 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
     if let Some(value) = upgrade_body_size {
         warnings.push(format!(
             "Exporter recorded WebSocket bodySize {value}; treated as unavailable"
+        ));
+    }
+    if let Timing::ExporterNegative(value) = timings.blocked {
+        warnings.push(format!(
+            "Exporter recorded blocked {value}; not a usable duration"
         ));
     }
     if missing_mime {

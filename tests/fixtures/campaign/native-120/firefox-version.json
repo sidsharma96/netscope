@@ -1,0 +1,29 @@
+{
+  "sessionId": "141d3d12-7103-429b-8120-da3f7ae33a57",
+  "capabilities": {
+    "acceptInsecureCerts": true,
+    "browserName": "firefox",
+    "browserVersion": "146.0.1",
+    "platformName": "mac",
+    "unhandledPromptBehavior": "dismiss and notify",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0",
+    "moz:buildID": "20251217121356",
+    "moz:headless": false,
+    "moz:platformVersion": "25.6.0",
+    "moz:processID": 64743,
+    "moz:profile": "/private/tmp/netscope-campaign-native120-final-evidence/ff-marionette",
+    "moz:shutdownTimeout": 60000,
+    "pageLoadStrategy": "normal",
+    "timeouts": {
+      "implicit": 0,
+      "pageLoad": 300000,
+      "script": 30000
+    },
+    "setWindowRect": true,
+    "strictFileInteractability": false,
+    "moz:accessibilityChecks": false,
+    "moz:webdriverClick": true,
+    "moz:windowless": false,
+    "proxy": {}
+  }
+}

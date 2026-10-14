@@ -33,6 +33,8 @@ partial replay "cat" ──────────→ Three shared bytes match
 
 Even when a complete replay matches every available captured byte, Netscope says that the stored bytes match. A capture's retained text is not proof that the exporter kept the entire original response. A preview adds another boundary: the screen may show only the beginning of a large stored representation. The comparison examines the available bytes beyond that preview too, so a difference after the visible excerpt is still reported.
 
+A text export can also differ from the bytes the browser received. In our controlled trial, the same UTF-8 bytes produced different exported text in two browsers when the response omitted its charset, the name of its character encoding. Comparing that text with a new raw response can report a difference even when the server sent identical bytes. Netscope preserves the exporter representation; guessing a repair would hide the evidence. The [campaign record](../COMPATIBILITY_CAMPAIGN.md) separates wire hashes, exported text and live observations.
+
 ## Ask a smaller question about a partial body
 
 A prefix is the beginning of a sequence. The common comparison region is as long as the shorter available sequence. If one side contains three bytes and the other contains seven, there are three positions at which both sides have a byte.

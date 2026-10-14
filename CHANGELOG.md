@@ -10,6 +10,8 @@
 - Inspect bounded classic PCAP records and supported Ethernet/VLAN/IP/TCP/UDP layers with explicit capture cuts and unsupported cases.
 - Inspect directed TCP epochs, gaps, repeated/conflicting overlaps, wrap-around, conditional plaintext HTTP/1.1 chunk/length boundaries, DNS answers and SDP/STUN candidates. Add five beginner lessons and deterministic packet/UI/terminal/install checks.
 
+- Retain narrow nonstandard blocked timings and absent addresses on failed WebSocket exports, following a 120-scenario native browser campaign. Add captured evidence, offline regression checks, production probes and documented representation/dispatch discrepancies.
+
 ## 0.1.0 — October 13, 2026
 
 The first Netscope release inspects local HAR captures and prepares explicitly reviewed HTTP requests. Install from the tagged source checkout; this release has no registry package or prebuilt binaries.

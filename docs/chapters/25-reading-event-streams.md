@@ -60,6 +60,8 @@ An unfinished tail does not diagnose the server. The exporter may have stopped r
 
 A parser can also stop because the application deliberately limits its work. Netscope examines at most 64 KiB of retained text and keeps at most 100 complete events. Both limits have explicit notices. They bound inspection work and the derived list; they do not change the recorded body. Individual long fields can also have shortened display previews, labelled separately from an analysis limit. Values are quoted: `""` means empty text, `\n` represents a newline, and `\\n` represents a literal backslash followed by n. This makes the characters visible without allowing captured controls to command the terminal.
 
+There is another boundary between the exported text and a browser's event delivery. Our controlled campaign observed a Unicode export differing from the browser's dispatched data, and metadata cases whose dispatch differed between browsers. Netscope interprets retained text under its stated rules; it does not claim to reconstruct every browser's event history. A [separate record of those observations](../COMPATIBILITY_CAMPAIGN.md) makes the distinction checkable without guessing from the saved body alone.
+
 ## Borrow the recording, own the joined data
 
 The captured body already owns its text. Event types and IDs can refer to portions of those existing bytes while inspection is in progress. Joining several data values with newlines creates a different string, so that result needs its own storage. Borrowing and ownership therefore serve different needs in the same event.

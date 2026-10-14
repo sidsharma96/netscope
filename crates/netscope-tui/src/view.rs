@@ -468,6 +468,7 @@ fn timing(value: Timing) -> String {
         Timing::Missing => "Not recorded".into(),
         Timing::Unavailable => "Unavailable (-1)".into(),
         Timing::Milliseconds(n) => format!("{n} ms"),
+        Timing::ExporterNegative(n) => format!("Exporter value {n} · not a duration"),
     }
 }
 fn size(value: ReportedSize) -> String {

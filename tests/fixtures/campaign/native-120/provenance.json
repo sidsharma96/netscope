@@ -1,0 +1,10 @@
+{
+  "started_utc": "2026-10-14T01:35:47.319681+00:00",
+  "ended_utc": "2026-10-14T01:36:09.307886+00:00",
+  "scenarios": 120,
+  "browser_runs": 240,
+  "transport": "loopback HTTP/1.1 and controlled self-signed HTTPS/H2",
+  "chrome_tls_exception": "test certificate SPKI only",
+  "firefox_tls_exception": "disposable session acceptInsecureCerts",
+  "normal_profiles_modified": false
+}

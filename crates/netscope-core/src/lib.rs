@@ -15,6 +15,8 @@ pub enum Timing {
     Unavailable,
     /// A duration in milliseconds. The constructor accepts finite, non-negative values.
     Milliseconds(f64),
+    /// A retained nonstandard exporter value, not a measured duration or -1 sentinel.
+    ExporterNegative(f64),
 }
 
 /// The supplied timing was neither unavailable nor a valid duration.

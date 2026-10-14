@@ -16,9 +16,11 @@ This is also the type used by a checked vector lookup. A successful lookup retur
 
 `Some(-1.0)` tells us that a number was supplied. It does not explain the special meaning HAR assigns to that number. For an optional timing, `-1` means unavailable.
 
-Our timing type therefore has three variants. `Missing` means the field was omitted. `Unavailable` means the exporter supplied `-1`. `Milliseconds` contains an accepted duration, including zero.
+Three variants of our timing type describe standard HAR values. `Missing` means the field was omitted. `Unavailable` means the exporter supplied `-1`. `Milliseconds` contains an accepted duration, including zero.
 
 These names make later decisions clearer. Drawing a duration and displaying an unavailable label are different operations, and the stored value tells us which one applies. The value `-2` fits neither case, so validation rejects it.
+
+A recorded number can also contradict its supposed meaning. In a native browser export, a blocked timing just below zero is not elapsed time travelling backward. Netscope retains that narrow exporter case separately, with a warning, instead of clamping it to zero or pretending it was the standard -1 sentinel. Its fourth variant, `ExporterNegative`, preserves the number without making it a measured duration. The standard conversion below remains strict; the [compatibility reference](../HAR_COMPATIBILITY.md) records the importer exception and its evidence.
 
 ## Give failure a value too
 
@@ -49,6 +51,7 @@ let label = match timing {
     Timing::Missing => "Not recorded",
     Timing::Unavailable => "Unavailable",
     Timing::Milliseconds(_) => "Duration recorded",
+    Timing::ExporterNegative(_) => "Nonstandard exporter observation",
 };
 assert_eq!(label, "Not recorded");
 ```
