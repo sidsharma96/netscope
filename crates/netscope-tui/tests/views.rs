@@ -40,6 +40,16 @@ fn workspace_focus_sections_and_resize_preserve_capture_identity()
     assert_eq!((app.selected, app.overview_offset), position);
     assert!(render(&session, &mut app, 120, 30)?.contains("Preview · Headers"));
     assert_eq!(session.requests(), original);
+    for (width, height) in [(80, 24), (100, 30), (120, 30)] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Section(InspectorTab::All), &session);
+        app.apply(Action::PageDown, &session);
+        assert_eq!(app.inspector_offset, usize::from(height - 9));
+        app.apply(Action::PageUp, &session);
+        assert_eq!(app.inspector_offset, 0);
+    }
     Ok(())
 }
 

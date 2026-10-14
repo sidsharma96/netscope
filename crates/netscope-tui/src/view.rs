@@ -404,8 +404,9 @@ impl App {
                         .map(|i| move_to(i, self.height.saturating_sub(17)));
                 }
                 Screen::Inspector(_) => {
-                    self.inspector_offset =
-                        move_to(self.inspector_offset, self.height.saturating_sub(6));
+                    let (_, rows) =
+                        crate::workspace_view::detail_size(self.width, self.height, self.journey);
+                    self.inspector_offset = move_to(self.inspector_offset, rows);
                 }
                 Screen::Replay(_) => {}
             }
