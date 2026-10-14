@@ -45,3 +45,13 @@ python3 scripts/check_install.py
 This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, malformed and empty captures, and failure exit codes. On POSIX systems it also runs navigation/search, small-window recovery, local GET/POST replay, cancellation, and save/reopen against the installed release binary. An injected drawing-error check uses a separate development probe. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
 
 To remove a normal Cargo installation, use `cargo uninstall netscope-tui`. If you selected a custom installation root, supply that same `--root` to uninstall.
+
+## Packet inspection on unreleased main
+
+The main checkout now includes M5–M8; the v0.1.0 tag remains its earlier snapshot. To run the current packet viewer without replacing an older installed binary:
+
+```sh
+cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap
+```
+
+Use the normal source-install command from this checkout to install these unreleased features. --pcap selects the bounded classic-PCAP subset; it does not require capture privileges or libpcap/tcpdump to run. See [milestone status](MILESTONES.md) and the [packet walkthrough](DEVELOPMENT.md#inspect-packets-and-streams).

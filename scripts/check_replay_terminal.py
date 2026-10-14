@@ -4,7 +4,6 @@ import fcntl
 import json
 import os
 import pty
-import re
 import select
 import socket
 import struct
@@ -21,39 +20,7 @@ if 'NETSCOPE_CHECK_BINARY' not in os.environ:
     subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--locked', '--offline'], cwd=ROOT, check=True)
 
 
-def screen_text(output):
-    """Reconstruct the cursor-positioned cells Ratatui writes, ignoring styles."""
-    cells = [[' '] * 100 for _ in range(30)]
-    row = column = 0
-    tokens = re.split(r'(\x1b\[[0-9;?]*[A-Za-z])', output.decode(errors='replace'))
-    for token in tokens:
-        if token.startswith('\x1b['):
-            command = token[-1]
-            args = token[2:-1]
-            if args.startswith('?'):
-                continue
-            values = [int(part or '0') for part in args.split(';')]
-            first = values[0] or 1
-            if command in ('H', 'f'):
-                row = first - 1
-                column = (values[1] if len(values) > 1 and values[1] else 1) - 1
-            elif command == 'G': column = first - 1
-            elif command == 'd': row = first - 1
-            elif command == 'A': row -= first
-            elif command == 'B': row += first
-            elif command == 'C': column += first
-            elif command == 'D': column -= first
-            elif command == 'J' and values[0] == 2: cells = [[' '] * 100 for _ in range(30)]
-            elif command == 'K' and 0 <= row < 30:
-                for x in range(max(0, column), 100): cells[row][x] = ' '
-        else:
-            for char in token:
-                if char == '\r': column = 0
-                elif char == '\n': row += 1
-                elif char >= ' ':
-                    if 0 <= row < 30 and 0 <= column < 100: cells[row][column] = char
-                    column += 1
-    return '\n'.join(''.join(line) for line in cells)
+from terminal_cells import screen_text
 
 
 def check(mode):

@@ -10,6 +10,7 @@ const HELP: &str = "Netscope — inspect HTTP captures and prepare reviewed requ
 
 Usage:
   netscope <capture.har>
+  netscope --pcap <capture.pcap>
   netscope --draft <request.json>
   netscope -- <capture.har>
   netscope --draft -- <request.json>
@@ -19,6 +20,7 @@ Usage:
 Options:
   -h, --help       Show this help
   -V, --version    Show the installed package version
+  --pcap FILE      Inspect classic PCAP packet/stream evidence offline
   --draft FILE     Open a saved request for editing
   --               Treat the following path literally, even if it starts with -
 
@@ -45,6 +47,38 @@ fn main() -> ExitCode {
     if args.len() == 1 && (args[0] == "--version" || args[0] == "-V") {
         println!("netscope {}", env!("CARGO_PKG_VERSION"));
         return ExitCode::SUCCESS;
+    }
+    if let Some((_, path)) = match args.as_slice() {
+        [flag, path] if flag == "--pcap" && !path.to_string_lossy().starts_with('-') => {
+            Some((flag, path))
+        }
+        [flag, separator, path] if flag == "--pcap" && separator == "--" => Some((flag, path)),
+        _ => None,
+    } {
+        let filename = terminal_text(&path.to_string_lossy());
+        return match netscope_import::pcap::import_pcap_file(Path::new(path)) {
+            Ok(capture) => {
+                if io::stdin().is_terminal() && io::stdout().is_terminal() {
+                    match netscope_tui::terminal::run_packets(&capture, &filename) {
+                        Ok(()) => ExitCode::SUCCESS,
+                        Err(_) => {
+                            eprintln!("{filename}: packet terminal operation failed");
+                            ExitCode::from(1)
+                        }
+                    }
+                } else {
+                    println!(
+                        "{filename}\n{}",
+                        netscope_tui::packet_view::packet_summary(&capture)
+                    );
+                    ExitCode::SUCCESS
+                }
+            }
+            Err(error) => {
+                eprintln!("{filename}: {error}");
+                ExitCode::from(1)
+            }
+        };
     }
     let (draft, path) = match args.as_slice() {
         [flag, separator, path] if flag == "--draft" && separator == "--" => (true, path),

@@ -23,3 +23,6 @@ mod text_edit;
 pub mod text_editing_lesson {}
 
 mod sse_view;
+
+/// Offline packet and directed stream inspection.
+pub mod packet_view;

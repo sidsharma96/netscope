@@ -197,3 +197,29 @@ fn run_app(
     let restored = guard.restore();
     result.and(restored)
 }
+
+/// Run offline packet inspection, restoring the terminal on exits and errors.
+/// # Errors
+/// Returns terminal setup, drawing, or input errors after attempted restoration.
+pub fn run_packets(
+    capture: &netscope_core::packets::PacketCapture,
+    filename: &str,
+) -> io::Result<()> {
+    let mut guard = Restore::enter()?;
+    let result = (|| {
+        let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
+        let mut app = crate::packet_view::PacketApp::new(capture);
+        while !app.quit() {
+            terminal.draw(|frame| {
+                crate::packet_view::draw_packets(frame, capture, &mut app, filename)
+            })?;
+            match event::read()? {
+                Event::Key(key) => app.key(key, capture),
+                Event::Resize(_, _) => {}
+                _ => {}
+            }
+        }
+        Ok(())
+    })();
+    result.and(guard.restore())
+}

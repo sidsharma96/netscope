@@ -150,3 +150,17 @@ Open `tests/fixtures/har/browsers/chrome-155-streams.har`, select its socket ent
 For a new local live observation, run `python3 scripts/stream_fixture_server.py`. Open Netscope with the captured SSE fixture above, select its events request, press r, edit the URL to the helper's printed address plus `events`, and choose Review. Press l to see the live review (GET, added Accept, 30 seconds, 64 KiB, 100 events), then s. Three observed events should appear; the finite response ends normally. Their durations are new local observations, unrelated to the frozen HAR. To see cancellation with an open response, the maintained replay PTY check supplies one event and a pending block, cancels, reopens the result, and verifies disposal. Stop your helper with Ctrl+C.
 
 `python3 scripts/check_replay_terminal.py` includes that open-stream case alongside ordinary replay and retained SSE. Runtime watchdogs detect hangs; they do not assert performance. Native HAR files are frozen and checksum-protected. Live observations are not persisted in saved drafts or written into the imported capture.
+
+## Inspect packets and streams
+
+```sh
+netscope --pcap tests/fixtures/pcap/streams.pcap
+```
+
+Enter opens recorded layers; Esc returns to the same list selection. Press s for directed TCP epochs, then select #1 and Enter to inspect the response. Scroll through its uniquely observed ranges, chunk size/data offsets, trailer and SDP-like recognition. No browser or remote server is needed. The fixture is a deterministic illustration with fixed timestamps, documentation addresses and synthetic signaling, not a recording of actual traffic.
+
+Epoch #0 has a repeated request prefix; #2 has a gap and stops HTTP interpretation; #3 has a conflicting overlap; #4 retains only three of six declared payload bytes; #5 wraps sequence space. Packet #20 contains DNS answers and #21 a STUN candidate. Their fields do not prove load balancing or successful connectivity. Press p to return to packet records. q/Ctrl+C exits; small terminals show a resize message and retain navigation state. Redirected output prints the same scoped evidence, escaped and with display cuts labelled.
+
+Classic PCAP only: Ethernet with bounded VLAN tags or selected raw IP, IPv4/IPv6 base plus direct TCP/UDP. PCAPNG, IPv6 extension chains, fragmented IP transport and encrypted applications need broader support. All budgets and exclusions are in [M7](contracts/m7-packets.md) and [M8](contracts/m8-streams.md). TCP/HTTP results do not become HAR sessions or replay drafts. Response framing is conditional because methods/opposite directions are not paired.
+
+`python3 scripts/check_packet_terminal.py` checks layer/stream navigation, chunks/SDP, gap refusal, resize and restoration with a real POSIX PTY. The installation check also runs it against the installed release binary outside the checkout. `python3 scripts/build_packet_fixtures.py` regenerates frozen examples; compare SHA256SUMS and review changes deliberately. No packet-capture privileges are needed. `tcpdump -nn -vv -r tests/fixtures/pcap/streams.pcap` is an optional independent reader check, not part of the deterministic Rust suite or a required install dependency.

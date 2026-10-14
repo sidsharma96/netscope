@@ -138,3 +138,26 @@ pub mod sse_lesson {}
 
 mod websocket;
 pub use websocket::{WebSocketEvidence, websocket_evidence};
+
+/// Recorded packet layers, independent of HAR sessions.
+pub mod packets;
+
+/// Bounded TCP sequence-space observations with explicit holes and conflicts.
+pub mod reassembly;
+/// Plaintext HTTP/1.1 framing candidates from contiguous recorded bytes.
+pub mod wire_http;
+
+/// Bounded UDP application metadata recognition.
+pub mod datagrams;
+
+/// Learning checked slices and explicit wire byte order.
+#[doc = include_str!("../../../docs/chapters/29-reading-packet-bytes.md")]
+pub mod packet_bytes_lesson {}
+
+/// Learning bounded sequence space and explicit wrapping arithmetic.
+#[doc = include_str!("../../../docs/chapters/30-putting-bytes-in-order.md")]
+pub mod sequence_lesson {}
+
+/// Learning plaintext HTTP framing from actual delimiters.
+#[doc = include_str!("../../../docs/chapters/31-finding-http-boundaries.md")]
+pub mod wire_framing_lesson {}

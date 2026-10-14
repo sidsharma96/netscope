@@ -175,6 +175,31 @@
     "subtitle": "HTTP/2 streams, flow control, and remembered headers"
   },
   {
+    "slug": "29-reading-packet-bytes",
+    "title": "Reading packet bytes",
+    "subtitle": "Bounds, byte order, and the layers actually present"
+  },
+  {
+    "slug": "30-putting-bytes-in-order",
+    "title": "Putting bytes in order",
+    "subtitle": "Sequence space, gaps, overlaps, and unknown starts"
+  },
+  {
+    "slug": "31-finding-http-boundaries",
+    "title": "Finding HTTP boundaries",
+    "subtitle": "Wire chunks and conditional message framing"
+  },
+  {
+    "slug": "32-reading-signaling",
+    "title": "Reading signaling",
+    "subtitle": "Descriptions, connectivity checks, and unseen media"
+  },
+  {
+    "slug": "33-interpreting-a-trace",
+    "title": "Interpreting a trace",
+    "subtitle": "Recorded fields and the causes they cannot establish"
+  },
+  {
     "slug": "20-remembering-a-request",
     "title": "Remembering a request",
     "subtitle": "Values, files, and careful replacement"

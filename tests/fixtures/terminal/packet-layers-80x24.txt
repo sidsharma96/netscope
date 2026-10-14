@@ -1,0 +1,24 @@
+NETSCOPE / PACKET LAYERS                                                        
+synthetic.pcap                                                                  
+24 packets · link 1 · offline; capture unchanged                                
+┌──────────────────────────────────────────────────────────────────────────────┐
+│Packet #0 · recorded timestamp 1700000000.123456000                           │
+│Retained 54 bytes · original 54 bytes                                         │
+│File record order is not a receiver transcript                                │
+│Ethernet 02:00:00:00:00:01 → 02:00:00:00:00:02                                │
+│IPv4 192.0.2.1 → 198.51.100.2 · 20-byte header · TTL 64                       │
+│TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x02 · 20-byte header            │
+│Checksums and receiver acceptance not verified                                │
+│Sequence 100 · ACK 0 · window 4096 (unscaled)                                 │
+│TCP payload range 54..54 · 0 retained / 0 declared bytes                      │
+│Stored packet hex · first 256 bytes; not decrypted                            │
+│02 00 00 00 00 02 02 00 00 00 00 01 08 00 45 00 00 28 00 01 00 00 40 06 8e 98 │
+│c0 00 02 01 c6 33 64 02 23 28 00 50 00 00 00 64 00 00 00 00 50 02 10 00 8f cf │
+│00 00                                                                         │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ move · Enter inspect · Esc back · p packets · s streams · ? help · q quit   

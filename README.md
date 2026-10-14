@@ -1,6 +1,6 @@
 # Netscope
 
-A Rust terminal application for inspecting HTTP captures and sending reviewed requests, with a beginner book explaining how the program works and why it is designed this way.
+A Rust terminal application for inspecting HTTP and supported packet captures and sending reviewed requests, with a beginner book explaining how the program works and why it is designed this way.
 
 ## Install and start
 
@@ -35,3 +35,5 @@ Start with the [field notes](docs/README.md). Read the beginner Rust chapters on
 Run `cargo fetch --locked` once to obtain dependencies, then `python3 scripts/check.py` for formatting, compilation, Clippy, tests, build, and book checks. `python3 scripts/check_install.py` verifies a temporary release installation and interactive workflows outside the checkout. See [development](docs/DEVELOPMENT.md) and [release evidence](docs/RELEASE_READINESS.md) for scope. Original planning documents and HTML mockups remain local references excluded from Git.
 
 The unreleased main branch also inspects captured SSE and WebSocket upgrades and offers separately reviewed live SSE GET observations (30 seconds, 64 KiB, 100 events). See the [local walkthrough](docs/DEVELOPMENT.md) and [M6 contract](docs/contracts/m6-live-sse.md). HTTP/2 teaching uses recorded H2 evidence and labelled illustrations; live sending remains HTTP/1.1.
+
+Inspect a classic packet file with `netscope --pcap tests/fixtures/pcap/streams.pcap`. Enter shows layers; s shows directed TCP streams with gaps, conflicts, plaintext chunk boundaries and available signaling. See the [packet walkthrough](docs/DEVELOPMENT.md#inspect-packets-and-streams), [supported subset](docs/contracts/m7-packets.md) and [milestone status](docs/MILESTONES.md). These features are unreleased on main; encrypted applications are not decoded.

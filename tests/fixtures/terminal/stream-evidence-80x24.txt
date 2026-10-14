@@ -1,0 +1,24 @@
+NETSCOPE / STREAM EVIDENCE                                                      
+synthetic.pcap                                                                  
+24 packets · link 1 · offline; capture unchanged                                
+┌──────────────────────────────────────────────────────────────────────────────┐
+│Directed epoch #1 · 198.51.100.2:80 → 192.0.2.1:9000                          │
+│4 source records · first sequence 501                                         │
+│SYN true · FIN true · reset false                                             │
+│343 sequence positions · 0 missing · 0 conflicting                            │
+│0 identical overlapping byte observations                                     │
+│Repeated observations are retransmission candidates or capture duplicates     │
+│0 segments excluded by sequence/memory limits                                 │
+│Checksums, receiver acceptance and opposite-direction pairing unverified      │
+│Sequence ranges · offsets from first retained sequence                        │
+│  [0..343) Observed                                                           │
+│HTTP/1.1 framing candidates · 343 uniquely observed prefix bytes              │
+│Response request method is not paired; framing is conditional                 │
+│At 0: HTTP/1.1 200 OK                                                         │
+│Chunked terminator and trailers observed                                      │
+│Examined end 343 · framing terminator present true                            │
+│  Content-Type:  application/sdp                                              │
+│  Transfer-Encoding:  chunked                                                 │
+│  Chunk line 78..90: 2f;piece=one · data 92..139                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+↑/↓ move · Enter inspect · Esc back · p packets · s streams · ? help · q quit   

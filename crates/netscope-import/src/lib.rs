@@ -539,3 +539,6 @@ fn parse_entry(v: &Value, p: &str, limits: Limits) -> Result<Request> {
         warnings,
     })
 }
+
+/// Bounded classic PCAP import and checked packet layer parsing.
+pub mod pcap;

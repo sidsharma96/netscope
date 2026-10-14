@@ -7,6 +7,9 @@
 - Inspect native WebSocket upgrade metadata, including ws/wss URLs, with explicit header-shape and missing-frame limits. Add frozen Chrome/Firefox SSE and WebSocket exports.
 - Review and observe one live SSE GET with local boundary times, cancellation, verified HTTPS and explicit time/byte/event limits. No reconnection. Add beginner lessons on upgrades, live observations and HTTP/2 streams, flow control and HPACK.
 
+- Inspect bounded classic PCAP records and supported Ethernet/VLAN/IP/TCP/UDP layers with explicit capture cuts and unsupported cases.
+- Inspect directed TCP epochs, gaps, repeated/conflicting overlaps, wrap-around, conditional plaintext HTTP/1.1 chunk/length boundaries, DNS answers and SDP/STUN candidates. Add five beginner lessons and deterministic packet/UI/terminal/install checks.
+
 ## 0.1.0 — October 13, 2026
 
 The first Netscope release inspects local HAR captures and prepares explicitly reviewed HTTP requests. Install from the tagged source checkout; this release has no registry package or prebuilt binaries.
