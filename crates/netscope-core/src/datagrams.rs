@@ -9,7 +9,10 @@ fn name(bytes: &[u8], at: usize) -> Result<(String, usize), &'static str> {
     let mut consumed = None;
     let mut labels = vec![];
     let mut size = 0;
-    for _ in 0..64 {
+    let mut jumps = 0;
+    // Labels are bounded by the 255-byte name size (at most 127 of them), so only
+    // pointer jumps need their own count. Together the two limits end every loop.
+    loop {
         let first = *bytes.get(position).ok_or("DNS name cut")?;
         if first == 0 {
             return Ok((labels.join("."), consumed.unwrap_or(position + 1)));
@@ -18,6 +21,10 @@ fn name(bytes: &[u8], at: usize) -> Result<(String, usize), &'static str> {
             let target = usize::from(number(bytes, position).ok_or("DNS pointer cut")? & 0x3fff);
             if target >= position {
                 return Err("DNS pointer does not reference earlier data");
+            }
+            jumps += 1;
+            if jumps > 127 {
+                return Err("DNS name traversal limit");
             }
             consumed.get_or_insert(position + 2);
             position = target;
@@ -46,7 +53,6 @@ fn name(bytes: &[u8], at: usize) -> Result<(String, usize), &'static str> {
         );
         position = end;
     }
-    Err("DNS name traversal limit")
 }
 fn dns(bytes: &[u8]) -> Result<Vec<String>, &'static str> {
     if bytes.len() < 12 {

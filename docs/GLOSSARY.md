@@ -110,7 +110,7 @@ The program that checks Rust source code against the language's rules and turns 
 
 ## Compression pointer
 
-In a DNS message, a two-byte field whose top two bits are set and whose other 14 bits give the offset where the rest of a name continues. A hostile packet can make pointers loop; Netscope stops after 64 label or pointer steps. See [How DNS compresses names](chapters/34-defending-the-design.md#how-dns-compresses-names).
+In a DNS message, a two-byte field whose top two bits are set and whose other 14 bits give the offset where the rest of a name continues. A hostile packet can make pointers loop; Netscope stops a name once its labels exceed 255 bytes or it has followed 127 pointers. See [How DNS compresses names](chapters/34-defending-the-design.md#how-dns-compresses-names).
 
 ## Conflict
 

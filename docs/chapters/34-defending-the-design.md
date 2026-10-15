@@ -188,11 +188,11 @@ Other limits are explicit. A start line or header line longer than 4 KiB, a head
 
 ### Can a malicious DNS packet hang the parser?
 
-No, but not for the reason the code comment suggests. The name reader [`name`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L7-L49) requires every compression pointer to [`target`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L19) an offset earlier than the pointer itself. That rule alone does not prevent a loop. Consider a label `1 a` at offset 12 followed by a pointer at offset 14 that targets 12. The target is earlier than the pointer, so the rule allows it. The reader reads `a`, reaches offset 14 again, jumps back to 12, and repeats.
+No, but not for the reason the code comment suggests. The name reader [`name`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L7-L56) requires every compression pointer to [`target`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L22) an offset earlier than the pointer itself. That rule alone does not prevent a loop. Consider a label `1 a` at offset 12 followed by a pointer at offset 14 that targets 12. The target is earlier than the pointer, so the rule allows it. The reader reads `a`, reaches offset 14 again, jumps back to 12, and repeats.
 
-Two other limits end the loop. The reader takes at most 64 steps, where each label and each pointer is one step, and it rejects a name once its decoded labels exceed 255 bytes. In the example the 64-step cap fires first. Every slice is taken with a checked `get`, so a pointer or label length past the end of the message is an error, not a panic.
+Two other limits end the loop, one for each kind of step. Each label adds its length plus one to the decoded size, at least 2 bytes, and the reader rejects a name once that size exceeds 255 bytes, so a name has at most 127 labels. In the example every pass round the loop adds `a`, and the size limit fires after 127 passes. A chain of pointers with no labels between them cannot loop, because each target is earlier than the pointer that named it, but it can be long; the reader [`jumps`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L25-L29) counter fails a name after 127 pointer jumps with "DNS name traversal limit". Together the two limits bound one name at 254 steps. Every slice is taken with a checked `get`, so a pointer or label length past the end of the message is an error, not a panic.
 
-The cap has a cost. A legal name can have up to 127 one-byte labels within 255 bytes, so a long but valid name exceeds 64 steps and is rejected as a traversal-limit error. A tighter design would track visited pointer targets or limit only pointer jumps; for example, allowing at most 127 label steps plus a small number of pointer jumps would accept every legal name and still terminate.
+Counting labels and jumps separately is what lets every legal name through. A legal name can have 127 one-byte labels within 255 bytes. An earlier version counted labels and pointers together and stopped at 64 steps, which rejected such a name.
 
 ### Why give each send its own thread and runtime?
 
@@ -265,8 +265,6 @@ Each of the following is true of the code on main today. The proposed fix is not
 A chunk-size line longer than 4 KiB reports "Chunked; waiting for complete terminator" instead of naming the limit, because [`line`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L45-L52) returns nothing for both a missing CRLF and an over-long line. Fix: return a distinct result for the over-long case and give it its own label.
 
 PCAPNG is rejected, and link types other than 0, 1, 101, 113, 228, 229, and 276 open with no decoded layers. Fix: read PCAPNG's section header, interface description, and enhanced packet blocks, with each interface's own link type.
-
-The DNS name reader rejects legal names that need more than 64 steps, and its backward-pointer rule does not on its own prevent loops. Fix: in [`name`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L7), count label steps and pointer jumps separately, allowing 127 labels and a small fixed number of jumps, or require each pointer to target an offset earlier than the previous pointer's target.
 
 Host summaries drop a status outside 0 and 100 to 599 without counting it. The HAR importer never produces one, but `Session::new` is public and does not validate. Fix: add an "other" count in [`record`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/hosts.rs#L46-L54), or validate in `Session::new`.
 

@@ -830,7 +830,7 @@ Netscope reports SDP-like text with an ICE username fragment and a STUN candidat
 
 The capture does not show that. SDP is a text description that proposes a session. STUN messages help check possible connection paths. Netscope recognises an SDP body by a narrow rule (`application/sdp`, a first line of `v=0`, and the expected fields) and a STUN datagram by its header signature and framing. Neither proves that a connectivity check succeeded or that media flowed.
 
-**Learn more:** [Recognize a description without inventing its outcome](../chapters/32-reading-signaling.md#recognize-a-description-without-inventing-its-outcome) · [A datagram has its own boundary](../chapters/32-reading-signaling.md#a-datagram-has-its-own-boundary) · [`inspect_datagram`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L107)
+**Learn more:** [Recognize a description without inventing its outcome](../chapters/32-reading-signaling.md#recognize-a-description-without-inventing-its-outcome) · [A datagram has its own boundary](../chapters/32-reading-signaling.md#a-datagram-has-its-own-boundary) · [`inspect_datagram`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L113)
 
 </details>
 
