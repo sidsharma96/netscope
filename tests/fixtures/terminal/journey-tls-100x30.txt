@@ -14,7 +14,7 @@ Bar scale: 0–45 ms · TLS is part of Connect
 ┌ Reported stages · ↑/↓ ─────────────────────┐ ┌ Set up encryption ────────────────────────────────┐
 │   Stage         Reported       Relative    │ │Reported: 20 ms                                    │
 │  Blocked    not recorded —                 │ │                                                   │
-│  DNS         unavailable —                 │ │WHAT THIS STAGE MEANS                              │
+│  DNS            n/a (-1) —                 │ │WHAT THIS STAGE MEANS                              │
 │  Connect           30 ms ━━━━━━━━━━━       │ │TLS sets up encryption for HTTPS. HAR calls this   │
 │> └ TLS             20 ms ━━━━━━━━          │ │timing field ssl; it is part of Connect, not an    │
 │  Send               0 ms                   │ │extra interval to add.                             │

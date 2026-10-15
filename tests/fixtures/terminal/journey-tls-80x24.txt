@@ -14,7 +14,7 @@ Bar scale: 0–45 ms · TLS is part of Connect
 ┌ Reported stages · ↑/↓ ────────────┐ ┌ Set up encryption · PgUp/PgDn ─────────┐
 │   Stage         Reported    Bar   │ │Reported: 20 ms                         │
 │  Blocked    not recorded —        │ │                                        │
-│  DNS         unavailable —        │ │WHAT THIS STAGE MEANS                   │
+│  DNS            n/a (-1) —        │ │WHAT THIS STAGE MEANS                   │
 │  Connect           30 ms ━━━━━━   │ │TLS sets up encryption for HTTPS. HAR   │
 │> └ TLS             20 ms ━━━━     │ │calls this timing field ssl; it is part │
 │  Send               0 ms          │ │of Connect, not an extra interval to    │

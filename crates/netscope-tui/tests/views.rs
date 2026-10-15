@@ -66,7 +66,7 @@ fn journey_keeps_missing_values_and_explanations_separate_from_observed_messages
     for label in [
         "NETSCOPE / JOURNEY",
         "Direction diagram",
-        "DNS         unavailable",
+        "DNS            n/a (-1)",
         "30 ms",
         "20 ms",
         "Known stage sum: 45 ms",
@@ -451,7 +451,7 @@ fn inspector_scrolls_to_every_section_and_preserves_duplicate_headers()
         "TIMINGS",
         "Connect: 30 ms",
         "SSL (within connect): 20 ms",
-        "DNS: Unavailable (-1)",
+        "DNS: Not applicable (-1)",
         "Blocked: Not recorded",
         "Waiting for response: 10 ms",
         "WARNINGS",

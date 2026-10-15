@@ -14,7 +14,7 @@ Bar scale: 0–45 ms · TLS is part of Connect
 ┌ Reported stages · ↑/↓ ────────────┐ ┌ Wait for the response · PgUp/PgDn ─────┐
 │   Stage         Reported    Bar   │ │Reported: 10 ms                         │
 │  Blocked    not recorded —        │ │                                        │
-│  DNS         unavailable —        │ │WHAT THIS STAGE MEANS                   │
+│  DNS            n/a (-1) —        │ │WHAT THIS STAGE MEANS                   │
 │  Connect           30 ms ━━━━━━   │ │After sending the request, the client   │
 │  └ TLS             20 ms ━━━━     │ │waits for the response to begin.        │
 │  Send               0 ms          │ │Network travel contributes as well as   │

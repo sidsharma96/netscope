@@ -14,7 +14,7 @@ Bar scale: 0–45 ms · TLS is part of Connect
 ┌ Reported stages · ↑/↓ ─────────────────────┐ ┌ Wait for the response ────────────────────────────┐
 │   Stage         Reported       Relative    │ │Reported: 10 ms                                    │
 │  Blocked    not recorded —                 │ │                                                   │
-│  DNS         unavailable —                 │ │WHAT THIS STAGE MEANS                              │
+│  DNS            n/a (-1) —                 │ │WHAT THIS STAGE MEANS                              │
 │  Connect           30 ms ━━━━━━━━━━━       │ │After sending the request, the client waits for    │
 │  └ TLS             20 ms ━━━━━━━━          │ │the response to begin. Network travel contributes  │
 │  Send               0 ms                   │ │as well as time before the server responds.        │

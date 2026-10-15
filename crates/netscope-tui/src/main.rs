@@ -11,6 +11,7 @@ const HELP: &str = "Netscope — inspect HTTP captures and prepare reviewed requ
 Usage:
   netscope <capture.har>
   netscope --pcap <capture.pcap>
+  netscope --pcap -- <capture.pcap>
   netscope --draft <request.json>
   netscope -- <capture.har>
   netscope --draft -- <request.json>

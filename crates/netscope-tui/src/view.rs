@@ -573,7 +573,7 @@ pub(super) fn status(request: &Request) -> String {
 pub(super) fn timing(value: Timing) -> String {
     match value {
         Timing::Missing => "Not recorded".into(),
-        Timing::Unavailable => "Unavailable (-1)".into(),
+        Timing::Unavailable => "Not applicable (-1)".into(),
         Timing::Milliseconds(n) => format!("{n} ms"),
         Timing::ExporterNegative(n) => format!("Exporter value {n} · not a duration"),
     }

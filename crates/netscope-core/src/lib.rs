@@ -6,12 +6,14 @@ use std::fmt;
 
 /// An optional timing as reported by a capture exporter.
 ///
-/// Missing and unavailable values must not become measured zeroes.
+/// Missing and not-applicable values must not become measured zeroes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Timing {
     /// The exporter omitted the field.
     Missing,
-    /// The exporter supplied the HAR sentinel value `-1`.
+    /// The exporter supplied `-1`. HAR 1.2 defines this for an optional
+    /// timing as "does not apply to the current request", for example DNS
+    /// and connect on a reused connection. It is not "value unknown".
     Unavailable,
     /// A duration in milliseconds. The constructor accepts finite, non-negative values.
     Milliseconds(f64),

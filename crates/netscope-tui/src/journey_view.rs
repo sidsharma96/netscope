@@ -99,7 +99,7 @@ fn explanation(r: &Request, stage: usize) -> Vec<String> {
             "The exporter did not retain a value here. That does not tell us whether the operation happened."
         }
         Timing::Unavailable => {
-            "The exporter retained -1: no duration is available. It does not mean the operation took zero time."
+            "The exporter recorded -1: under HAR 1.2 this stage did not apply to the request, for example on a reused connection. It does not mean the operation took zero time."
         }
         Timing::ExporterNegative(_) => {
             "This negative exporter value is preserved as metadata, not a duration. It has no duration bar and is excluded from the known-stage sum."
@@ -209,7 +209,7 @@ fn accounting(r: &Request) -> (String, String, bool) {
 fn short_value(value: Timing) -> String {
     match value {
         Timing::Missing => "not recorded".into(),
-        Timing::Unavailable => "unavailable".into(),
+        Timing::Unavailable => "n/a (-1)".into(),
         Timing::Milliseconds(n) => format!("{n} ms"),
         Timing::ExporterNegative(n) => format!("{n} *"),
     }
