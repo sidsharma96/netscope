@@ -29,6 +29,7 @@ fn capture(packets: Vec<Packet>) -> PacketCapture {
         snaplen: 65535,
         nanoseconds: false,
         packets,
+        notes: vec![],
     }
 }
 #[test]

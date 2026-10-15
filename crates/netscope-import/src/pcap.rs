@@ -105,14 +105,29 @@ pub fn import_pcap(bytes: &[u8]) -> Result<PacketCapture, PcapError> {
         snaplen,
         nanoseconds,
         packets: vec![],
+        notes: vec![],
     };
     let mut offset = 24;
     while offset < bytes.len() {
         if capture.packets.len() == PCAP_PACKET_LIMIT {
-            return Err(error(offset, "More than 20000 packet records"));
+            capture
+                .notes
+                .push("More than 20000 packet records; only the first 20000 were read");
+            break;
         }
+        // Stopping a capture abruptly can leave a half-written last record.
+        let truncated = |capture: &mut PacketCapture, at, reason| {
+            if capture.packets.is_empty() {
+                return Err(error(at, reason));
+            }
+            capture
+                .notes
+                .push("Final packet record truncated; earlier records kept");
+            Ok(())
+        };
         if bytes.len() - offset < 16 {
-            return Err(error(offset, "Truncated record header"));
+            truncated(&mut capture, offset, "Truncated record header")?;
+            break;
         }
         let seconds = word(bytes, offset, little)?;
         let fraction = word(bytes, offset + 4, little)?;
@@ -137,10 +152,13 @@ pub fn import_pcap(bytes: &[u8]) -> Result<PacketCapture, PcapError> {
             ));
         }
         let start = offset + 16;
-        let end = start
+        let Some(end) = start
             .checked_add(retained)
             .filter(|end| *end <= bytes.len())
-            .ok_or_else(|| error(start, "Truncated packet record"))?;
+        else {
+            truncated(&mut capture, start, "Truncated packet record")?;
+            break;
+        };
         let mut packet = Packet {
             seconds,
             nanos: if nanoseconds {

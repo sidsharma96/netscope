@@ -69,7 +69,12 @@ fn file_framing_and_all_prefix_cuts_fail_safely() -> Result<(), Box<dyn std::err
     for _ in 0..=PCAP_PACKET_LIMIT {
         many.extend_from_slice(&[0; 16]);
     }
-    assert!(import_pcap(&many).is_err());
+    let kept = import_pcap(&many)?;
+    assert_eq!(kept.packets.len(), PCAP_PACKET_LIMIT);
+    assert_eq!(
+        kept.notes,
+        ["More than 20000 packet records; only the first 20000 were read"]
+    );
     let mut generator = 7u32;
     for length in 0..512 {
         let mut bytes = vec![0; length];
@@ -300,5 +305,24 @@ fn ipv4_total_length_zero_from_offload_uses_the_frame_length()
     bare[32..36].copy_from_slice(&20u32.to_le_bytes());
     bare[36..40].copy_from_slice(&20u32.to_le_bytes());
     assert!(import_pcap(&bare)?.packets[0].tcp.is_none());
+    Ok(())
+}
+#[test]
+fn a_truncated_final_record_keeps_the_complete_records_before_it()
+-> Result<(), Box<dyn std::error::Error>> {
+    let whole = import_pcap(SAMPLE)?;
+    assert!(whole.notes.is_empty());
+    // Cut inside the last record's data, then inside its 16-byte header.
+    let last = SAMPLE.len() - whole.packets[23].bytes.len();
+    for cut in [SAMPLE.len() - 1, last - 16 + 7] {
+        let capture = import_pcap(&SAMPLE[..cut])?;
+        assert_eq!(capture.packets.len(), 23);
+        assert_eq!(
+            capture.notes,
+            ["Final packet record truncated; earlier records kept"]
+        );
+    }
+    // With no complete record there is nothing to keep, so the file still fails.
+    assert!(import_pcap(&SAMPLE[..24 + 20]).is_err());
     Ok(())
 }

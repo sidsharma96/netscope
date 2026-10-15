@@ -12,6 +12,8 @@ pub struct PacketCapture {
     pub nanoseconds: bool,
     /// Packet records; their vector positions are stable identifiers.
     pub packets: Vec<Packet>,
+    /// File-level notes, such as records that were not read.
+    pub notes: Vec<&'static str>,
 }
 /// One stored record; layer interpretation never changes these bytes.
 #[derive(Debug)]

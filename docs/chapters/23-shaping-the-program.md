@@ -136,7 +136,7 @@ Gap: a response to HEAD is misframed, and port reuse without a captured SYN merg
 
 Scope: WebSocket support covers handshake header shape only, and SSE in a HAR has no timing. Scope: the import and reassembly budgets mean a large capture is analysed in part, and the views say so.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L236)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L254)
 
 </details>
 

@@ -389,10 +389,16 @@ pub fn draw_packets(
     };
     frame.render_widget(
         Paragraph::new(format!(
-            "NETSCOPE / {title}\n{}\n{} packets · link {} · offline; capture unchanged",
+            "NETSCOPE / {title}\n{}\n{} packets · link {} · {}",
             terminal_text(filename),
             capture.packets.len(),
-            capture.link_type
+            capture.link_type,
+            // A file-level note, such as unread records, outranks the reminder.
+            capture
+                .notes
+                .first()
+                .copied()
+                .unwrap_or("offline; capture unchanged")
         )),
         header,
     );
@@ -529,6 +535,7 @@ pub fn packet_summary(capture: &PacketCapture) -> String {
         ),
         "Offline packet evidence; checksums and receiver acceptance not verified".into(),
     ];
+    lines.extend(capture.notes.iter().map(|s| s.to_string()));
     for id in 0..capture.packets.len() {
         lines.extend(packet_lines(capture, id));
     }

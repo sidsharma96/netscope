@@ -19,7 +19,7 @@ A retransmitted SYN with the same ISN on an open epoch matches the anchor, so it
 
 The weak case is reuse where the new connection's SYN was not captured. Its first packet is not a SYN, so it joins the old closed epoch, and its bytes are placed relative to the old anchor.
 
-**Learn more:** [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`is_none_or`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L99-L101) · [`tuple_reuse_resets_directions_and_budget_does_not_merge_new_epochs_into_old`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L35)
+**Learn more:** [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`is_none_or`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L99-L101) · [`tuple_reuse_resets_directions_and_budget_does_not_merge_new_epochs_into_old`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L36)
 
 </details>
 
@@ -40,7 +40,7 @@ Without a SYN, the anchor is the sequence number of the first packet recorded fo
 
 With a SYN, position 0 is ISN + 1, the first data byte. A segment whose offset is negative cannot belong to this connection's data, so it is skipped and counted in `skipped_segments`. A skipped segment also makes `observed_end` false.
 
-**Learn more:** [A direction needs a beginning, and sometimes we do not have it](../chapters/30-putting-bytes-in-order.md#a-direction-needs-a-beginning-and-sometimes-we-do-not-have-it) · [`first_sequence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L239) · [`without_syn_out_of_order_prefix_is_retained_but_not_claimed_as_connection_start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L77)
+**Learn more:** [A direction needs a beginning, and sometimes we do not have it](../chapters/30-putting-bytes-in-order.md#a-direction-needs-a-beginning-and-sometimes-we-do-not-have-it) · [`first_sequence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L239) · [`without_syn_out_of_order_prefix_is_retained_but_not_claimed_as_connection_start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L78)
 
 </details>
 
@@ -61,7 +61,7 @@ The segment's declared payload comes from the IP length field, not from the capt
 
 `contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L354) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L175-L179) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L372) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
 
 </details>
 
@@ -394,7 +394,7 @@ Gap: a response to HEAD is misframed, and port reuse without a captured SYN merg
 
 Scope: WebSocket support covers handshake header shape only, and SSE in a HAR has no timing. Scope: the import and reassembly budgets mean a large capture is analysed in part, and the views say so.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L236)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L254)
 
 </details>
 

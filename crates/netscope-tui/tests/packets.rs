@@ -116,3 +116,13 @@ fn inspector_bounds_do_not_change_list_selection_and_empty_files_are_safe()
     assert!(render(&empty, &mut app, 80, 24)?.contains("0 directed epochs"));
     Ok(())
 }
+#[test]
+fn file_level_packet_notes_are_shown() -> Result<(), Box<dyn std::error::Error>> {
+    let sample = include_bytes!("../../../tests/fixtures/pcap/streams.pcap");
+    let capture = netscope_import::pcap::import_pcap(&sample[..sample.len() - 1])?;
+    let note = "Final packet record truncated; earlier records kept";
+    assert!(netscope_tui::packet_view::packet_summary(&capture).contains(note));
+    let mut app = PacketApp::new(&capture);
+    assert!(render(&capture, &mut app, 100, 30)?.contains("Final packet record truncated"));
+    Ok(())
+}
