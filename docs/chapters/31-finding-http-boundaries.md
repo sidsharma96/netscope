@@ -124,7 +124,7 @@ The segment's declared payload comes from the IP length field, not from the capt
 
 `contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L305) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L342) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
 
 </details>
 

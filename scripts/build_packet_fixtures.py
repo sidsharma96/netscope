@@ -90,6 +90,19 @@ def build():
     (ROOT / 'big-nano.pcap').write_bytes(pcap([packet(b'hello', ipv6=True)], little=False, nano=True))
     (ROOT / 'raw-ip.pcap').write_bytes(pcap([packet(b'raw')[14:]], link=101))
     (ROOT / 'unknown-link.pcap').write_bytes(pcap([b'opaque'], link=147))
+    # Loopback (DLT_NULL) stores the address family in the capturing host's byte
+    # order: 2 is AF_INET everywhere, 30 is AF_INET6 on macOS, 10 on Linux.
+    for little, name in [(True, 'loopback-null.pcap'), (False, 'loopback-null-be.pcap')]:
+        family = '<I' if little else '>I'
+        (ROOT / name).write_bytes(pcap([struct.pack(family, 2) + packet(b'loop4')[14:],
+                                        struct.pack(family, 30) + packet(b'loop6', ipv6=True)[14:]],
+                                       little=little, link=0))
+    # Linux cooked captures (tcpdump -i any): SLL is 16 bytes ending in the
+    # EtherType; SLL2 is 20 bytes starting with it. Both are big-endian fields.
+    sll = struct.pack('!HHH8sH', 0, 1, 6, bytes.fromhex('0200000000010000'), 0x0800)
+    sll2 = struct.pack('!HHIHBB8s', 0x86dd, 0, 2, 1, 0, 6, bytes.fromhex('0200000000010000'))
+    (ROOT / 'linux-sll.pcap').write_bytes(pcap([sll + packet(b'cooked')[14:]], link=113))
+    (ROOT / 'linux-sll2.pcap').write_bytes(pcap([sll2 + packet(b'cooked2', ipv6=True)[14:]], link=276))
     hashes = []
     for path in sorted(ROOT.glob('*.pcap')):
         hashes.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}')

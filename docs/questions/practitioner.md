@@ -93,11 +93,11 @@ Which container formats, link types and network and transport layers does the PC
 <details>
 <summary>Answer</summary>
 
-Only classic PCAP version 2.4 is supported, in either byte order and with microsecond or nanosecond timestamps. A PCAPNG file is rejected with an explicit message. The supported link types are 1 (Ethernet), 101 (raw IP), 228 (raw IPv4) and 229 (raw IPv6), with up to two VLAN tags. IPv4 and IPv6 are parsed, and the transport layers are TCP and UDP. Fragmented IPv4 packets are not reassembled, IPv6 extension headers are not walked, and checksums are never verified.
+Only classic PCAP version 2.4 is supported, in either byte order and with microsecond or nanosecond timestamps. A PCAPNG file is rejected with an explicit message. The supported link types are 0 (BSD loopback, as macOS `lo0` writes), 1 (Ethernet, with up to two VLAN tags), 101 (raw IP), 113 and 276 (Linux cooked SLL and SLL2, as `tcpdump -i any` writes), 228 (raw IPv4) and 229 (raw IPv6). IPv4 and IPv6 are parsed, and the transport layers are TCP and UDP. Fragmented IPv4 packets are not reassembled, IPv6 extension headers are not walked, and checksums are never verified.
 
 Errors in the file's framing fail the import: a snap length of 0 or above 256 KiB, more than 20,000 records, a file over 32 MiB, a truncated record, a captured length above the snap length or original length, or a timestamp fraction out of range. Errors inside a packet do not. The packet keeps its bytes and gets a reason in its layer list, such as "Link type unsupported; packet bytes retained". A macOS loopback capture (link type 0) or a Linux `-i any` capture (link type 113) therefore opens, but every packet carries that reason.
 
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L170) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L200)
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L170) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L237)
 
 </details>
 
@@ -270,7 +270,7 @@ The IP layer computes a declared end: the start of the IP header plus the IPv4 t
 
 Two cases show why both are needed. Ethernet pads short frames to 60 bytes, and using the record length would turn that padding into fake TCP payload; the IP length excludes it. In a capture cut by its snap length, the declared length still says how much was sent, so reassembly reserves the whole sequence range and marks the uncaptured part `Missing` instead of pretending the segment was short. UDP works the same way, with a `complete` flag when the whole datagram was retained.
 
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L210-L240) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L297-L306)
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L247-L277) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L334-L343)
 
 </details>
 

@@ -244,3 +244,42 @@ fn remaining_orders_resolutions_vlan_and_variable_headers_are_supported()
     );
     Ok(())
 }
+#[test]
+fn loopback_and_linux_cooked_link_types_decode_ip() -> Result<(), Box<dyn std::error::Error>> {
+    for (file, payloads) in [
+        (
+            include_bytes!("../../../tests/fixtures/pcap/loopback-null.pcap").as_slice(),
+            [b"loop4".as_slice(), b"loop6"].as_slice(),
+        ),
+        (
+            include_bytes!("../../../tests/fixtures/pcap/loopback-null-be.pcap"),
+            &[b"loop4", b"loop6"],
+        ),
+        (
+            include_bytes!("../../../tests/fixtures/pcap/linux-sll.pcap"),
+            &[b"cooked"],
+        ),
+        (
+            include_bytes!("../../../tests/fixtures/pcap/linux-sll2.pcap"),
+            &[b"cooked2"],
+        ),
+    ] {
+        let capture = import_pcap(file)?;
+        assert_eq!(capture.packets.len(), payloads.len());
+        for (packet, payload) in capture.packets.iter().zip(payloads) {
+            let tcp = packet.tcp.as_ref().ok_or("Missing TCP")?;
+            assert_eq!(&packet.bytes[tcp.payload.clone()], *payload);
+            assert_eq!(tcp.destination.port(), 80);
+        }
+    }
+    // An unknown loopback family and a cut cooked header stay labelled, not decoded.
+    let mut odd = include_bytes!("../../../tests/fixtures/pcap/loopback-null.pcap").to_vec();
+    odd[40] = 99;
+    assert!(import_pcap(&odd)?.packets[0].tcp.is_none());
+    let mut cut = include_bytes!("../../../tests/fixtures/pcap/linux-sll.pcap").to_vec();
+    cut.truncate(24 + 16 + 10);
+    cut[32..36].copy_from_slice(&10u32.to_le_bytes());
+    cut[36..40].copy_from_slice(&10u32.to_le_bytes());
+    assert!(import_pcap(&cut)?.packets[0].tcp.is_none());
+    Ok(())
+}

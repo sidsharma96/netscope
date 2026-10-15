@@ -298,7 +298,7 @@ JavaScript Object Notation, a text format for named fields, lists, text, numbers
 
 ## Link type
 
-The number in a PCAP file header that says what the first bytes of every record are. Netscope reads type 1 (Ethernet), 101 (raw IP), 228 (raw IPv4), and 229 (raw IPv6). See [What a capture file contains](chapters/34-defending-the-design.md#what-a-capture-file-contains).
+The number in a PCAP file header that says what the first bytes of every record are. Netscope reads type 0 (BSD loopback), 1 (Ethernet), 101 (raw IP), 113 (Linux cooked SLL), 228 (raw IPv4), 229 (raw IPv6), and 276 (Linux cooked SLL2). See [What a capture file contains](chapters/34-defending-the-design.md#what-a-capture-file-contains).
 
 ## Lint
 
@@ -310,7 +310,7 @@ The response header that names a redirect's destination. Netscope requires exact
 
 ## Loopback
 
-A network interface that delivers traffic back to the same machine, such as `lo0` on macOS. macOS loopback captures use link type 0, which Netscope does not read. See [Why refuse PCAPNG and other link types](chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do).
+A network interface that delivers traffic back to the same machine, such as `lo0` on macOS. macOS loopback captures use link type 0, `DLT_NULL`, whose 4-byte header gives the address family. See [Why refuse PCAPNG and other link types](chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do).
 
 ## Macro
 

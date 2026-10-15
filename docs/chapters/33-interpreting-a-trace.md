@@ -134,12 +134,12 @@ A security engineer is evaluating Netscope for incident work. Name the five most
 
 Any five of these, each labelled correctly, make a good answer.
 
-Scope: only classic PCAP is read. PCAPNG is rejected, and macOS loopback (link type 0) and Linux `-i any` captures show "Link type unsupported". Scope: TLS is neither parsed nor decrypted, so HTTPS in a packet capture is opaque. Scope: IPv4 fragments are not reassembled, IPv6 extension headers are not walked, and checksums are not verified. Scope: wire HTTP is HTTP/1.1 with GET and POST requests only, and the two directions are not paired.
+Scope: only classic PCAP is read. PCAPNG is rejected, and link types outside 0, 1, 101, 113, 228, 229 and 276 show "Link type unsupported". Scope: TLS is neither parsed nor decrypted, so HTTPS in a packet capture is opaque. Scope: IPv4 fragments are not reassembled, IPv6 extension headers are not walked, and checksums are not verified. Scope: wire HTTP is HTTP/1.1 with GET and POST requests only, and the two directions are not paired.
 
 Gap: a response to HEAD is misframed, and port reuse without a captured SYN merges into the old epoch. Gap: replay trusts only the bundled root certificates and ignores proxies. Gap: saved drafts keep URL query tokens and unlisted secret headers, and the parent directory is not synced. Gap: terminal escaping misses bidi and zero-width characters. Gap: retry matching can be quadratic, and it misses real retries that change one header.
 
 Scope: WebSocket support covers handshake header shape only, and SSE in a HAR has no timing. Scope: the import and reassembly budgets mean a large capture is analysed in part, and the views say so.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L199)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L236)
 
 </details>

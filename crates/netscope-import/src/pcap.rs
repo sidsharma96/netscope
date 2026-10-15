@@ -1,4 +1,4 @@
-//! Classic PCAP framing and a bounded Ethernet/raw-IP layer subset.
+//! Classic PCAP framing and a bounded Ethernet, loopback, Linux cooked and raw-IP layer subset.
 use netscope_core::packets::{Packet, PacketCapture, TcpSegment, UdpDatagram};
 use std::{
     fmt,
@@ -194,6 +194,43 @@ fn layers(packet: &mut Packet, link: u32) -> Result<(), &'static str> {
                 _ => return Err("Raw IP version unsupported or unavailable"),
             },
         ),
+        // BSD loopback (DLT_NULL): a 4-byte address family in the capturing host's byte order.
+        0 => {
+            let family = b.get(..4).ok_or("Loopback header unavailable")?;
+            let value = if family[..2] == [0, 0] {
+                u32::from_be_bytes([family[0], family[1], family[2], family[3]])
+            } else {
+                u32::from_le_bytes([family[0], family[1], family[2], family[3]])
+            };
+            packet
+                .layers
+                .push(format!("Loopback address family {value}"));
+            let kind = match value {
+                2 => 0x0800,
+                // AF_INET6 differs by system: Linux, NetBSD/OpenBSD, FreeBSD, macOS.
+                10 | 24 | 28 | 30 => 0x86dd,
+                _ => return Err("Loopback address family unsupported; bytes retained"),
+            };
+            (4, kind)
+        }
+        // Linux cooked capture v1: 16 bytes, EtherType last.
+        113 => {
+            let kind = be16(b, 14).ok_or("Linux cooked (SLL) header unavailable")?;
+            packet.layers.push("Linux cooked capture (SLL)".into());
+            (16, kind)
+        }
+        // Linux cooked capture v2: 20 bytes, EtherType first.
+        276 => {
+            if b.len() < 20 {
+                return Err("Linux cooked (SLL2) header unavailable");
+            }
+            let kind = be16(b, 0).ok_or("Linux cooked (SLL2) header unavailable")?;
+            packet.layers.push(format!(
+                "Linux cooked capture (SLL2) · interface {}",
+                be32(b, 4).ok_or("Linux cooked (SLL2) header unavailable")?
+            ));
+            (20, kind)
+        }
         228 => (0, 0x0800),
         229 => (0, 0x86dd),
         _ => return Err("Link type unsupported; packet bytes retained"),

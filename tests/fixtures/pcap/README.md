@@ -8,6 +8,10 @@ Generated on October 13, 2026 by [build_packet_fixtures.py](../../../scripts/bui
 | big-nano.pcap | Big-endian/nanosecond IPv6/TCP |
 | raw-ip.pcap | Link type 101 with IPv4/TCP |
 | unknown-link.pcap | Unsupported type 147 with retained opaque bytes |
+| loopback-null.pcap | Little-endian link type 0 (BSD loopback); family 2 IPv4/TCP and family 30 (macOS) IPv6/TCP |
+| loopback-null-be.pcap | The same records big-endian, with the family in big-endian order |
+| linux-sll.pcap | Link type 113 (Linux cooked v1) with IPv4/TCP |
+| linux-sll2.pcap | Link type 276 (Linux cooked v2) with IPv6/TCP |
 
 streams.pcap #0..8 contain two directed SYN/data/FIN observations. The response's wire chunks retain an extension and a trailer; application bytes are an illustrative SDP-like description. #9..11 contain a known sequence gap. #12..14 disagree about a payload position. #15..16 retain only three of six declared payload bytes. #17..19 cross the 32-bit sequence boundary. #20 is a DNS response with two IPv4 and one IPv6 answer, not proof of load balancing. #21 has a framed STUN-shaped header, not evidence of ICE success. #22 is deliberately outside fragment handling and #23 outside ARP decoding.
 
