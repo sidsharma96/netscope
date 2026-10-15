@@ -52,7 +52,7 @@ Costs include startup work and extra storage. In-window mismatches can still lea
 
 Independent Boolean flags would allow combinations such as “editing and sending” unless every transition repaired them. A general state-machine framework could centralize transitions but adds an abstraction before the current states require it. Current enums improve clarity without proving every invariant: optional result/pending fields must still agree with the mode, and transition tests enforce those relationships.
 
-Revisit if new modes make those combinations difficult to reason about. Evidence: view state [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66), editor [`ReplayEditor`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L31), terminal loop [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L126), [navigation lesson](chapters/11-drawing-and-navigation.md). Pure state and buffer tests complement real-terminal checks; neither substitutes for the other.
+Revisit if new modes make those combinations difficult to reason about. Evidence: view state [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66), editor [`ReplayEditor`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L31), terminal loop [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L158), [navigation lesson](chapters/11-drawing-and-navigation.md). Pure state and buffer tests complement real-terminal checks; neither substitutes for the other.
 
 ## Inspection workspace and replay workbench
 

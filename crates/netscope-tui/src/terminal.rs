@@ -9,6 +9,35 @@ use crossterm::{
 use netscope_core::Session;
 use ratatui::{Frame, Terminal, backend::CrosstermBackend};
 use std::io::{self, Stdout};
+use std::panic::PanicHookInfo;
+use std::sync::{Mutex, Once, PoisonError};
+use std::thread::{self, ThreadId};
+
+type Hook = Box<dyn Fn(&PanicHookInfo<'_>) + Send + Sync + 'static>;
+/// The thread that owns the terminal while raw mode or the alternate screen is active.
+static UI_THREAD: Mutex<Option<ThreadId>> = Mutex::new(None);
+static HOOK: Once = Once::new();
+
+/// Wrap the previous panic hook so a panic on the interface thread first leaves
+/// the alternate screen; otherwise the message is printed there and then erased.
+fn restoring_hook(previous: Hook, restore: impl Fn() + Send + Sync + 'static) -> Hook {
+    Box::new(move |info| {
+        let owner = *UI_THREAD.lock().unwrap_or_else(PoisonError::into_inner);
+        if owner == Some(thread::current().id()) {
+            restore();
+        }
+        previous(info);
+    })
+}
+fn install_panic_hook() {
+    HOOK.call_once(|| {
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(restoring_hook(previous, || {
+            let _ = execute!(io::stdout(), Show, LeaveAlternateScreen);
+            let _ = disable_raw_mode();
+        }));
+    });
+}
 
 struct Restore {
     raw: bool,
@@ -20,6 +49,8 @@ impl Restore {
             raw: false,
             alternate: false,
         };
+        install_panic_hook();
+        *UI_THREAD.lock().unwrap_or_else(PoisonError::into_inner) = Some(thread::current().id());
         enable_raw_mode()?;
         guard.raw = true;
         // Mark first so a partially failed terminal write still triggers cleanup.
@@ -40,6 +71,7 @@ impl Restore {
         if raw.is_ok() {
             self.raw = false;
         }
+        *UI_THREAD.lock().unwrap_or_else(PoisonError::into_inner) = None;
         screen.and(raw)
     }
 }
@@ -230,4 +262,30 @@ pub fn run_packets(
         Ok(())
     })();
     result.and(guard.restore())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{UI_THREAD, restoring_hook};
+    use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+    fn lock<T>(value: &Mutex<T>) -> MutexGuard<'_, T> {
+        value.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+    #[test]
+    fn panic_hook_restores_the_interface_thread_before_printing() {
+        let events = Arc::new(Mutex::new(vec![]));
+        let (printed, restored) = (events.clone(), events.clone());
+        let original = std::panic::take_hook();
+        std::panic::set_hook(restoring_hook(
+            Box::new(move |_| lock(&printed).push("message")),
+            move || lock(&restored).push("restore"),
+        ));
+        *lock(&UI_THREAD) = Some(std::thread::current().id());
+        let _ = std::panic::catch_unwind(|| panic!("interface"));
+        // A worker panic must not tear down the interface that is still running.
+        let _ = std::thread::spawn(|| panic!("worker")).join();
+        *lock(&UI_THREAD) = None;
+        std::panic::set_hook(original);
+        assert_eq!(*lock(&events), ["restore", "message", "message"]);
+    }
 }

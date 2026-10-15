@@ -121,7 +121,7 @@ Network code lives only in `netscope-net`, and the only place that starts it is 
 
 Replay supports two methods. GET is accepted only when the capture reports a request body size of 0 and recorded no body. POST is accepted with `text/plain` or `application/json`, in UTF-8 (an optional `charset=utf-8` is the only parameter allowed), at most 16 KiB, and without a content encoding. WebSocket URLs are refused because WebSocket captures are inspection-only.
 
-**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L139-L141) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L157-L172)
+**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L139-L141) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L189-L204)
 
 </details>
 

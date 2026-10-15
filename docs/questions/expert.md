@@ -105,7 +105,7 @@ What happens when (a) a result arrives in the same loop iteration as an Esc key,
 
 (d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L146-L155) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
 
 </details>
 
@@ -321,11 +321,11 @@ Captured URLs, headers, and filenames are controlled by whoever made the file. H
 
 `is_control` covers only Unicode category Cc: U+0000 to U+001F and U+007F to U+009F. That includes ESC, so a captured value cannot start a terminal command. Format characters in category Cf pass through unchanged. The right-to-left override U+202E, the bidi isolates, and the zero-width space can make a URL display differently from its bytes.
 
-The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. No panic hook is installed, so a panic message printed inside the alternate screen is erased when the screen is restored.
+The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. A panic hook on the interface thread leaves the alternate screen and disables raw mode before the panic message is printed, so the message stays visible on the normal screen.
 
 **Common wrong answer.** "All dangerous Unicode is escaped." Only Cc controls are; bidi and zero-width characters are a listed gap.
 
-**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L13-L50)
+**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L42-L82)
 
 </details>
 
@@ -438,7 +438,7 @@ The terminal loop polls the worker before it handles a key, so most late Esc pre
 
 The fix is to base the mode and message on the result's outcome: show "stopped" only for `Cancelled`, and show a Complete result normally. A test should drive this exact order: poll empty, worker completes, Esc, poll.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L153-L155)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
 
 </details>
 

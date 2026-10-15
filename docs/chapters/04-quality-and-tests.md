@@ -126,7 +126,7 @@ Netscope switches the terminal into raw mode and an alternate screen. How does i
 
 A guard value owns the cleanup. When setup changes the terminal, the guard records those changes. A normal exit restores them explicitly and reports any error. If the function returns early after an error, the guard's `Drop` implementation runs when it leaves scope and attempts the same restoration. A separate pseudo-terminal check runs the real program and inspects the terminal modes after it exits.
 
-**Learn more:** [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [Check the rule and the visible result](../chapters/04-quality-and-tests.md#check-the-rule-and-the-visible-result) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L13)
+**Learn more:** [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [Check the rule and the visible result](../chapters/04-quality-and-tests.md#check-the-rule-and-the-visible-result) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L42)
 
 </details>
 

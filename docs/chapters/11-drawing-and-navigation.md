@@ -156,7 +156,7 @@ Finally, explain why drawing takes a shared reference to the session but a mutab
 
 ## Follow the implementation when ready
 
-The view code [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66) contains state changes, and the workspace renderer [`sections`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/workspace_view.rs#L133) composes the list and sections. Their tests [`navigation_retains_overview_selection_and_scroll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/tests/views.rs#L333) exercise navigation and fixed screen buffers. The terminal code [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L126) manages input and cleanup, with a separate restoration check [`check`](https://github.com/sidsharma96/netscope/blob/main/scripts/check_terminal.py#L20).
+The view code [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66) contains state changes, and the workspace renderer [`sections`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/workspace_view.rs#L133) composes the list and sections. Their tests [`navigation_retains_overview_selection_and_scroll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/tests/views.rs#L333) exercise navigation and fixed screen buffers. The terminal code [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L158) manages input and cleanup, with a separate restoration check [`check`](https://github.com/sidsharma96/netscope/blob/main/scripts/check_terminal.py#L20).
 
 The [first version walkthrough](06-first-milestone.md) provides the command to run the sample. The [verification record](../VERIFICATION.md) describes completed checks and their limits. [Ratatui's documentation](https://docs.rs/ratatui/0.29.0/ratatui/) is the implementation reference for frames and drawing.
 
@@ -196,11 +196,11 @@ Captured URLs, headers, and filenames are controlled by whoever made the file. H
 
 `is_control` covers only Unicode category Cc: U+0000 to U+001F and U+007F to U+009F. That includes ESC, so a captured value cannot start a terminal command. Format characters in category Cf pass through unchanged. The right-to-left override U+202E, the bidi isolates, and the zero-width space can make a URL display differently from its bytes.
 
-The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. No panic hook is installed, so a panic message printed inside the alternate screen is erased when the screen is restored.
+The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. A panic hook on the interface thread leaves the alternate screen and disables raw mode before the panic message is printed, so the message stays visible on the normal screen.
 
 **Common wrong answer.** "All dangerous Unicode is escaped." Only Cc controls are; bidi and zero-width characters are a listed gap.
 
-**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L13-L50)
+**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L42-L82)
 
 </details>
 
