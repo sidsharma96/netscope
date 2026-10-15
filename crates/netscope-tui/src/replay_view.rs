@@ -162,17 +162,21 @@ impl ReplayEditor {
         if !matches!(self.mode, Mode::Running(active) if active == id) {
             return;
         }
+        // Esc can arrive after the worker finished but before this result was accepted,
+        // so the message follows the outcome, not the cancel request.
+        self.message = match (self.cancel, &result.outcome) {
+            (false, _) => String::new(),
+            (true, netscope_net::Outcome::Cancelled) => {
+                "Operation stopped; o opens its retained result".into()
+            }
+            (true, _) => "Finished before Esc took effect; o opens its retained result".into(),
+        };
         self.result = Some(result);
         self.pending = None;
         self.mode = if self.cancel {
             Mode::Draft
         } else {
             Mode::Result
-        };
-        self.message = if self.cancel {
-            "Operation stopped; o opens its retained result".into()
-        } else {
-            String::new()
         };
         self.cancel = false;
         self.offset = 0;

@@ -162,7 +162,7 @@ What happens when (a) a result arrives in the same loop iteration as an Esc key,
 <details>
 <summary>Answer</summary>
 
-(a) Completion is accepted before a later cancellation. At the top of each loop pass the terminal loop polls the worker first and sends the cancel signal only when no result is waiting. When a key arrives, it polls again before handling the key. If the cancel flag was already set when the result is accepted, `complete` returns to the draft with "Operation stopped; o opens its retained result", and the result is still kept.
+(a) Completion is accepted before a later cancellation. At the top of each loop pass the terminal loop polls the worker first and sends the cancel signal only when no result is waiting. When a key arrives, it polls again before handling the key. If the cancel flag was already set when the result is accepted, `complete` returns to the draft and keeps the result. The message depends on the outcome: "Operation stopped; o opens its retained result" for `Cancelled`, and "Finished before Esc took effect; o opens its retained result" for any other outcome.
 
 (b) Each Send gets a `u64` ID from a counter owned by `App`, which outlives editors. `complete` and `progress` ignore a result whose ID is not the running one. When the counter would overflow, sending is disabled with "Send IDs exhausted" instead of wrapping.
 
@@ -170,7 +170,7 @@ What happens when (a) a result arrives in the same loop iteration as an Esc key,
 
 (d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
 
 </details>
 
@@ -195,17 +195,17 @@ Only one part of the program needs to change the body at a time. The worker owns
 **Level:** Expert
 
 
-A replay completes normally, but the user presses Esc at almost the same moment. Under what ordering does the screen say "Operation stopped" even though the retained result is Complete? How would you fix it?
+A replay completes normally, but the user presses Esc at almost the same moment. Under what ordering can Esc arrive after the worker finished, and what does the screen say then?
 
 <details>
 <summary>Answer</summary>
 
 The terminal loop polls the worker before it handles a key, so most late Esc presses arrive after the result has been accepted. The window is smaller. The key path polls and finds nothing yet. The worker then sends its Complete result. The loop handles Esc, which only sets the editor's cancel flag. On the next pass, the loop polls first, finds the result, and calls `complete`.
 
-`complete` chooses the message from the cancel flag, not from the result. With the flag set, it returns to the draft with "Operation stopped; o opens its retained result", although no cancel signal was ever sent and the outcome is Complete. Nothing is lost: the result is retained and opens with `o`. The message is misleading, and the screen shows the draft instead of the result.
+`complete` returns to the draft, because the user asked to leave the running view, and keeps the result, which opens with `o`. It chooses the message from the result's outcome, not from the cancel flag. No cancel signal was ever sent and the outcome is Complete, so the message is "Finished before Esc took effect; o opens its retained result". Only a `Cancelled` outcome produces "Operation stopped". The view test `esc_after_the_worker_finished_does_not_claim_a_stop` drives this order.
 
-The fix is to base the mode and message on the result's outcome: show "stopped" only for `Cancelled`, and show a Complete result normally. A test should drive this exact order: poll empty, worker completes, Esc, poll.
+**Common wrong answer.** "The screen says the operation stopped." That was true of earlier versions, which chose the message from the cancel flag.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
 
 </details>

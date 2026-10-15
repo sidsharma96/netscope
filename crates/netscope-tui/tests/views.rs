@@ -1320,6 +1320,33 @@ fn cancel_waits_for_cleanup_and_preserves_a_separate_result()
     assert_eq!(session.requests()[0].url, "https://example.test/api/books");
     Ok(())
 }
+#[test]
+fn esc_after_the_worker_finished_does_not_claim_a_stop() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    let mut app = reviewed_app(&session);
+    press(&mut app, &session, KeyCode::Enter);
+    let (id, _) = app
+        .replay
+        .as_mut()
+        .ok_or("editor")?
+        .take_send()
+        .ok_or("send")?;
+    // The worker finished, but Esc arrived before the interface accepted the result.
+    press(&mut app, &session, KeyCode::Esc);
+    app.replay
+        .as_mut()
+        .ok_or("editor")?
+        .complete(id, new_replay_result(netscope_net::Outcome::Complete));
+    let screen = render(&session, &mut app, 100, 30)?;
+    assert!(!screen.contains("Operation stopped"), "{screen}");
+    assert!(
+        screen.contains("Finished before Esc took effect"),
+        "{screen}"
+    );
+    press(&mut app, &session, KeyCode::Char('o'));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Outcome: Complete"));
+    Ok(())
+}
 
 #[test]
 fn running_and_each_result_match_fixed_buffers() -> Result<(), Box<dyn std::error::Error>> {

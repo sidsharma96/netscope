@@ -268,8 +268,6 @@ PCAPNG is rejected, and link types other than 0, 1, 101, 113, 228, 229, and 276 
 
 Host summaries drop a status outside 0 and 100 to 599 without counting it. The HAR importer never produces one, but `Session::new` is public and does not validate. Fix: add an "other" count in [`record`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/hosts.rs#L46-L54), or validate in `Session::new`.
 
-If Esc is pressed after the worker has already finished but before the UI has accepted the result, [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161) shows "Operation stopped" while the retained result says Complete. Fix: base the message on the result's outcome rather than on the cancel flag, and add a test for this order.
-
 Terminal escaping covers Unicode category Cc only. Format characters such as U+202E (right-to-left override), U+2066 to U+2069 (bidi isolates), and U+200B (zero-width space) are displayed as they are, so a captured URL can look like a different URL. Fix: in [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285), also escape bidi controls and zero-width characters, and add them to the hostile-text view test.
 
 A panic on a replay worker thread prints its message over the running interface, because the [`restoring_hook`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L23-L31) restores the terminal only for the thread that owns it. Fix: on other threads, hold the message and show it in the replay view's failure text instead of printing it.
