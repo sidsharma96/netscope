@@ -283,3 +283,22 @@ fn loopback_and_linux_cooked_link_types_decode_ip() -> Result<(), Box<dyn std::e
     assert!(import_pcap(&cut)?.packets[0].tcp.is_none());
     Ok(())
 }
+#[test]
+fn ipv4_total_length_zero_from_offload_uses_the_frame_length()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut raw = include_bytes!("../../../tests/fixtures/pcap/raw-ip.pcap").to_vec();
+    // The IPv4 header starts after the 24-byte file and 16-byte record headers.
+    raw[42..44].copy_from_slice(&[0, 0]);
+    let capture = import_pcap(&raw)?;
+    let packet = &capture.packets[0];
+    let tcp = packet.tcp.as_ref().ok_or("Missing TCP")?;
+    assert_eq!(&packet.bytes[tcp.payload.clone()], b"raw");
+    assert_eq!(tcp.declared_payload, 3);
+    assert!(packet.layers.iter().any(|s| s.contains("offload")));
+    // A header-only frame with total length 0 is still invalid.
+    let mut bare = raw[..40 + 20].to_vec();
+    bare[32..36].copy_from_slice(&20u32.to_le_bytes());
+    bare[36..40].copy_from_slice(&20u32.to_le_bytes());
+    assert!(import_pcap(&bare)?.packets[0].tcp.is_none());
+    Ok(())
+}

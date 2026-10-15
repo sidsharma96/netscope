@@ -123,7 +123,7 @@ The segment's declared payload comes from the IP length field, not from the capt
 
 `contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L342) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L354) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
 
 </details>
 
@@ -157,6 +157,6 @@ The IP layer computes a declared end: the start of the IP header plus the IPv4 t
 
 Two cases show why both are needed. Ethernet pads short frames to 60 bytes, and using the record length would turn that padding into fake TCP payload; the IP length excludes it. In a capture cut by its snap length, the declared length still says how much was sent, so reassembly reserves the whole sequence range and marks the uncaptured part `Missing` instead of pretending the segment was short. UDP works the same way, with a `complete` flag when the whole datagram was retained.
 
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L247-L277) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L334-L343)
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L247-L289) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L346-L355)
 
 </details>

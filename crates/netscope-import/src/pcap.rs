@@ -250,7 +250,14 @@ fn layers(packet: &mut Packet, link: u32) -> Result<(), &'static str> {
                 .get(offset..offset + 20)
                 .ok_or("IPv4 base header unavailable")?;
             let length = usize::from(h[0] & 15) * 4;
-            let total = usize::from(be16(h, 2).ok_or("IPv4 length unavailable")?);
+            let mut total = usize::from(be16(h, 2).ok_or("IPv4 length unavailable")?);
+            // Segmentation offload can record a total length of 0 for a segment the
+            // card has not split yet; the frame's original length is then the evidence.
+            let frame = packet.original_len as usize;
+            let offload = total == 0 && frame > offset + length;
+            if offload {
+                total = frame - offset;
+            }
             if h[0] >> 4 != 4 || length < 20 || total < length {
                 return Err("Invalid IPv4 version or lengths");
             }
@@ -263,6 +270,11 @@ fn layers(packet: &mut Packet, link: u32) -> Result<(), &'static str> {
                 "IPv4 {src} → {dst} · {length}-byte header · TTL {}",
                 h[8]
             ));
+            if offload {
+                packet.layers.push(
+                    "IPv4 total length 0 (segmentation offload capture); frame length used".into(),
+                );
+            }
             let fragment = be16(h, 6).ok_or("IPv4 fragment field unavailable")?;
             if fragment & 0x3fff != 0 {
                 return Err("IPv4 fragmented payload: transport/reassembly unavailable");
