@@ -308,9 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let ok = match expected {
                     "TLS rejection" => matches!(
                         result.outcome,
-                        netscope_net::Outcome::Failed(
-                            "TLS handshake or certificate verification failed"
-                        )
+                        netscope_net::Outcome::Failed("TLS certificate issuer is not trusted")
                     ),
                     "compression rejection" => matches!(
                         result.outcome,

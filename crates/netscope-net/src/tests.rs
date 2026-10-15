@@ -239,10 +239,18 @@ async fn tls_verifies_trust_and_hostname() -> TestResult {
             .with_root_certificates(roots)
             .with_no_client_auth(),
     );
-    for (host, tls, succeeds) in [
-        ("localhost", trusted.clone(), true),
-        ("127.0.0.1", trusted.clone(), false),
-        ("localhost", configuration(), false),
+    for (host, tls, expected) in [
+        ("localhost", trusted.clone(), Outcome::Complete),
+        (
+            "127.0.0.1",
+            trusted.clone(),
+            Outcome::Failed("TLS certificate does not match the host name"),
+        ),
+        (
+            "localhost",
+            configuration(),
+            Outcome::Failed("TLS certificate issuer is not trusted"),
+        ),
     ] {
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let port = listener.local_addr()?.port();
@@ -274,7 +282,7 @@ async fn tls_verifies_trust_and_hostname() -> TestResult {
             tls,
         )
         .await;
-        assert_eq!(result.outcome == Outcome::Complete, succeeds);
+        assert_eq!(result.outcome, expected);
         tokio::time::timeout(TIME_LIMIT, server).await???;
     }
     Ok(())

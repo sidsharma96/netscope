@@ -105,7 +105,7 @@ What happens when (a) a result arrives in the same loop iteration as an Esc key,
 
 (d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L444-L454)
 
 </details>
 
@@ -126,7 +126,7 @@ Cancellation does not wait for it. The biased `select!` in `wait_for` sees the c
 
 One thing is left behind: the helper thread keeps waiting for the operating system to answer the lookup, and its answer is then discarded. It holds no UI state. The code comment beside the call records this choice.
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [Cancellation follows ownership](../chapters/17-waiting-for-a-response.md#cancellation-follows-ownership) · [`shutdown_timeout`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L388-L389) · [`wait_for`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L297-L308)
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [Cancellation follows ownership](../chapters/17-waiting-for-a-response.md#cancellation-follows-ownership) · [`shutdown_timeout`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L412-L413) · [`wait_for`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L321-L332)
 
 </details>
 
@@ -141,7 +141,7 @@ A user replays a request to an internal HTTPS service whose certificate is signe
 <details>
 <summary>Answer</summary>
 
-The TLS configuration trusts only the Mozilla root set compiled in from `webpki-roots`. It does not read the operating system's trust store, and there is no option to add a CA or skip verification. A company-signed certificate therefore fails with "TLS handshake or certificate verification failed". Hostname verification is also always on.
+The TLS configuration trusts only the Mozilla root set compiled in from `webpki-roots`. It does not read the operating system's trust store, and there is no option to add a CA or skip verification. A company-signed certificate therefore fails with "TLS certificate issuer is not trusted". Hostname verification is also always on.
 
 The client connects directly to the URL's host with `TcpStream::connect`. It does not read `HTTP_PROXY` or `HTTPS_PROXY`, so on a network that blocks direct connections the attempt fails with "Could not connect to destination" or meets the 10-second deadline.
 
@@ -149,7 +149,7 @@ ALPN offers only `http/1.1`, and the hyper connection is HTTP/1.1 only. A server
 
 **Common wrong answer.** "It uses the system trust store and honours `HTTPS_PROXY`, like curl or a browser." Neither is true here. Both are disclosed gaps, not configuration choices the user can change.
 
-**Learn more:** [How does replay use TLS, and what is missing?](../chapters/34-defending-the-design.md#how-does-replay-use-tls-and-what-is-missing) · [`configuration`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L90-L97) · [`TcpStream::connect`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L207) · [`tls_verifies_trust_and_hostname`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/tests.rs#L223)
+**Learn more:** [How does replay use TLS, and what is missing?](../chapters/34-defending-the-design.md#how-does-replay-use-tls-and-what-is-missing) · [`configuration`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L90-L97) · [`TcpStream::connect`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L231) · [`tls_verifies_trust_and_hostname`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/tests.rs#L223)
 
 </details>
 
@@ -281,7 +281,7 @@ A full client applies its own policies by default, such as following redirects, 
 
 The proof is a test. `redirects_and_disconnects_never_open_a_second_connection` serves a 302 with a Location header on a local listener, checks that the result is Complete, and then checks that the listener has no second connection waiting.
 
-**Learn more:** [Why let a library interpret HTTP?](../chapters/17-waiting-for-a-response.md#why-let-a-library-interpret-http) · [Replay transport decision](../contracts/replay-transport.md) · [`Builder`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L237-L241) · [`redirects_and_disconnects_never_open_a_second_connection`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/tests.rs#L479)
+**Learn more:** [Why let a library interpret HTTP?](../chapters/17-waiting-for-a-response.md#why-let-a-library-interpret-http) · [Replay transport decision](../contracts/replay-transport.md) · [`Builder`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L261-L265) · [`redirects_and_disconnects_never_open_a_second_connection`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/tests.rs#L487)
 
 </details>
 
@@ -501,6 +501,6 @@ Browsers avoid this with Happy Eyeballs (RFC 8305): they start an IPv6 attempt, 
 
 The change would be to race address families as RFC 8305 describes, inside the same deadline. Reporting which stage failed would also help, because today the result records only total elapsed time, not separate DNS, connect, and TLS durations.
 
-**Learn more:** [How does replay use TLS, and what is missing?](../chapters/34-defending-the-design.md#how-does-replay-use-tls-and-what-is-missing) · [Keep one deadline for the whole request](../chapters/17-waiting-for-a-response.md#keep-one-deadline-for-the-whole-request) · [`TcpStream::connect`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L207-L209) · [`TIME_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L30)
+**Learn more:** [How does replay use TLS, and what is missing?](../chapters/34-defending-the-design.md#how-does-replay-use-tls-and-what-is-missing) · [Keep one deadline for the whole request](../chapters/17-waiting-for-a-response.md#keep-one-deadline-for-the-whole-request) · [`TcpStream::connect`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L231-L233) · [`TIME_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L30)
 
 </details>

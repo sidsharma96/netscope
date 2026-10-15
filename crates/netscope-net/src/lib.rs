@@ -186,6 +186,30 @@ async fn exchange_mode(
         Err(reason) => Outcome::Failed(reason),
     }
 }
+/// A fixed description of the rustls failure kind; no certificate or request data.
+fn tls_failure(error: &std::io::Error) -> &'static str {
+    use tokio_rustls::rustls::{CertificateError, Error};
+    match error.get_ref().and_then(|e| e.downcast_ref::<Error>()) {
+        Some(Error::InvalidCertificate(kind)) => match kind {
+            CertificateError::UnknownIssuer => "TLS certificate issuer is not trusted",
+            CertificateError::NotValidForName | CertificateError::NotValidForNameContext { .. } => {
+                "TLS certificate does not match the host name"
+            }
+            CertificateError::Expired | CertificateError::ExpiredContext { .. } => {
+                "TLS certificate has expired"
+            }
+            CertificateError::NotValidYet | CertificateError::NotValidYetContext { .. } => {
+                "TLS certificate is not valid yet"
+            }
+            _ => "TLS certificate verification failed",
+        },
+        Some(Error::AlertReceived(_)) => "TLS server sent an alert and ended the handshake",
+        Some(Error::PeerIncompatible(_)) => {
+            "TLS server offered no supported protocol version or cipher"
+        }
+        _ => "TLS handshake failed",
+    }
+}
 async fn exchange_inner(
     review: &ReplayReview,
     result: &mut ReplayResult,
@@ -213,7 +237,7 @@ async fn exchange_inner(
             TlsConnector::from(tls)
                 .connect(name, tcp)
                 .await
-                .map_err(|_| "TLS handshake or certificate verification failed")?,
+                .map_err(|error| tls_failure(&error))?,
         )
     } else {
         Box::new(tcp)
