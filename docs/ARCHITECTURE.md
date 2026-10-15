@@ -86,6 +86,8 @@ The current design gives cleanup and response ownership one location, with per-s
 
 Detaching a worker without cleanup could leave traffic running after the UI appeared to cancel. Clearing the whole result would lose useful partial evidence. Adding competing atomic flags for completion would create another place deciding the outcome. Current channels and selection already supply an authority, so application-level compare-and-swap is not used for this purpose.
 
+**Worker failure.** A worker that panics never sends a result. Unwinding drops its sender, so the UI's `try_recv` sees `Disconnected` rather than `Empty`, and [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430) returns a fallback built at start by [`empty`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L74-L87) with the outcome `Failed("Worker stopped without a result")`, no status, and no body. The fallback sits in an `Option` that `poll` takes, so it is delivered once, and a real result clears it first, so the UI never receives both. The panic message itself goes to standard error over the running interface, because Netscope installs no panic hook.
+
 Revisit if operation ownership changes or multiple producers can finish one logical operation. Evidence: [waiting lesson](chapters/17-waiting-for-a-response.md), [transport contract](contracts/replay-transport.md), network tests [`cancellation_precedes_simultaneous_completion_and_drops_work`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/tests.rs#L151). Controlled scheduling tests support specified cases, not a claim that every possible interleaving has been exhaustively explored.
 
 ## Operation identity
