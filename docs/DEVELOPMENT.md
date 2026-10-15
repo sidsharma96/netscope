@@ -48,7 +48,7 @@ The [protocol contract](contracts/m2-recorded-protocols.md) defines exact export
 
 ## Inspection layout
 
-On main, a terminal at least 100 columns wide shows the request list beside selected details. Enter or Tab focuses the inspector; Tab/Esc returns to the list. Number keys choose Summary (1), Headers (2), Body (3), Timing (4), Evidence (5), or the complete report (6). Up/Down and page/home/end keys act on the focused pane. At 80–99 columns, list and details occupy separate screens. Press g for the explanatory journey, then g/Esc to return to the section. See [layout rules and boundaries](UI_LAYOUT.md).
+On main, a terminal at least 100 columns wide shows the request list beside selected details. Enter or Tab focuses the inspector; Tab/Esc returns to the list. Number keys choose Summary (1), Headers (2), Body (3), Timing (4), Evidence (5), or the complete report (6). Up/Down and page/home/end keys act on the focused pane. At 80–99 columns, list and details occupy separate screens. Press g for the explanatory journey: Up/Down selects stages, Home/End selects the first/last, and Page Up/Down scrolls the explanation. Its total and known-stage sum remain separate. Press g/Esc to return to the section. See [layout rules and boundaries](UI_LAYOUT.md).
 
 ## Replay workflow
 

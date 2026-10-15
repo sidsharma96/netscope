@@ -49,13 +49,12 @@ pub(super) fn block(title: String, focused: bool) -> Block<'static> {
         .borders(Borders::ALL)
         .title(title)
         .border_style(Style::default().fg(if focused { MINT } else { RULE }))
+        .title_style(Style::default().fg(if focused { MINT } else { MUTED }))
 }
 
 // These dimensions also bound scrolling, so resizing cannot strand a line.
-pub(super) fn detail_size(width: u16, height: u16, journey: bool) -> (u16, u16) {
-    let pane = if journey {
-        width
-    } else if width >= 100 {
+pub(super) fn detail_size(width: u16, height: u16) -> (u16, u16) {
+    let pane = if width >= 100 {
         let [_, detail] = Layout::horizontal([Constraint::Percentage(40), Constraint::Min(1)])
             .areas(Rect::new(0, 0, width, height));
         detail.width
@@ -204,86 +203,17 @@ fn sections(session: &Session, r: &Request, id: RequestId, tab: InspectorTab) ->
     }
 }
 
-fn journey_lines(r: &Request) -> Vec<String> {
-    let mut lines = vec![
-        "REQUEST JOURNEY · reported values + explanation".into(),
-        "Illustrative arrows show HTTP direction, not recorded packets.".into(),
-        String::new(),
-        format!(
-            "Browser -- {} --> {}",
-            terminal_text(&r.method),
-            terminal_text(&r.host)
-        ),
-        format!("Browser <-- {} -- server", view::status(r)),
-        String::new(),
-    ];
-    let stages = [
-        (
-            "DNS lookup",
-            r.timings.dns,
-            "Find an address for a host name. HAR does not retain the DNS exchange.",
-        ),
-        (
-            "Connection",
-            r.timings.connect,
-            "Prepare a connection. TLS time, when reported, is included here.",
-        ),
-        (
-            "TLS within connect",
-            r.timings.ssl,
-            "Set up encryption. HAR does not provide certificate or handshake messages.",
-        ),
-        (
-            "Send",
-            Timing::Milliseconds(r.timings.send),
-            "Send the request. This value does not describe individual packets.",
-        ),
-        (
-            "Wait",
-            Timing::Milliseconds(r.timings.wait),
-            "Wait for the response to start. Network travel contributes as well as server work.",
-        ),
-        (
-            "Receive",
-            Timing::Milliseconds(r.timings.receive),
-            "Receive the response. Missing event arrival times cannot be reconstructed from this total.",
-        ),
-    ];
-    lines.push(format!(
-        "Blocked: {} · waiting before the exchange",
-        view::timing(r.timings.blocked)
-    ));
-    for (name, value, explanation) in stages {
-        lines.extend([
-            String::new(),
-            format!("{name}: {}", view::timing(value)),
-            explanation.into(),
-        ]);
-    }
-    lines.extend([
-        String::new(),
-        format!("Reported total: {} ms", r.total_ms),
-        "A missing stage does not prove that the operation did not happen.".into(),
-    ]);
-    lines
-}
-
 pub(super) fn detail_lines(
     session: &Session,
     r: &Request,
     id: RequestId,
     tab: InspectorTab,
-    journey: bool,
     width: u16,
 ) -> Vec<String> {
-    if tab == InspectorTab::All && !journey {
+    if tab == InspectorTab::All {
         return view::wrapped_inspector(session, r, id, width);
     }
-    let lines = if journey {
-        journey_lines(r)
-    } else {
-        sections(session, r, id, tab)
-    };
+    let lines = sections(session, r, id, tab);
     lines
         .iter()
         .flat_map(|s| view::wrap(s, usize::from(width).max(2)))
@@ -385,7 +315,22 @@ fn draw_list(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
 }
 
 pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
-    let detail = if area.width >= 100 && !app.journey {
+    if app.journey && matches!(app.screen, Screen::Inspector(_)) {
+        if let Screen::Inspector(id) = app.screen
+            && let Some(request) = session.request(id)
+        {
+            crate::journey_view::draw(
+                frame,
+                area,
+                request,
+                id,
+                app.journey_stage,
+                app.inspector_offset,
+            );
+        }
+        return;
+    }
+    let detail = if area.width >= 100 {
         let [list, detail] =
             Layout::horizontal([Constraint::Percentage(40), Constraint::Min(1)]).areas(area);
         draw_list(frame, list, session, app);
@@ -402,15 +347,11 @@ pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) 
     };
     let focused = matches!(app.screen, Screen::Inspector(_));
     let b = block(
-        if app.journey {
-            " Journey · g or Esc returns ".into()
-        } else {
-            format!(
-                " {} · {} ",
-                if focused { "Inspector" } else { "Preview" },
-                app.inspector_tab.title()
-            )
-        },
+        format!(
+            " {} · {} ",
+            if focused { "Inspector" } else { "Preview" },
+            app.inspector_tab.title()
+        ),
         focused,
     );
     let inner = b.inner(detail);
@@ -442,7 +383,7 @@ pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) 
         ),
         Style::default().fg(MINT),
     );
-    if !app.journey {
+    {
         let mut spans = Vec::new();
         for (i, tab) in [
             InspectorTab::Summary,
@@ -483,14 +424,7 @@ pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) 
         }
         frame.render_widget(Paragraph::new(Line::from(spans)), tabs);
     }
-    let lines = detail_lines(
-        session,
-        r,
-        id,
-        app.inspector_tab,
-        app.journey,
-        content.width,
-    );
+    let lines = detail_lines(session, r, id, app.inspector_tab, content.width);
     let offset = if focused { app.inspector_offset } else { 0 };
     let content_lines = lines
         .into_iter()

@@ -26,7 +26,7 @@ Press 2 for Headers and find the two `X-Example` fields. Both remain present and
 
 Press 3 for Body. Find `[]`, the JSON representation of an empty list. This body contains text; it is different from a captured empty string and from a body that was not recorded. Down or j scrolls the focused details; Up or k moves back.
 
-Press 4 for Timing. Connecting takes 30 ms and SSL takes 20 ms within that interval. The [capture chapter](02-reading-a-capture.md) explains why those numbers are not added as separate stages. Press g for a journey that explains each reported stage. Its arrows illustrate HTTP direction; they are not recovered handshake messages. Press g or Esc to return to the section.
+Press 4 for Timing. Connecting takes 30 ms and SSL takes 20 ms within that interval. The [capture chapter](02-reading-a-capture.md) explains why those numbers are not added as separate stages. Press g for a journey that keeps the reported stages beside an explanation of the selected one. Up and Down choose a stage; Page Up and Page Down scroll its explanation when needed. Its arrows illustrate HTTP direction; they are not recovered handshake messages. Press g or Esc to return to the section.
 
 Evidence, under 5, gathers warnings and qualified interpretations. All, under 6, keeps the complete report available when you need fields outside the shorter sections. Choosing a section changes your place in the interface, not the captured request.
 

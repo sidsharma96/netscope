@@ -5,9 +5,13 @@ use ratatui::{Terminal, backend::TestBackend};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let width: u16 = args.first().map(String::as_str).unwrap_or("100").parse()?;
-    let height: u16 = if width == 80 { 24 } else { 30 };
+    let height: u16 = args
+        .get(2)
+        .map(|s| s.parse())
+        .transpose()?
+        .unwrap_or(if width == 80 { 24 } else { 30 });
     let mode = args.get(1).map(String::as_str).unwrap_or("overview");
-    let bytes: &[u8] = if matches!(mode, "hosts" | "filtered") {
+    let bytes: &[u8] = if matches!(mode, "hosts" | "filtered" | "journey-gaps") {
         include_bytes!("../../../tests/fixtures/har/multi-host.har")
     } else if mode == "sse" {
         include_bytes!("../../../tests/fixtures/har/sse.har")
@@ -140,6 +144,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         "journey" => app.apply(Action::Journey, &session),
+        "journey-gaps" => {
+            app.apply(Action::Down, &session);
+            app.apply(Action::Journey, &session);
+        }
+        "journey-tls" => {
+            app.apply(Action::Journey, &session);
+            app.apply(Action::Up, &session);
+            app.apply(Action::Up, &session);
+        }
         "headers" => {
             app.apply(Action::Open, &session);
             app.apply(Action::Section(InspectorTab::Headers), &session);

@@ -93,7 +93,9 @@ def check_workspace(width, height):
         stages = [
             ('NETSCOPE / CAPTURE', b'\t2'),
             ('Inspector · Headers', b'g'),
-            ('REQUEST JOURNEY', b'\x1b'),
+            ('Wait for the response', b'k'),
+            ('Send the request', b'k'),
+            ('Set up encryption', b'\x1b'),
             ('Inspector · Headers', b'3'),
             ('Response body', b'r'),
             ('[ Edit ]', b'\x1b'),

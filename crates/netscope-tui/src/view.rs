@@ -68,6 +68,8 @@ pub struct App {
     pub inspector_tab: crate::InspectorTab,
     /// Whether the explanatory journey is open.
     pub journey: bool,
+    /// Selected reported stage in the journey, from Blocked through Receive.
+    pub journey_stage: usize,
     /// Current view.
     pub screen: Screen,
     /// Selected row in the current request list; none when empty.
@@ -119,6 +121,7 @@ impl App {
         Self {
             inspector_tab: crate::InspectorTab::Summary,
             journey: false,
+            journey_stage: 5,
             screen: Screen::Overview,
             selected: (!session.requests().is_empty()).then_some(0),
             overview_offset: 0,
@@ -207,17 +210,27 @@ impl App {
         if let Screen::Inspector(id) = self.screen
             && let Some(request) = session.request(id)
         {
-            let (width, rows) =
-                crate::workspace_view::detail_size(self.width, self.height, self.journey);
-            let len = crate::workspace_view::detail_lines(
-                session,
-                request,
-                id,
-                self.inspector_tab,
-                self.journey,
-                width,
-            )
-            .len();
+            self.journey_stage = self.journey_stage.min(crate::journey_view::STAGES - 1);
+            let (len, rows) = if self.journey {
+                let (width, rows) = crate::journey_view::detail_size(self.width, self.height);
+                (
+                    crate::journey_view::detail_lines(request, self.journey_stage, width).len(),
+                    rows,
+                )
+            } else {
+                let (width, rows) = crate::workspace_view::detail_size(self.width, self.height);
+                (
+                    crate::workspace_view::detail_lines(
+                        session,
+                        request,
+                        id,
+                        self.inspector_tab,
+                        width,
+                    )
+                    .len(),
+                    rows,
+                )
+            };
             self.inspector_offset = self
                 .inspector_offset
                 .min(len.saturating_sub(usize::from(rows)));
@@ -231,6 +244,7 @@ impl App {
         self.screen = Screen::Hosts;
     }
     fn show_all(&mut self, session: &Session) {
+        self.journey = false;
         if self.host_filter.is_none() && self.query.is_empty() {
             self.screen = Screen::Overview;
             return;
@@ -355,9 +369,12 @@ impl App {
                 }
                 Action::Journey => {
                     if let Some(id) = self.selected_id(session) {
+                        let active = self.journey && matches!(self.screen, Screen::Inspector(_));
                         self.screen = Screen::Inspector(id);
-                        self.journey = !self.journey;
+                        self.journey = !active;
+                        self.journey_stage = 5;
                         self.inspector_offset = 0;
+                        self.notice.clear();
                     }
                     self.clamp(session);
                     return;
@@ -375,6 +392,35 @@ impl App {
                 Action::Back if self.journey => {
                     self.journey = false;
                     self.inspector_offset = 0;
+                    self.clamp(session);
+                    return;
+                }
+                _ => {}
+            }
+        }
+        if self.journey && matches!(self.screen, Screen::Inspector(_)) {
+            match action {
+                Action::Up | Action::Down | Action::First | Action::Last => {
+                    self.journey_stage = match action {
+                        Action::Up => self.journey_stage.saturating_sub(1),
+                        Action::Down => self
+                            .journey_stage
+                            .saturating_add(1)
+                            .min(crate::journey_view::STAGES - 1),
+                        Action::First => 0,
+                        _ => crate::journey_view::STAGES - 1,
+                    };
+                    self.inspector_offset = 0;
+                    self.clamp(session);
+                    return;
+                }
+                Action::PageUp | Action::PageDown => {
+                    let (_, rows) = crate::journey_view::detail_size(self.width, self.height);
+                    self.inspector_offset = if action == Action::PageUp {
+                        self.inspector_offset.saturating_sub(usize::from(rows))
+                    } else {
+                        self.inspector_offset.saturating_add(usize::from(rows))
+                    };
                     self.clamp(session);
                     return;
                 }
@@ -404,8 +450,7 @@ impl App {
                         .map(|i| move_to(i, self.height.saturating_sub(17)));
                 }
                 Screen::Inspector(_) => {
-                    let (_, rows) =
-                        crate::workspace_view::detail_size(self.width, self.height, self.journey);
+                    let (_, rows) = crate::workspace_view::detail_size(self.width, self.height);
                     self.inspector_offset = move_to(self.inspector_offset, rows);
                 }
                 Screen::Replay(_) => {}
@@ -462,6 +507,7 @@ impl App {
                         }
                     }
                     self.screen = Screen::Overview;
+                    self.journey = false;
                 }
             }
             (Screen::Overview, Action::Back) if self.host_filter.is_some() => {
@@ -873,6 +919,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             "NETSCOPE / {}\n{} · {} requests\n{}",
             match app.screen {
                 Screen::Overview => "CAPTURE",
+                Screen::Inspector(_) if app.journey => "JOURNEY",
                 Screen::Inspector(_) => "INSPECTOR",
                 Screen::Replay(_) => app
                     .replay
@@ -924,6 +971,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                     ),
                     None => "Chronological order · Reported total (ms) and recorded start".into(),
                 },
+                Screen::Inspector(_) if app.journey && app.notice.is_empty() =>
+                    "Reported values · select a stage for its explanation".into(),
                 Screen::Inspector(_) =>
                     if app.notice.is_empty() {
                         "Captured data · 1–6 sections · g journey · Tab changes focus".into()
@@ -957,6 +1006,9 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
             Screen::Overview => {
                 "↑/↓ move · Enter inspect · Tab focus · / search · h hosts · a all · ? · q quit"
             }
+            Screen::Inspector(_) if app.journey => {
+                "↑/↓ stage · PgUp/PgDn explanation · Home/End stages · g/Esc back · ? · q quit"
+            }
             Screen::Inspector(_) => {
                 "↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit"
             }
@@ -969,7 +1021,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\n↑/↓ or j/k  move in the focused pane\nPgUp/PgDn   move by visible rows · Home/End first/last\nEnter / Tab focus details · Tab / Esc returns to list\n1 Summary · 2 Headers · 3 Body\n4 Timing · 5 Evidence · 6 All (complete report)\ng           journey explanation / return to section\nh           Hosts / return from Hosts\n/           URL search (from list)\na           clear host and URL filters (from lists)\nr           replay draft (from details)\nEsc         back / close help\n?           help · q / Ctrl+c quit and restore terminal\n\nCaptured values remain unchanged.\nJourney arrows illustrate direction, not recorded packets.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("KEYS\n\n↑/↓ or j/k  move in the focused pane\nPgUp/PgDn   move by visible rows · Home/End first/last\nEnter / Tab focus details · Tab / Esc returns to list\n1 Summary · 2 Headers · 3 Body\n4 Timing · 5 Evidence · 6 All (complete report)\ng           journey / return · ↑/↓ stage · PgUp/PgDn explanation\nh           Hosts / return from Hosts\n/           URL search (from list)\na           clear host and URL filters (from lists)\nr           replay draft (from details)\nEsc         back / close help\n?           help · q / Ctrl+c quit and restore terminal\n\nCaptured values remain unchanged.\nJourney arrows illustrate direction, not recorded packets.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {

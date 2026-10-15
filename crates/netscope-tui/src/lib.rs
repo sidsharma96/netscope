@@ -1,4 +1,5 @@
 //! Deterministic view state and rendering, with terminal I/O kept at the edge.
+mod journey_view;
 /// Real-terminal setup, input, and restoration.
 pub mod terminal;
 mod view;

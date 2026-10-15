@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the journey's full-width text report with a compact exchange diagram, selectable timing stages and a focused explanation pane. Show partial timing sums and discrepancies without inventing missing durations; keep stage navigation and explanation paging separate.
+
 - Add a default split request inspector on wide terminals, focused sections, an optional explanatory journey, and a replay workbench with a persistent operation strip. Keep one-pane navigation on smaller supported terminals and the complete captured report under All. Update the beginner walkthrough and lessons on focus, ownership, and review.
 
 - Inspect captured SSE text as ordered derived events, with persistent ID state, multiline data, retry instructions, unfinished tails, and explicit analysis limits. The original response remains available.

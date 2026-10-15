@@ -1,0 +1,30 @@
+NETSCOPE / JOURNEY                                                                                  
+synthetic.har · 6 requests                                                                          
+Reported values · select a stage for its explanation                                                
+┌ Request #2 · GET · 503  ─────────────────────────────────────────────────────────────────────────┐
+│http://API.example.test:8080/books                                                                │
+│Client                                                                            api.example.test│
+│       ─────────────────────────────────────── GET ───────────────────────────────────────▶       │
+│       ◀────────────────────────────────── 503 response ───────────────────────────────────       │
+│Direction diagram · not a packet trace                                                            │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+Reported total: 70 ms    Known stage sum: 5 ms · excludes TLS                                       
+65.00 ms difference · cause not recorded · no time assigned to missing stages                       
+Bar scale: 0–70 ms · TLS is part of Connect                                                         
+┌ Reported stages · ↑/↓ ─────────────────────┐ ┌ Wait for the response ────────────────────────────┐
+│   Stage         Reported       Relative    │ │Reported: 5 ms                                     │
+│  Blocked    not recorded —                 │ │                                                   │
+│  DNS        not recorded —                 │ │WHAT THIS STAGE MEANS                              │
+│  Connect    not recorded —                 │ │After sending the request, the client waits for    │
+│  └ TLS      not recorded —                 │ │the response to begin. Network travel contributes  │
+│  Send               0 ms                   │ │as well as time before the server responds.        │
+│> Wait               5 ms ━━                │ │                                                   │
+│  Receive            0 ms                   │ │READING THIS CAPTURE                               │
+│                                            │ │This is not a measurement of server processing     │
+│Bars compare durations.                     │ │alone. The capture cannot divide it into server    │
+│TLS is included in Connect.                 │ │work and network travel.                           │
+│— no duration · * exporter value            │ │                                                   │
+│                                            │ │                                                   │
+│                                            │ │                                                   │
+└────────────────────────────────────────────┘ └───────────────────────────────────────────────────┘
+↑/↓ stage · PgUp/PgDn explanation · Home/End stages · g/Esc back · ? · q quit                       

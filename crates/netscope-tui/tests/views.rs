@@ -64,18 +64,41 @@ fn journey_keeps_missing_values_and_explanations_separate_from_observed_messages
     assert!(app.journey);
     let top = render(&session, &mut app, 100, 30)?;
     for label in [
-        "REQUEST JOURNEY",
-        "Illustrative arrows",
-        "DNS lookup: Unavailable (-1)",
-        "TLS within connect: 20 ms",
-        "HAR does not provide certificate",
+        "NETSCOPE / JOURNEY",
+        "Direction diagram",
+        "DNS         unavailable",
+        "30 ms",
+        "20 ms",
+        "Known stage sum: 45 ms",
+        "Wait for the response",
+        "not a measurement of server processing",
     ] {
         assert!(top.contains(label), "{label}\n{top}");
     }
+    assert_eq!(app.journey_stage, 5);
+    press(&mut app, &session, KeyCode::Up);
+    press(&mut app, &session, KeyCode::Up);
+    let tls = render(&session, &mut app, 100, 30)?;
+    assert!(tls.contains("Set up encryption"));
+    assert!(tls.contains("part of Connect"));
+    assert!(tls.contains("certificate results"));
+    press(&mut app, &session, KeyCode::Home);
+    press(&mut app, &session, KeyCode::Up);
+    assert_eq!(app.journey_stage, 0);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Reported: Not recorded"));
     press(&mut app, &session, KeyCode::End);
-    let bottom = render(&session, &mut app, 100, 30)?;
-    assert!(bottom.contains("Network travel contributes"));
-    assert!(bottom.contains("does not prove"));
+    press(&mut app, &session, KeyCode::Down);
+    assert_eq!(app.journey_stage, 6);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Receive the response"));
+    let resized = render(&session, &mut app, 80, 24)?;
+    assert!(resized.contains("PgUp/PgDn"));
+    press(&mut app, &session, KeyCode::PageDown);
+    assert!(app.inspector_offset > 0);
+    let before = app.inspector_offset;
+    press(&mut app, &session, KeyCode::PageDown);
+    assert_eq!(app.inspector_offset, before);
+    press(&mut app, &session, KeyCode::PageUp);
+    assert_eq!(app.inspector_offset, 0);
     press(&mut app, &session, KeyCode::Esc);
     assert!(!app.journey);
     assert_eq!(app.inspector_tab, InspectorTab::Body);
@@ -106,6 +129,93 @@ fn workspace_shortcuts_remain_ordinary_text_inside_editors()
     let editor = app.replay.as_mut().ok_or("editor")?;
     assert_eq!(editor.draft().body(), "g123456\t");
     assert!(editor.take_send().is_none());
+    Ok(())
+}
+
+#[test]
+fn journey_exposes_partial_totals_without_assigning_the_difference()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/multi-host.har"),
+        Limits::default(),
+    )?;
+    let original = session.requests().to_vec();
+    let mut app = App::new(&session);
+    app.apply(Action::Down, &session);
+    let selected = app.selected;
+    app.apply(Action::Journey, &session);
+    let text = render(&session, &mut app, 120, 30)?;
+    for label in [
+        "Request #2",
+        "503",
+        "Reported total: 70 ms",
+        "Known stage sum: 5 ms",
+        "65.00 ms difference",
+        "cause not recorded",
+        "not recorded",
+        "0 ms",
+    ] {
+        assert!(text.contains(label), "{label}\n{text}");
+    }
+    press(&mut app, &session, KeyCode::Up);
+    press(&mut app, &session, KeyCode::Up);
+    assert!(render(&session, &mut app, 120, 30)?.contains("This URL uses plain HTTP"));
+    app.apply(Action::Hosts, &session);
+    app.apply(Action::Back, &session);
+    assert!(app.journey);
+    assert_eq!(app.selected, selected);
+    app.apply(Action::Hosts, &session);
+    app.apply(Action::Open, &session);
+    assert!(!app.journey);
+    assert!(render(&session, &mut app, 100, 30)?.contains("Preview"));
+    assert_eq!(session.requests(), original);
+    Ok(())
+}
+
+#[test]
+fn journey_preserves_non_duration_values_and_bounds_large_layouts()
+-> Result<(), Box<dyn std::error::Error>> {
+    let base = session()?;
+    let mut request = base.requests()[0].clone();
+    request.timings.blocked = netscope_core::Timing::ExporterNegative(-0.787);
+    let session = Session::new(vec![request.clone()]);
+    let mut app = App::new(&session);
+    app.apply(Action::Journey, &session);
+    app.apply(Action::First, &session);
+    let large = render(&session, &mut app, 180, 60)?;
+    for label in ["-0.787 *", "not a duration", "Known stage sum: 45 ms"] {
+        assert!(large.contains(label), "{label}");
+    }
+    assert!(
+        large
+            .lines()
+            .skip(33)
+            .take(26)
+            .all(|line| line.trim().is_empty())
+    );
+    assert_eq!(session.requests()[0], request);
+    let mut huge = request;
+    huge.timings.send = f64::MAX;
+    huge.timings.wait = f64::MAX;
+    let huge = Session::new(vec![huge]);
+    let mut app = App::new(&huge);
+    app.apply(Action::Journey, &huge);
+    let text = render(&huge, &mut app, 120, 30)?;
+    assert!(text.contains("Stage sum exceeds the numeric range"));
+    assert!(!text.contains("inf ms"));
+    let mut fractional = base.requests()[0].clone();
+    fractional.timings.connect = netscope_core::Timing::Missing;
+    fractional.timings.ssl = netscope_core::Timing::Missing;
+    fractional.timings.send = 0.1;
+    fractional.timings.wait = 0.2;
+    fractional.timings.receive = 0.0;
+    fractional.total_ms = 0.3;
+    let fractional = Session::new(vec![fractional]);
+    let mut app = App::new(&fractional);
+    app.apply(Action::Journey, &fractional);
+    let text = render(&fractional, &mut app, 120, 30)?;
+    assert!(text.contains("Known stage sum: ≈0.30 ms"));
+    assert!(!text.contains("0.30000000000000004"));
     Ok(())
 }
 
@@ -167,6 +277,37 @@ fn workspace_fixed_buffers_cover_sections_and_journey_at_three_widths()
             actual,
             std::fs::read_to_string(path)?.trim_end_matches('\n')
         );
+    }
+    let multiple = import_bytes(
+        include_bytes!("../../../tests/fixtures/har/multi-host.har"),
+        Limits::default(),
+    )?;
+    for width in [80, 100, 120] {
+        let height = if width == 80 { 24 } else { 30 };
+        for name in ["journey-gaps", "journey-tls"] {
+            let session = if name == "journey-gaps" {
+                &multiple
+            } else {
+                &session
+            };
+            let mut app = App::new(session);
+            if name == "journey-gaps" {
+                app.apply(Action::Down, session);
+            }
+            app.apply(Action::Journey, session);
+            if name == "journey-tls" {
+                app.apply(Action::Up, session);
+                app.apply(Action::Up, session);
+            }
+            let actual = render(session, &mut app, width, height)?;
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+                "../../tests/fixtures/terminal/{name}-{width}x{height}.txt"
+            ));
+            assert_eq!(
+                actual,
+                std::fs::read_to_string(path)?.trim_end_matches('\n')
+            );
+        }
     }
     Ok(())
 }

@@ -23,6 +23,14 @@ Short tab names fit the split pane; the expanded names appear in the panel title
 
 Press g from the list or inspector for a request journey. It presents HTTP-direction arrows explicitly labelled as an illustration, reported stage values, and short explanations of those stages. It does not reconstruct DNS/TCP/TLS messages, certificate checks, server processing time, or event arrival times. Missing stages remain missing; SSL is part of connect. Press g or Esc to return to the chosen section at its beginning. Number keys also return directly to a section.
 
+### Request journey
+
+Following the October 14 screenshot review, the journey uses a compact exchange diagram above two panes: all seven timing fields on the left and the selected field's explanation on the right. It starts on Wait. Up/Down selects a stage; Home/End selects the first/last. Page Up/Down scrolls only the explanation when it does not fit. Changing stage returns that explanation to its beginning. The stage list remains visible at the supported 80 × 24 minimum, and the layout stops growing at 140 columns and 30 body rows in a larger terminal.
+
+The total and sum of known main-stage durations are shown together. The sum excludes SSL because it is included in Connect, and excludes missing, unavailable, and exporter-negative non-duration values. A difference above 0.01 ms is highlighted without assigning it to an unknown stage or naming a cause. Fractional sums are rounded for display with an approximation sign; original values remain available. Numeric sum overflow has its own label.
+
+Bars compare durations on an explicitly labelled common scale: the larger of the reported total and largest reported stage. They do not place stages on a reconstructed timeline. Zero has no filled bar; missing/unavailable values show a dash; non-duration exporter values have an asterisk and no duration bar. The selected explanation distinguishes these cases. Selecting TLS on a plain HTTP URL does not call a missing SSL value a failed handshake. Reported SSL/Connect inconsistencies remain visible as conflicting or insufficient evidence.
+
 ## Edit and review
 
 Replay keeps Edit → Review → Send → Result visible. At 100 columns or wider, editing uses the left pane with context and any labelled older result on the right. Review, sending, and result inspection use the right pane with request context on the left. Text editing remains in one active pane: Tab inserts a tab in a body field rather than changing focus. Narrow terminals show the active pane alone, with the same operation strip.

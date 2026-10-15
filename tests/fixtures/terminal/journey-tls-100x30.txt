@@ -1,0 +1,30 @@
+NETSCOPE / JOURNEY                                                                                  
+synthetic.har · 1 requests                                                                          
+Reported values · select a stage for its explanation                                                
+┌ Request #0 · GET · 200 OK ───────────────────────────────────────────────────────────────────────┐
+│https://example.test/api/books                                                                    │
+│Client                                                                                example.test│
+│       ─────────────────────────────────────── GET ───────────────────────────────────────▶       │
+│       ◀────────────────────────────────── 200 response ───────────────────────────────────       │
+│Direction diagram · not a packet trace                                                            │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+Reported total: 45 ms    Known stage sum: 45 ms · excludes TLS                                      
+Sum matches total within 0.01 ms; missing values still remain unknown.                              
+Bar scale: 0–45 ms · TLS is part of Connect                                                         
+┌ Reported stages · ↑/↓ ─────────────────────┐ ┌ Set up encryption ────────────────────────────────┐
+│   Stage         Reported       Relative    │ │Reported: 20 ms                                    │
+│  Blocked    not recorded —                 │ │                                                   │
+│  DNS         unavailable —                 │ │WHAT THIS STAGE MEANS                              │
+│  Connect           30 ms ━━━━━━━━━━━       │ │TLS sets up encryption for HTTPS. HAR calls this   │
+│> └ TLS             20 ms ━━━━━━━━          │ │timing field ssl; it is part of Connect, not an    │
+│  Send               0 ms                   │ │extra interval to add.                             │
+│  Wait              10 ms ━━━━              │ │                                                   │
+│  Receive            5 ms ━━                │ │READING THIS CAPTURE                               │
+│                                            │ │Do not add this value again when summing Connect.  │
+│Bars compare durations.                     │ │The duration does not retain TLS messages or       │
+│TLS is included in Connect.                 │ │certificate results.                               │
+│— no duration · * exporter value            │ │                                                   │
+│                                            │ │                                                   │
+│                                            │ │                                                   │
+└────────────────────────────────────────────┘ └───────────────────────────────────────────────────┘
+↑/↓ stage · PgUp/PgDn explanation · Home/End stages · g/Esc back · ? · q quit                       

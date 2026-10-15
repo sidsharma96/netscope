@@ -46,6 +46,10 @@ Choosing Headers or Body answers another question: which information about this 
 
 The optional journey adds explanations without replacing the recorded values. Its arrows illustrate HTTP direction, and its stage descriptions explain what a reported measurement means. They do not recover handshake messages missing from HAR. Keeping that learning view separate leaves routine inspection compact while making an explanation available when a field is unfamiliar.
 
+Suppose a capture reports a 70 ms total, a 5 ms wait, and no duration for finding an address or connecting. The journey keeps those values together. It shows the known-stage sum beside the total, but does not turn their 65 ms difference into a new DNS or connection measurement. Subtraction can expose a discrepancy; it cannot explain its cause. The bars have a labelled duration scale, so a small known interval does not appear to account for the whole reported total.
+
+Selecting Wait changes the explanation beside the stage list. Page Down can move through that explanation while Wait stays selected. Selecting another stage begins its explanation at the top. This is the same distinction between selection and scroll position that we needed for requests: one value identifies what we are reading, while another records our place within its text. Keeping them separate lets a smaller window require more scrolling without changing the selected measurement.
+
 ## Borrow data, change selection
 
 Drawing needs read access to the capture. Navigation needs to change the view state. Rust distinguishes those permissions in the references passed to a function.
