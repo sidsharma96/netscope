@@ -6,9 +6,9 @@ This is a different problem from reading a completed capture. A capture gives us
 
 ## Waiting does not need to occupy the terminal
 
-A thread is a sequence of instructions that the operating system can schedule independently of another sequence. Netscope keeps terminal input on one thread and gives a send operation its own worker thread. Waiting for a server therefore does not require the terminal thread to stop reading keys.
+A [thread](../GLOSSARY.md#thread) is a sequence of instructions that the operating system can schedule independently of another sequence. Netscope keeps terminal input on one thread and gives a send operation its own worker thread. Waiting for a server therefore does not require the terminal thread to stop reading keys.
 
-Moving work to a thread is only part of the answer. A worker that waits indefinitely for a response would still need a way to notice cancellation. Our worker uses asynchronous I/O: an operation can report that it cannot progress yet, allowing other pending work, such as a cancellation signal or a deadline, to be checked.
+Moving work to a thread is only part of the answer. A worker that waits indefinitely for a response would still need a way to notice cancellation. Our worker uses asynchronous I/O: an operation can report that it cannot progress yet, allowing other pending work, such as a cancellation signal or a [deadline](../GLOSSARY.md#deadline), to be checked.
 
 The following timeline is illustrative. Columns represent responsibilities, not processor cores or measured durations. Read downward to follow events. The arrows show information passing between the terminal and the worker.
 
@@ -26,7 +26,7 @@ The terminal does not wait inside the operation that reads the response. It peri
 
 ## A future holds unfinished work
 
-Rust calls a value representing an asynchronous computation a future. A future can contain the data and progress needed to continue later. Calling an `async fn` creates such a value. It does not, by itself, run the function's body.
+Rust calls a value representing an asynchronous computation a [future](../GLOSSARY.md#future). A future can contain the data and progress needed to continue later. Calling an `async fn` creates such a value. It does not, by itself, run the function's body.
 
 This small example makes that distinction visible. It creates work and then discards it before anything drives it forward.
 
@@ -43,7 +43,7 @@ This prints nothing. `async` changes the kind of function call: the call produce
 
 A future makes progress when it is polled. Polling means asking it to do the work it can do now. It answers either Ready, with its result, or Pending, meaning it needs another opportunity later. A network future can register a waker before returning Pending. A waker is a way for the waiting infrastructure to notify the task when another poll may make progress; it does not contain the response itself.
 
-We do not write a loop that repeatedly asks an idle socket whether a byte has arrived. A runtime coordinates these polls with notifications from the operating system and with timers. Netscope uses the Tokio runtime in the worker. A pending socket read lets that runtime wait efficiently while still being able to wake for cancellation or a deadline.
+We do not write a loop that repeatedly asks an idle socket whether a byte has arrived. A [runtime](../GLOSSARY.md#runtime) coordinates these polls with notifications from the operating system and with timers. Netscope uses the [Tokio](../GLOSSARY.md#tokio) runtime in the worker. A pending socket read lets that runtime wait efficiently while still being able to wake for cancellation or a deadline.
 
 ## Awaiting keeps a place to continue
 
@@ -97,7 +97,7 @@ The current design keeps the existing terminal loop in charge of input and gives
 
 ## Why let a library interpret HTTP?
 
-A response can arrive in pieces that do not line up with a header or body boundary. Handling those pieces correctly is separate from deciding how much data Netscope should retain. Hyper, our HTTP library, interprets the protocol; the application sets its limits and decides what the result means. Rustls handles the encrypted connection and certificate checks for HTTPS, while Tokio coordinates waiting.
+A response can arrive in pieces that do not line up with a header or body boundary. Handling those pieces correctly is separate from deciding how much data Netscope should retain. [Hyper](../GLOSSARY.md#hyper), our HTTP library, interprets the protocol; the application sets its limits and decides what the result means. Rustls handles the encrypted connection and certificate checks for HTTPS, while Tokio coordinates waiting.
 
 Writing our own HTTP parser would add another large correctness problem to a learning inspector. A higher-level client library could do more of the connection management for us, but we would need to check its redirect, retry, cookie, proxy, and decompression behaviour against the reviewed-send promise. Such libraries can be configured; they are not inherently unsuitable. Our current lower-level connection API makes the one-connection lifetime explicit, at the cost of more code to manage it.
 
@@ -123,7 +123,7 @@ Keep:   Partial result → deliver one final result to the terminal
 
 Dropping a future is a local action. It does not rewind instructions already run. If the server received the GET, it may continue working after we close our connection. Even local cleanup has a boundary: an operating-system hostname lookup can continue in the background after we stop waiting for it. It has no access to the draft and cannot deliver a later result into the interface.
 
-The worker returns its result through a channel, a communication path that transfers a value between threads. This channel has room for one result. The body stays with the worker while receiving, then moves with that result; it is not repeatedly copied into a queue of screen updates.
+The worker returns its result through a [channel](../GLOSSARY.md#channel), a communication path that transfers a value between threads. This channel has room for one result. The body stays with the worker while receiving, then moves with that result; it is not repeatedly copied into a queue of screen updates.
 
 ## A late result must not change a newer decision
 
@@ -138,3 +138,99 @@ While cancellation is pending, editing remains suspended. Once the worker has di
 Consider a server that sends headers and three bytes, then stays silent. Predict what Netscope should retain after the deadline. Now consider a server that sends the entire body and finishes before you press Esc. Explain why the second response should remain complete.
 
 For a local experiment, follow the [replay instructions](../DEVELOPMENT.md#try-a-local-send). Keep the default empty header selection, review the local destination, and send. The result should identify a new request, while returning to the inspector should show the original recording. The transport implementation [`wait_for`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L297) and terminal loop [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L126) show how these ownership and waiting rules fit together. Exact limits and test boundaries live in the [transport decision](../contracts/replay-transport.md) and [replay contract](../contracts/m3-single-request-replay.md).
+
+<!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
+
+## Check your understanding
+
+These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+
+### Waiting without freezing the screen
+
+**Level:** Newcomer
+
+
+A server accepts your request and then sends nothing. How can Netscope still react when you press Esc?
+
+<details>
+<summary>Answer</summary>
+
+Each Send runs on its own worker thread, so the terminal thread keeps reading keys. Inside the worker, a Tokio runtime drives the exchange as a future, a value representing unfinished work. A pending socket read lets the runtime also watch a cancellation signal and a deadline. Esc sends that signal. The worker stops waiting, drops the connection, and returns whatever bytes it already received.
+
+**Learn more:** [Waiting does not need to occupy the terminal](../chapters/17-waiting-for-a-response.md#waiting-does-not-need-to-occupy-the-terminal) · [A future holds unfinished work](../chapters/17-waiting-for-a-response.md#a-future-holds-unfinished-work) · [`Worker`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L312)
+
+</details>
+
+### How does a synchronous terminal meet an async client?
+
+**Level:** Practitioner
+
+
+The terminal loop is synchronous, while the HTTP client is async (tokio and hyper). How do the two meet? Describe the threads, runtimes and channels involved.
+
+<details>
+<summary>Answer</summary>
+
+Each Send creates a `Worker`, which spawns a dedicated OS thread named `netscope-replay`. That thread builds a current-thread tokio runtime and blocks on the exchange inside it. Three channels connect the worker to the terminal. A `tokio::sync::oneshot` carries cancellation from the terminal to the worker. A `std::sync::mpsc::sync_channel(1)` carries the single final `ReplayResult` back. For live SSE only, a `tokio::sync::watch` carries the newest cumulative snapshot, replacing the previous one instead of queueing every update.
+
+The terminal loop waits at most 50 ms for a key, and on every pass it calls `progress` and `poll`, which use non-blocking reads. At most one worker runs at a time. Dropping a `Worker` sends cancellation and joins its thread. The terminal therefore stays synchronous and needs no async runtime of its own, and each replay gets a small runtime that is torn down when it finishes.
+
+**Learn more:** [Why keep a separate worker at all?](../chapters/17-waiting-for-a-response.md#why-keep-a-separate-worker-at-all) · [Hand the value over when responsibility changes](../chapters/24-sharing-work.md#hand-the-value-over-when-responsibility-changes) · [Why give each send its own thread and runtime?](../chapters/34-defending-the-design.md#why-give-each-send-its-own-thread-and-runtime) · [`start_mode`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L338-L404) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L421-L430)
+
+</details>
+
+### Races in the replay screen
+
+**Level:** Expert
+
+
+What happens when (a) a result arrives in the same loop iteration as an Esc key, (b) a result for an earlier Send arrives, (c) the worker thread panics, and (d) the user presses q while a request is in flight?
+
+<details>
+<summary>Answer</summary>
+
+(a) Completion is accepted before a later cancellation. At the top of each loop pass the terminal loop polls the worker first and sends the cancel signal only when no result is waiting. When a key arrives, it polls again before handling the key. If the cancel flag was already set when the result is accepted, `complete` returns to the draft with "Operation stopped; o opens its retained result", and the result is still kept.
+
+(b) Each Send gets a `u64` ID from a counter owned by `App`, which outlives editors. `complete` and `progress` ignore a result whose ID is not the running one. When the counter would overflow, sending is disabled with "Send IDs exhausted" instead of wrapping.
+
+(c) A panic drops the worker's end of the `sync_channel`, so `try_recv` reports `Disconnected`. `poll` then returns a prebuilt fallback result with `Failed("Worker stopped without a result")`, exactly once.
+
+(d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
+
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L146-L155) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L177) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L420-L430)
+
+</details>
+
+### Handing over a result
+
+**Level:** Newcomer
+
+
+Why does the worker send its finished result through a channel instead of sharing a growing response body with the terminal under a lock?
+
+<details>
+<summary>Answer</summary>
+
+Only one part of the program needs to change the body at a time. The worker owns it while receiving, then moves it into the result and sends that through a channel with room for one value. The terminal owns what it receives. Nothing is edited by two threads at once, so there is no lock to hold and no consistency rule to protect. A mutex would only be worth it if two parts really had to change related data together.
+
+**Learn more:** [Hand the value over when responsibility changes](../chapters/24-sharing-work.md#hand-the-value-over-when-responsibility-changes) · [Protect several related changes together](../chapters/24-sharing-work.md#protect-several-related-changes-together) · [`sync_channel`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L353)
+
+</details>
+
+### How do the deadline and cancellation work?
+
+**Level:** Practitioner
+
+
+When does the replay deadline start, how long is it for a normal replay and for live SSE, does progress extend it, and what makes Esc take effect? In what order are cancellation, the deadline and completion checked?
+
+<details>
+<summary>Answer</summary>
+
+The deadline starts at the instant the terminal accepted Send, before the worker thread exists, so thread setup counts against it. It is one absolute deadline covering connection, TLS, headers and the whole body: 10 seconds for a normal replay and 30 seconds for live SSE. Progress never extends it, and tests check that a slow stream of bytes does not restart the clock.
+
+The worker runs the exchange inside a `tokio::select!` marked `biased`, which checks the cancellation channel first, then `sleep_until(deadline)`, then the work. When cancellation or the deadline wins, the losing futures are dropped, and dropping them closes the connection and its socket. Because the deadline is checked before the work, an already expired deadline never opens a connection. Bytes copied into the result before the stop are kept and reported with the `Cancelled` or `TimedOut` outcome.
+
+**Learn more:** [Keep one deadline for the whole request](../chapters/17-waiting-for-a-response.md#keep-one-deadline-for-the-whole-request) · [Cancellation follows ownership](../chapters/17-waiting-for-a-response.md#cancellation-follows-ownership) · [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [`wait_for`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L297-L308) · [`TIME_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L30) · [`started`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L454)
+
+</details>

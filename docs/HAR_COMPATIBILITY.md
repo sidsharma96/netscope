@@ -33,7 +33,7 @@ The helper reproduces the scenarios, not identical HAR bytes. Ports, timestamps,
 
 ## Frozen regression evidence
 
-The [fixture provenance](../tests/fixtures/har/browsers/README.md) records the exact capture method and file transformations. Our checked-in files were produced by invoking the browser-bundled export functions programmatically, rather than clicking the save menu. They exercise native serialization; the manual save-menu workflow above was not separately verified.
+The [fixture provenance](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/har/browsers/README.md) records the exact capture method and file transformations. Our checked-in files were produced by invoking the browser-bundled export functions programmatically, rather than clicking the save menu. They exercise native serialization; the manual save-menu workflow above was not separately verified.
 
 `cargo test --workspace --locked --offline` tests these fixed files without launching a browser or opening a socket. Assertions cover stable ordering, body representations, binary decoding, missing metadata, reviewed JSON body preservation, form replay rejection, command output, and inspector labels. Separate mutations deliberately introduce wrong types and disagreement; they are not presented as browser-generated observations. The [verification ledger](VERIFICATION.md) records the local check results.
 
@@ -71,7 +71,7 @@ For our automated recordings, Chrome used a certificate exception restricted to 
 
 ## Native SSE and WebSocket exports — October 13, 2026
 
-Frozen Chrome 155.0.8059.40 and Firefox 146.0.1 exports add three-entry loopback page/SSE/WebSocket scenarios. [Provenance and hashes](../tests/fixtures/har/browsers/README.md) record capture method and exact boundaries. Both preserve three complete SSE events, multiline UTF-8, inherited ID and retry setting, while removing a leading BOM from their retained text. Retained text has 123 bytes versus the server's 126. No event timestamps or browser dispatch history are inferred.
+Frozen Chrome 155.0.8059.40 and Firefox 146.0.1 exports add three-entry loopback page/SSE/WebSocket scenarios. [Provenance and hashes](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/har/browsers/README.md) record capture method and exact boundaries. Both preserve three complete SSE events, multiline UTF-8, inherited ID and retry setting, while removing a leading BOM from their retained text. Retained text has 123 bytes versus the server's 126. No event timestamps or browser dispatch history are inferred.
 
 Native WS URLs required widening inspection to ws/wss, while replay remains HTTP(S). Chrome's 101 entry reports bodySize -202 and empty serverIPAddress. Only ws/wss 101 entries permit negative bodySize below -1 as unavailable with exact-value warning and empty address as absent. Firefox's 202-byte reported size and empty text do not establish later frame bytes. The helper sent a frame; neither export retained a usable frame history. Classic upgrade header shape is inspected without acceptance-digest, extension or browser-policy validation.
 

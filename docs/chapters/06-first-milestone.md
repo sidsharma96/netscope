@@ -12,9 +12,9 @@ From the project directory, run:
 cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
 ```
 
-Cargo is Rust's build tool. This command builds and starts the terminal application, then passes it the sample file. The [development guide](../DEVELOPMENT.md) covers toolchain and dependency setup if this is your first run on another machine.
+[Cargo](../GLOSSARY.md#cargo) is Rust's build tool. This command builds and starts the terminal application, then passes it the sample file. The [development guide](../DEVELOPMENT.md) covers toolchain and dependency setup if this is your first run on another machine.
 
-In an interactive terminal, you should see one request for `https://example.test/api/books`, status 200, and a reported total of 45 ms. A marker and filled row identify the selection. On a window at least 100 columns wide, its summary appears beside the list. At narrower supported widths, Enter opens the details on their own screen. The narrow list's bar shows recorded start and total; it does not identify a particular network connection.
+In an interactive terminal, you should see one request for `https://example.test/api/books`, [status](../GLOSSARY.md#status-code) 200, and a reported total of 45 ms. A marker and filled row identify the selection. On a window at least 100 columns wide, its summary appears beside the list. At narrower supported widths, Enter opens the details on their own screen. The narrow list's bar shows recorded start and total; it does not identify a particular network connection.
 
 If you redirect the output to a file or pipe, the program prints a text summary instead of opening the interactive screen.
 

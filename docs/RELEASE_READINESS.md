@@ -20,4 +20,4 @@ Reviewed the README, installation and development instructions, chapter order, i
 
 This pass establishes the observed macOS checks and the separately reported CI result, not universal operating-system compatibility. Windows interactive behaviour has not been verified. HTTPS validation has controlled network regression coverage; this pass's live sends use loopback HTTP. Native HAR fixtures cover the documented browser recordings. No fresh-browser recording, external-service replay, search-latency benchmark, exhaustive race analysis, or learner-comprehension study was performed.
 
-Version 0.1.0 keeps the limits and exclusions described in [release notes](../CHANGELOG.md). The [verification ledger](VERIFICATION.md) records final outcomes. The release tag identifies a reviewed snapshot; it does not imply API stability or registry publication.
+Version 0.1.0 keeps the limits and exclusions described in [release notes](https://github.com/sidsharma96/netscope/blob/main/CHANGELOG.md). The [verification ledger](VERIFICATION.md) records final outcomes. The release tag identifies a reviewed snapshot; it does not imply API stability or registry publication.

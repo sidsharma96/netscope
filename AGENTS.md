@@ -13,8 +13,8 @@ The living book assumes no Rust knowledge. Apply these rules to all existing and
 
 Before editing a chapter, read `docs/chapters/05-decisions.md`. Review the draft without referring to source code: can a newcomer understand the problem, follow the example, and predict a result? Then check its factual claims against the implementation. A refactor alone does not justify reorganising a lesson.
 
-`docs/chapters.json` defines the learning order. Existing chapter URLs are stable identifiers, not an instruction to order chapters by their numeric filename prefixes. Preserve valid deep links when changing headings or navigation.
+`docs/SUMMARY.md` defines the learning order and the book's parts; mdBook 0.5.4 renders it (`mdbook build docs`). Existing chapter filenames are stable identifiers, not an instruction to order chapters by their numeric prefixes. Preserve valid deep links when changing headings or navigation, and add every new page to `SUMMARY.md`.
 
-Edit chapter sources and regenerate `docs/index.html` with `python3 scripts/build_docs.py`. Run `python3 scripts/check_docs.py` after documentation changes. When Rust examples change, also run `cargo test --workspace --doc --locked --offline`. These automated checks establish link and example correctness; they do not substitute for an editorial review.
+Questions live only in `docs/questions/`. After editing them, run `python3 scripts/sync_questions.py` to regenerate each chapter's "Check your understanding" section; never edit that section by hand. Run `python3 scripts/check_docs.py` after documentation changes. When Rust examples change, also run `cargo test --workspace --doc --locked --offline`. These automated checks establish link and example correctness; they do not substitute for an editorial review.
 
 For material architecture choices, maintain `docs/ARCHITECTURE.md` with constraints, alternatives, consequences, evidence, and revisit conditions. Distinguish contemporaneous records from later assessments. Update the relevant reader-led lesson when the reasoning changes; do not invent historical deliberation or justify complexity merely because it exists.

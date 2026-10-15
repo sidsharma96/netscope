@@ -8,21 +8,21 @@ This book assumes no Rust knowledge. You do not need to recognise Rust syntax be
 
 ## One request to follow
 
-Our examples follow a browser requesting `https://example.test/api/books`. The response contains a short JSON list. Both the address and its captured traffic are invented, so you can experiment without needing access to a real service.
+Our examples follow a browser requesting `https://example.test/api/books`. The response contains a short [JSON](../GLOSSARY.md#json) list. Both the address and its captured traffic are invented, so you can experiment without needing access to a real service.
 
-The recording is a HAR file, a JSON document exported by a browser or another capture tool. JSON represents data using named fields, lists, text, numbers, and a few other values. A HAR arranges those values into records of HTTP requests and responses. HTTP is the protocol the browser uses here to ask for a resource and receive a response.
+The recording is a [HAR](../GLOSSARY.md#har) file, a JSON document exported by a browser or another capture tool. JSON represents data using named fields, lists, text, numbers, and a few other values. A HAR arranges those values into records of [HTTP](../GLOSSARY.md#http) requests and responses. HTTP is the protocol the browser uses here to ask for a resource and receive a response.
 
 A recording can be incomplete. A missing response body means the export did not retain it. We will keep returning to distinctions like this because a useful inspector must preserve what the recording actually says.
 
 ## A path through the ideas
 
-Start by reading a capture and deciding what you can conclude from it. Then meet Rust's values and functions through a method name and a status number. Ownership explains who keeps the request data alive; collections explain how to store many requests without losing their identity.
+Start by reading a capture and deciding what you can conclude from it. Then meet Rust's values and functions through a method name and a [status](../GLOSSARY.md#status-code) number. Ownership explains who keeps the request data alive; collections explain how to store many requests without losing their identity.
 
 Once those ideas are familiar, missing values and errors become easier to describe. We then follow a file into the program and a selected request onto the screen. Grouping and redirect evidence show how to calculate useful summaries while preserving uncertainty. Later chapters explain how we check our work and define the first useful version.
 
 The later [sharing lesson](24-sharing-work.md) asks when ownership, channels, locks, and atomics fit a problem. [Shaping the program](23-shaping-the-program.md) connects those choices to the package boundaries and alternatives. The [decision record](../ARCHITECTURE.md) keeps the evidence and open questions beside the lessons.
 
-You can also use the Rust index to return to a concept. Source links appear after the explanation they support. Reading the implementation is a useful next step, but it is not a prerequisite for understanding a chapter.
+You can also use the [glossary](../GLOSSARY.md) or the search box to return to a concept. Source links appear after the explanation they support. Reading the implementation is a useful next step, but it is not a prerequisite for understanding a chapter.
 
 ## What you can try today
 

@@ -2,11 +2,11 @@
 
 A book request appears in the browser's export, but now you want to see the packets beneath it. A packet recording answers a different question. Instead of an exporter describing an HTTP response, it stores pieces of traffic seen at a capture point. Some pieces may be cut short. Some protocols may be outside the inspector's supported formats. Understanding the recording begins with finding exactly which bytes exist.
 
-PCAP is a file format for packet records. Its file header tells the reader how to interpret later records, including their link type and timestamp representation. Each record reports both an original packet length and a captured length. If the original length is 120 bytes but only 80 are stored, the missing forty bytes are not zeros. They are unavailable. Netscope's classic PCAP reader preserves that distinction; PCAPNG, a different container format, is explicitly outside this first subset.
+[PCAP](../GLOSSARY.md#pcap) is a file format for packet records. Its file header tells the reader how to interpret later records, including their [link type](../GLOSSARY.md#link-type) and timestamp representation. Each record reports both an original packet length and a captured length. If the original length is 120 bytes but only 80 are stored, the missing forty bytes are not zeros. They are unavailable. Netscope's classic PCAP reader preserves that distinction; PCAPNG, a different container format, is explicitly outside this first subset.
 
 ## A boundary belongs to a particular layer
 
-Ethernet is a common format for frames, the pieces transmitted on a local-network link. IP supplies addresses for routing packets, while TCP carries an ordered stream between endpoints. With those layers present, an Ethernet frame contains an IP packet, whose payload contains a TCP segment, whose payload contains application bytes. A payload is the part carried by a layer after its own header. A header contains instructions or metadata needed to interpret that layer. The same byte can therefore be application data when viewed from TCP and part of TCP's payload when viewed from IP.
+[Ethernet](../GLOSSARY.md#ethernet) is a common format for frames, the pieces transmitted on a local-network link. IP supplies addresses for routing packets, while [TCP](../GLOSSARY.md#tcp) carries an ordered stream between endpoints. With those layers present, an Ethernet frame contains an IP packet, whose payload contains a TCP segment, whose payload contains application bytes. A payload is the part carried by a layer after its own header. A header contains instructions or metadata needed to interpret that layer. The same byte can therefore be application data when viewed from TCP and part of TCP's payload when viewed from IP.
 
 The following illustration shows containment, not a measured allocation layout. Read the nested boxes from outside inward. Each outer layer supplies a reason to interpret the next range.
 
@@ -22,13 +22,13 @@ TCP:         [TCP header | application bytes..................]
 
 Not every recording starts with Ethernet, not every IP packet contains TCP, and not every TCP payload contains plaintext HTTP. The link type matters before the first packet byte is interpreted. Netscope also supports selected raw-IP link types. Unknown types retain their bytes and an explanation instead of receiving invented Ethernet addresses.
 
-IPv4 and TCP headers can have options, so their lengths are not always the minimum. A length field must be checked against the enclosing packet and the retained bytes before advancing. Ethernet tags add another boundary. IPv6 can lead through extension headers; this first reader stops before unsupported chains. An IP fragment is not automatically a complete TCP segment, so fragments remain outside transport analysis. See the [IPv4](https://www.rfc-editor.org/rfc/rfc791) and [IPv6](https://www.rfc-editor.org/rfc/rfc8200) specifications for their layer rules.
+[IPv4](../GLOSSARY.md#ip) and TCP headers can have options, so their lengths are not always the minimum. A length field must be checked against the enclosing packet and the retained bytes before advancing. Ethernet tags add another boundary. IPv6 can lead through extension headers; this first reader stops before unsupported chains. An IP fragment is not automatically a complete TCP segment, so fragments remain outside transport analysis. See the [IPv4](https://www.rfc-editor.org/rfc/rfc791) and [IPv6](https://www.rfc-editor.org/rfc/rfc8200) specifications for their layer rules.
 
 ## Two bytes need an agreed order
 
 A port number is larger than a single byte can represent. A byte has eight bits, each either zero or one, and can represent 256 different values. Two bytes can represent 65,536 values. The order matters: bytes `01 bb` represent 443 when the first byte supplies the high part, but reversing them produces a different number.
 
-Rust names an unsigned eight-bit integer `u8` and an unsigned sixteen-bit integer `u16`. Unsigned means no negative values. A fixed array contains a known number of values. The expression below creates a two-byte array and interprets it in big-endian order, with the high byte first.
+Rust names an unsigned eight-bit integer `u8` and an unsigned sixteen-bit integer `u16`. Unsigned means no negative values. A fixed array contains a known number of values. The expression below creates a two-byte array and interprets it in [big-endian](../GLOSSARY.md#byte-order) order, with the high byte first.
 
 ```rust
 let bytes = [0x01, 0xbb];
@@ -66,3 +66,97 @@ Netscope owns each record's byte vector and stores checked ranges identifying pa
 The record timestamp belongs to the capture process. It is not automatically the time the application received a message or an accurate server clock. Converting microsecond fractions into nanosecond units does not add precision to the measurement. The packet inspector currently prints every timestamp with nine fractional digits, so a microsecond file shows three trailing zeros that were never measured; only the redirected summary names the file's resolution. Record timestamps are wall-clock readings, so they can also go backwards when the capturing machine's clock is stepped. Netscope retains record order rather than sorting bytes into a receiver transcript.
 
 Try the 120-byte packet with an 80-byte capture again. If a supported TCP header fits but declares more payload than exists, which part is usable? The checked header and retained prefix can remain visible; the missing bytes cannot be recovered by increasing an offset. The [local packet walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams) supplies examples, and the reader [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69) implements the bounds behind them.
+
+<!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
+
+## Check your understanding
+
+These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+
+### Captured length and original length
+
+**Level:** Newcomer
+
+
+A PCAP record says the original packet was 120 bytes but only 80 were captured. What does Netscope do with the missing 40?
+
+<details>
+<summary>Answer</summary>
+
+It treats them as unavailable, never as zeros. The capture tool stored only the first 80 bytes, often because of a snap length setting. Netscope keeps the headers and payload prefix that fit, and adds the note "Capture cut: fewer bytes retained than original packet". Later, TCP reassembly marks the uncaptured positions as missing, so no analysis reads past them.
+
+**Learn more:** [Which bytes were actually recorded?](../chapters/29-reading-packet-bytes.md#which-bytes-were-actually-recorded) · [Check availability before indexing](../chapters/29-reading-packet-bytes.md#check-availability-before-indexing) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69)
+
+</details>
+
+### What can the PCAP importer read?
+
+**Level:** Practitioner
+
+
+Which container formats, link types and network and transport layers does the PCAP importer support? What happens to a packet whose layers it cannot parse?
+
+<details>
+<summary>Answer</summary>
+
+Only classic PCAP version 2.4 is supported, in either byte order and with microsecond or nanosecond timestamps. A PCAPNG file is rejected with an explicit message. The supported link types are 1 (Ethernet), 101 (raw IP), 228 (raw IPv4) and 229 (raw IPv6), with up to two VLAN tags. IPv4 and IPv6 are parsed, and the transport layers are TCP and UDP. Fragmented IPv4 packets are not reassembled, IPv6 extension headers are not walked, and checksums are never verified.
+
+Errors in the file's framing fail the import: a snap length of 0 or above 256 KiB, more than 20,000 records, a file over 32 MiB, a truncated record, a captured length above the snap length or original length, or a timestamp fraction out of range. Errors inside a packet do not. The packet keeps its bytes and gets a reason in its layer list, such as "Link type unsupported; packet bytes retained". A macOS loopback capture (link type 0) or a Linux `-i any` capture (link type 113) therefore opens, but every packet carries that reason.
+
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L170) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L171-L200)
+
+</details>
+
+### A capture taken with a 96-byte snap length
+
+**Level:** Expert
+
+
+A capture was recorded with a snap length of 96 bytes, so every TCP payload is cut. What do the reassembled byte states look like, what does `contiguous_prefix` return, and what does the HTTP framing inspector see?
+
+<details>
+<summary>Answer</summary>
+
+Each record keeps 96 bytes. After a 14-byte Ethernet header, a 20-byte IPv4 header, and a 20 to 32-byte TCP header, between about 30 and 42 payload bytes remain. The importer adds the layer note "Capture cut: fewer bytes retained than original packet".
+
+The segment's declared payload comes from the IP length field, not from the captured length, so reassembly reserves the full sequence range the sender used. Only the retained bytes are written. The rest of each segment's range stays Missing. The stream becomes a run of Observed bytes, then a run of Missing positions, then Observed again for the next segment, and so on.
+
+`contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
+
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L305) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L51-L58)
+
+</details>
+
+### Reading a two-byte number
+
+**Level:** Newcomer
+
+
+A TCP header holds the port as bytes `01 bb`. What number is that, and why can't Netscope use the computer's own byte order?
+
+<details>
+<summary>Answer</summary>
+
+It is 443: the first byte is the high part, so 1 × 256 + 187. Network headers use this big-endian order whatever machine reads them, and Rust's `u16::from_be_bytes` applies it explicitly. A classic PCAP file's own header fields can use either byte order, marked by its magic bytes. The reader therefore needs one rule for the file container and another for the packets inside it.
+
+**Learn more:** [Two bytes need an agreed order](../chapters/29-reading-packet-bytes.md#two-bytes-need-an-agreed-order) · [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer)
+
+</details>
+
+### Which length bounds a TCP payload?
+
+**Level:** Practitioner
+
+
+A TCP segment's payload length could come from the captured record length, the IP header's length field, or the snap length. Which one does Netscope use for `declared_payload`, which one for the retained byte range, and why does the difference matter?
+
+<details>
+<summary>Answer</summary>
+
+The IP layer computes a declared end: the start of the IP header plus the IPv4 total length, or plus 40 and the IPv6 payload length. The retained end is the smaller of that declared end and the captured bytes. `declared_payload` is the declared end minus the IP and TCP headers, so it comes from the IP length field. The retained `payload` range runs from the end of the TCP header to the retained end, so it holds only bytes that are present in the file.
+
+Two cases show why both are needed. Ethernet pads short frames to 60 bytes, and using the record length would turn that padding into fake TCP payload; the IP length excludes it. In a capture cut by its snap length, the declared length still says how much was sent, so reassembly reserves the whole sequence range and marks the uncaptured part `Missing` instead of pretending the segment was short. UDP works the same way, with a `complete` flag when the whole datagram was retained.
+
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L210-L240) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L297-L306)
+
+</details>

@@ -7,3 +7,6 @@ __pycache__/
 /netscope-implementation-spec.md
 /netscope-tui-novice.html
 /netscope-views-redesign.html
+
+# Built documentation site
+/docs/book/

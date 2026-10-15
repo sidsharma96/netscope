@@ -10,13 +10,24 @@ The session owns the recorded requests. A smaller set of values records the sele
 
 Opening the inspector changes that state to identify one request. Returning to the overview restores its saved selection and scroll position. We do not need another copy of the captured body to remember either screen.
 
-<!-- view-flow -->
+*Figure 8.1. Keep the selection while the view changes.*
+
+```text
+Request list                         Request details
+Request 1                            Read request 2
+> Request 2 ─────── Enter ──────────→ Scroll through its fields
+Request 0
+         ←────────── Esc ────────────
+Same selection and list position
+
+The view state changes. Both screens read the same stored capture.
+```
 
 When the capture is empty, there is no selected request. Rust's `Option` represents that absence. Pressing Enter can therefore leave the empty view in place instead of attempting to look up a nonexistent row.
 
 ## Describe the screen with an enum
 
-When browsing requests, we switch between the overview and an inspector for a particular request. Those alternatives fit an enum. In Netscope, they are named `Overview` and `Inspector(RequestId)`.
+When browsing requests, we switch between the overview and an inspector for a particular request. Those alternatives fit an [enum](../GLOSSARY.md#enum). In Netscope, they are named `Overview` and `Inspector(RequestId)`.
 
 The host view introduced in the next chapter adds another screen variant using the same idea.
 
@@ -123,19 +134,19 @@ Terminal fonts and Unicode versions can still differ. The tests establish how ou
 
 The interactive program draws a frame, waits for input, changes the view state, and draws again. Several physical keys can become the same action: j and Down both mean move down. Keeping that conversion separate lets the navigation rules work with actions rather than every keyboard detail.
 
-Ratatui, the terminal drawing library, accepts a closure when it is time to draw. A closure is a function-like value written where it is used. It can borrow values from the surrounding code. Ours uses the session and the current view state to prepare one frame.
+[Ratatui](../GLOSSARY.md#ratatui), the terminal drawing library, accepts a [closure](../GLOSSARY.md#closure) when it is time to draw. A closure is a function-like value written where it is used. It can borrow values from the surrounding code. Ours uses the session and the current view state to prepare one frame.
 
 We can call the same drawing function with a fixed screen held in memory. A test can then check the visible text, the selected row's styling, and what appears at different sizes. No person has to press a key at exactly the right moment to test those rules.
 
 ## Leave the terminal usable
 
-An interactive viewer changes how a terminal receives input so keys can be handled without waiting for Enter. It also uses an alternate screen, which gives the viewer a display separate from the shell's usual contents. On exit, those settings need to be restored.
+An interactive viewer changes how a terminal receives input so keys can be handled without waiting for Enter. It also uses an [alternate screen](../GLOSSARY.md#alternate-screen), which gives the viewer a display separate from the shell's usual contents. On exit, those settings need to be restored.
 
-A guard is a value that takes responsibility for cleanup. Our terminal guard records the changes made during setup. Normal exit explicitly restores them. If the function returns early after an error, the guard's `Drop` implementation attempts cleanup when the guard leaves scope.
+A [guard](../GLOSSARY.md#guard) is a value that takes responsibility for cleanup. Our terminal guard records the changes made during setup. Normal exit explicitly restores them. If the function returns early after an error, the guard's `Drop` implementation attempts cleanup when the guard leaves scope.
 
 `Drop` is Rust's custom cleanup mechanism. It connects this terminal problem to the ownership rule we first met with `String`: a value can carry responsibility for releasing a resource. A terminal setting is a different resource from a text buffer, but both need a clear owner for cleanup.
 
-Cleanup can also fail, so the explicit restoration path reports errors. A separate pseudo-terminal check exercises actual terminal settings after both quitting and an injected drawing failure. A pseudo-terminal behaves like a terminal connection under program control; it lets the test inspect mode changes without depending on a person's terminal window.
+Cleanup can also fail, so the explicit restoration path reports errors. A separate [pseudo-terminal](../GLOSSARY.md#pseudo-terminal) check exercises actual terminal settings after both quitting and an injected drawing failure. A pseudo-terminal behaves like a terminal connection under program control; it lets the test inspect mode changes without depending on a person's terminal window.
 
 ## Try returning to the same request
 
@@ -148,3 +159,101 @@ Finally, explain why drawing takes a shared reference to the session but a mutab
 The view code [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66) contains state changes, and the workspace renderer [`sections`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/workspace_view.rs#L133) composes the list and sections. Their tests [`navigation_retains_overview_selection_and_scroll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/tests/views.rs#L333) exercise navigation and fixed screen buffers. The terminal code [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L126) manages input and cleanup, with a separate restoration check [`check`](https://github.com/sidsharma96/netscope/blob/main/scripts/check_terminal.py#L20).
 
 The [first version walkthrough](06-first-milestone.md) provides the command to run the sample. The [verification record](../VERIFICATION.md) describes completed checks and their limits. [Ratatui's documentation](https://docs.rs/ratatui/0.29.0/ratatui/) is the implementation reference for frames and drawing.
+
+<!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
+
+## Check your understanding
+
+These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+
+### Why `mut` is needed
+
+**Level:** Newcomer
+
+
+Why does `let selected = 0_usize; selected += 1;` fail, and what does adding `mut` tell a reader?
+
+<details>
+<summary>Answer</summary>
+
+Rust variables cannot be changed unless they are declared with `mut`. Writing `let mut selected` allows `+=` to store a new value. The keyword also tells the reader that this value is meant to change. In Netscope that separates values that describe the capture, which stay fixed, from view state such as the selected row, which changes as you press keys.
+
+**Learn more:** [Make changes explicit](../chapters/07-values-and-functions.md#make-changes-explicit) · [Separate the capture from your place in it](../chapters/11-drawing-and-navigation.md#separate-the-capture-from-your-place-in-it)
+
+</details>
+
+### Hostile text and the terminal
+
+**Level:** Expert
+
+
+Captured URLs, headers, and filenames are controlled by whoever made the file. How does Netscope keep them from sending escape sequences to the terminal, what does it miss, and how is the terminal restored after an error or a panic?
+
+<details>
+<summary>Answer</summary>
+
+`terminal_text` replaces every character for which `char::is_control` is true with its escaped form, so ESC becomes `\u{1b}`. The views and the non-interactive summary pass captured strings and filenames through it. Binary bodies are shown as hex, and previews are cut on character boundaries.
+
+`is_control` covers only Unicode category Cc: U+0000 to U+001F and U+007F to U+009F. That includes ESC, so a captured value cannot start a terminal command. Format characters in category Cf pass through unchanged. The right-to-left override U+202E, the bidi isolates, and the zero-width space can make a URL display differently from its bytes.
+
+The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. No panic hook is installed, so a panic message printed inside the alternate screen is erased when the screen is restored.
+
+**Common wrong answer.** "All dangerous Unicode is escaped." Only Cc controls are; bidi and zero-width characters are a listed gap.
+
+**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L13-L50)
+
+</details>
+
+### Why the view stores request IDs
+
+**Level:** Newcomer
+
+
+The screen must remember which request you selected across many redraws. Why does Netscope store a request ID for this instead of a reference to the request?
+
+<details>
+<summary>Answer</summary>
+
+A reference is suited to short access, such as reading during one draw. Remembering a selection lasts across many key presses and redraws. An ID is a plain number the view state can own, and the program looks the request up in the session whenever it needs it. The lookup returns an `Option`, so an ID with no matching request becomes a visible absence instead of a crash.
+
+**Learn more:** [Why store IDs?](../chapters/03-storing-requests.md#why-store-ids) · [`Session::request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L264)
+
+</details>
+
+### Searching for API
+
+**Level:** Expert
+
+
+A user presses `/` and searches for `API` to find `https://example.com/api/books`. Will it match? What does the search look at, when does it run, and how does it combine with the host filter?
+
+<details>
+<summary>Answer</summary>
+
+It will not match. The search is a case-sensitive substring test, `str::contains`, on the raw recorded URL string. It does not look at headers or bodies, and it does no normalisation or pattern matching.
+
+The query is applied when Enter is pressed, not on each keystroke. The query is limited to 1024 bytes. It filters the current host filter's chronological list, or every request when no host filter is set. The matches are rebuilt as a list of request IDs, and the previously selected request stays selected if it still matches. Otherwise the first row is selected. Pressing `a` clears both the query and the host filter.
+
+Each Enter costs O(n × m) for n requests and a query of length m. The captured requests are never moved or copied; only the list of matching IDs changes.
+
+**Common wrong answer.** "The search is case-insensitive and also looks at headers." It is neither.
+
+**Learn more:** [Find a request without changing the capture](../chapters/11-drawing-and-navigation.md#find-a-request-without-changing-the-capture) · [URL search](../contracts/m4-url-search.md) · [`rebuild_search`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L164-L177)
+
+</details>
+
+### Selection, scroll and focus
+
+**Level:** Newcomer
+
+
+In a wide window the request list and its details are both visible. Pressing Down could select the next request or scroll the body. What decides which one happens?
+
+<details>
+<summary>Answer</summary>
+
+Focus decides. Focus is the pane that receives movement keys, and selection is the request whose details are shown. They are separate values in the view state. Tab moves focus between the list and the details, and Enter focuses the selected request's details. The bright border marks focus and the filled row marks selection. Scroll position is a third value that records your place within the text.
+
+**Learn more:** [Which pane should a key change?](../chapters/11-drawing-and-navigation.md#which-pane-should-a-key-change) · [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66)
+
+</details>

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Publish the book with mdBook 0.5.4 from `docs/SUMMARY.md`, grouped into parts, with search, a reading-path front page, a glossary and a three-level question bank whose answers link to the teaching sections. Teaching chapters end with generated questions. The custom HTML reader and its builder are retired; the documentation checks now run on the Markdown and also verify heading anchors and question format. A workflow builds the site and deploys it to Cloudflare Pages.
+
 - Replace the journey's full-width text report with a compact exchange diagram, selectable timing stages and a focused explanation pane. Show partial timing sums and discrepancies without inventing missing durations; keep stage navigation and explanation paging separate.
 
 - Add a default split request inspector on wide terminals, focused sections, an optional explanatory journey, and a replay workbench with a persistent operation strip. Keep one-pane navigation on smaller supported terminals and the complete captured report under All. Update the beginner walkthrough and lessons on focus, ownership, and review.

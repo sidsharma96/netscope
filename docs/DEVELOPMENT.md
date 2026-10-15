@@ -24,13 +24,30 @@ Functions and types should express the work they do. Add abstractions when a rea
 
 ## Writing and examples
 
-The book assumes no Rust knowledge. Its order follows the learner's questions: observations, basic syntax, ownership, collections, missing values, then file reading and screen behaviour. Numeric filename prefixes are stable chapter identifiers; chapters.json defines the actual reading order.
+The book assumes no Rust knowledge. Its order follows the learner's questions: observations, basic syntax, ownership, collections, missing values, then file reading and screen behaviour. Numeric filename prefixes are stable chapter identifiers; `docs/SUMMARY.md` defines the actual reading order and groups the chapters into parts.
 
 Read [the book's writing principles](chapters/05-decisions.md) before adding or revising a lesson. Root AGENTS.md records the same audience requirement for future work. Start from a concrete question and build a coherent explanation before choosing source examples. Code structure, recent implementation changes, and test output do not dictate the outline. Explain the mechanism in ordinary language, introduce terms and symbols before relying on them, and use diagrams where they help the reader reason about a relationship.
 
 Review in two passes. First, read without source code and check that a beginner can follow the example and predict its consequence. Then verify the claims and source links against the implementation. Keep status reports and detailed check instructions in reference material. Comments explain a local reason, assumption, or consequence; long lessons belong in the book.
 
-Edit the Markdown chapters, run `python3 scripts/build_docs.py`, and check the result with `python3 scripts/check_docs.py`. If examples change, run `cargo test --workspace --doc --locked --offline`. Rustdoc checks the examples included from the basic-language chapters. Compilation checks do not certify beginner readability or the accuracy of uncompiled illustrations.
+If examples change, run `cargo test --workspace --doc --locked --offline`. Rustdoc checks the examples included from the chapters, so a fenced block without a language is compiled as Rust. Compilation checks do not certify beginner readability or the accuracy of uncompiled illustrations.
+
+## Edit the book
+
+The book is built with [mdBook](https://rust-lang.github.io/mdBook/) 0.5.4. `docs/book.toml` configures it, `docs/SUMMARY.md` lists every page in reading order, and the Markdown files stay where they are: `docs/` is the book's source directory. A new page must be added to `SUMMARY.md`, or the check fails.
+
+```sh
+python3 scripts/sync_questions.py   # after editing docs/questions/
+python3 scripts/check_docs.py       # navigation, links, anchors, code links, questions
+mdbook build docs                   # writes the site to docs/book/ (ignored by Git)
+mdbook serve docs                   # optional: preview at http://localhost:3000
+```
+
+`check_docs.py` checks the Markdown, so it needs neither mdBook nor a network connection. It confirms that every page is in `SUMMARY.md`, that relative links and heading anchors resolve inside `docs/`, that each code link names a symbol found near its line anchor, and that the question bank follows its format. Links to files outside `docs/` must be absolute GitHub links, because the hosted site holds only `docs/`. Do not link to `docs/README.md` from another page: mdBook publishes it as the site's front page, `index.html`.
+
+The question bank in `docs/questions/` is the single source for questions. Each question carries a `<!-- chapters: ... -->` tag, and `sync_questions.py` copies up to five tagged questions into the generated "Check your understanding" section at the end of each teaching chapter. Edit the bank, never the generated section.
+
+Pushing documentation changes to main runs `.github/workflows/docs.yml`, which repeats these checks, builds the site and deploys it to Cloudflare Pages (project `netscope-docs`) when the deployment secrets are configured.
 
 ## CI and evidence
 

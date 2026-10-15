@@ -36,7 +36,7 @@ Early attempts exposed harness setup mistakes (Firefox's raw Marionette TLS capa
 
 ## Retained evidence and reproduction
 
-[Case manifest](../tests/fixtures/campaign/native-120/cases.json), unchanged [Chrome HAR](../tests/fixtures/campaign/native-120/chrome-native.har), reformatted native [Firefox HAR](../tests/fixtures/campaign/native-120/firefox-native.har), browser observations, server request logs, versions, provenance, [results](../tests/fixtures/campaign/native-120/results.json), and SHA256SUMS are retained in the [campaign directory](../tests/fixtures/campaign/native-120/README.md). Firefox formatting preserves the native values; Chrome's native string is unchanged.
+[Case manifest](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/campaign/native-120/cases.json), unchanged [Chrome HAR](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/campaign/native-120/chrome-native.har), reformatted native [Firefox HAR](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/campaign/native-120/firefox-native.har), browser observations, server request logs, versions, provenance, [results](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/campaign/native-120/results.json), and SHA256SUMS are retained in the [campaign directory](https://github.com/sidsharma96/netscope/blob/main/tests/fixtures/campaign/native-120/README.md). Firefox formatting preserves the native values; Chrome's native string is unchanged.
 
 The normal check script rechecks the frozen corpus offline. No browser/service is started in CI. To record new traffic on macOS with installed Chrome/Firefox, Node 24, Python and OpenSSL:
 

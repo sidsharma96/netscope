@@ -2,7 +2,7 @@
 
 A plaintext response contains a book description, followed by another response on the same connection. Reading every remaining byte as the first body would consume the second message too. Reading one TCP packet as one body would fail whenever a packet cuts a message in two. HTTP needs its own framing rules: rules that identify where a message ends.
 
-A HAR often retains an already assembled response body. It normally does not retain the original HTTP/1.1 chunk delimiters. Packet-derived plaintext can supply those bytes, but only when reassembly has a usable contiguous prefix. Missing or conflicting TCP positions stop this interpretation before it guesses a later message start.
+A HAR often retains an already assembled response body. It normally does not retain the original HTTP/1.1 chunk delimiters. Packet-derived plaintext can supply those bytes, but only when reassembly has a usable [contiguous prefix](../GLOSSARY.md#contiguous-prefix). Missing or conflicting TCP positions stop this interpretation before it guesses a later message start.
 
 ## Packet boundaries and message boundaries have different jobs
 
@@ -20,9 +20,9 @@ The split does not change a six-byte chunk into a two-byte chunk and a four-byte
 
 ## A length and a delimiter answer different questions
 
-A Content-Length field declares the number of body bytes. Three means three bytes, not necessarily three visible characters; UTF-8 characters can occupy more than one byte. If only two declared bytes are present, the boundary remains unavailable. Later-looking text cannot be assumed to start another message until the current boundary is resolved.
+A [Content-Length](../GLOSSARY.md#content-length) field declares the number of body bytes. Three means three bytes, not necessarily three visible characters; UTF-8 characters can occupy more than one byte. If only two declared bytes are present, the boundary remains unavailable. Later-looking text cannot be assumed to start another message until the current boundary is resolved.
 
-With chunked transfer encoding, each chunk begins with a hexadecimal size line. CRLF, the two-byte carriage-return/line-feed pair, ends that line. The declared number of data bytes follows, then another CRLF. A zero-sized chunk starts the ending section, which may contain trailer fields before a final empty line. The [HTTP/1.1 framing rules](https://www.rfc-editor.org/rfc/rfc9112#section-7.1) define that grammar.
+With [chunked transfer encoding](../GLOSSARY.md#chunked-transfer-coding), each chunk begins with a hexadecimal size line. CRLF, the two-byte carriage-return/line-feed pair, ends that line. The declared number of data bytes follows, then another CRLF. A zero-sized chunk starts the ending section, which may contain trailer fields before a final empty line. The [HTTP/1.1 framing rules](https://www.rfc-editor.org/rfc/rfc9112#section-7.1) define that grammar.
 
 Here is an illustrative wire representation. Each visible `\r\n` means those two bytes; it is not literal backslash text.
 
@@ -52,7 +52,7 @@ The second argument is false because this illustration does not supply a transpo
 
 ## Some apparent boundaries are ambiguous
 
-Netscope's initial subset deliberately refuses Transfer-Encoding together with Content-Length, repeated lengths, and unsupported transfer-coding combinations. The [message body length rules](https://www.rfc-editor.org/rfc/rfc9112#section-6.3) say what a receiver does instead: Transfer-Encoding overrides Content-Length, and a message carrying both "ought to be handled as an error" because the pair is a classic request-smuggling setup. Two parsers that disagree about which header wins disagree about where the next message starts. An inspector that picks one answer can show a boundary the real receiver never used, so Netscope labels the message `Ambiguous` and stops.
+Netscope's initial subset deliberately refuses [Transfer-Encoding](../GLOSSARY.md#transfer-encoding) together with Content-Length, repeated lengths, and unsupported transfer-coding combinations. The [message body length rules](https://www.rfc-editor.org/rfc/rfc9112#section-6.3) say what a receiver does instead: Transfer-Encoding overrides Content-Length, and a message carrying both "ought to be handled as an error" because the pair is a classic request-smuggling setup. Two parsers that disagree about which header wins disagree about where the next message starts. An inspector that picks one answer can show a boundary the real receiver never used, so Netscope labels the message `Ambiguous` and stops.
 
 The same rules put status codes first. A 1xx, 204, or 304 response has no body whatever its headers say. Netscope runs the Transfer-Encoding with Content-Length check before that status rule, so a 304 that carries both headers is labelled ambiguous instead of header-only. The [design defense](34-defending-the-design.md#known-gaps-and-pitfalls) records this order bug and its fix.
 
@@ -65,3 +65,103 @@ Some status codes define a header-only boundary. A 101 upgrade instead changes t
 An unfinished chunk does not erase earlier complete chunks. Their size-line and data ranges remain useful. A malformed terminator, missing trailer ending, inspection limit, or unknown framing gets a distinct explanation. The underlying packet and sequence bytes remain separate from the application-body preview.
 
 Try removing the final empty line from the illustrative message. The body bytes `abcde` may already be available, while its framing remains unfinished. Then place a TCP gap inside a size line. No later chunk boundary should be invented. The wire inspector [`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140), prefix-cut tests [`every_chunked_prefix_keeps_absence_distinct_from_termination`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/wire_http.rs#L16), and [local walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams) let you check those predictions.
+
+<!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
+
+## Check your understanding
+
+These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+
+### Chunked bodies
+
+**Level:** Newcomer
+
+
+How does a chunked HTTP/1.1 response mark where its body ends, and which bytes become the body?
+
+<details>
+<summary>Answer</summary>
+
+Each chunk starts with its size in hexadecimal and a CRLF, then that many data bytes, then another CRLF. A chunk of size zero starts the ending section, which may hold trailer fields and ends with an empty line. Only the data bytes form the body. The size lines, CRLFs and trailers are framing. Packet boundaries do not matter, because Netscope reads chunks from the reassembled byte stream, not from individual packets.
+
+**Learn more:** [A length and a delimiter answer different questions](../chapters/31-finding-http-boundaries.md#a-length-and-a-delimiter-answer-different-questions) · [Packet boundaries and message boundaries have different jobs](../chapters/31-finding-http-boundaries.md#packet-boundaries-and-message-boundaries-have-different-jobs) · [`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140)
+
+</details>
+
+### What does Netscope show for HTTPS in a PCAP?
+
+**Level:** Practitioner
+
+
+You open a PCAP of HTTPS traffic to port 443. What does Netscope show about the TLS handshake (ClientHello, server name, certificate), and what does it show about the HTTP inside it?
+
+<details>
+<summary>Answer</summary>
+
+Nothing specific to TLS. Netscope has no TLS record or handshake parser for packet captures, so it does not extract the server name (SNI), list cipher suites or show certificates. The port 443 stream is reassembled like any other TCP stream, with its byte states and SYN, FIN and RST flags, and the packet view shows the layers and the bytes.
+
+When the HTTP/1.1 parser examines that stream, it stops with "No supported GET/POST or HTTP/1.1 response start at prefix", because TLS records begin with a record-type byte such as 0x16 or 0x17, not with a request line. The HTTP inside is not visible: Netscope does not decrypt traffic and does not accept key-log files. TLS appears elsewhere in Netscope only as the HAR `ssl` timing and as the rustls client that replay uses.
+
+**Common wrong answer.** "It shows the SNI from the ClientHello." No code in Netscope parses TLS handshake messages from a capture.
+
+**Learn more:** [TLS: the handshake, SNI, ALPN and certificate checks](../chapters/34-defending-the-design.md#tls-the-handshake-sni-alpn-and-certificate-checks) · [Plaintext HTTP/1.1 subset](../contracts/m8-streams.md#plaintext-http11-subset) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186-L214)
+
+</details>
+
+### A capture taken with a 96-byte snap length
+
+**Level:** Expert
+
+
+A capture was recorded with a snap length of 96 bytes, so every TCP payload is cut. What do the reassembled byte states look like, what does `contiguous_prefix` return, and what does the HTTP framing inspector see?
+
+<details>
+<summary>Answer</summary>
+
+Each record keeps 96 bytes. After a 14-byte Ethernet header, a 20-byte IPv4 header, and a 20 to 32-byte TCP header, between about 30 and 42 payload bytes remain. The importer adds the layer note "Capture cut: fewer bytes retained than original packet".
+
+The segment's declared payload comes from the IP length field, not from the captured length, so reassembly reserves the full sequence range the sender used. Only the retained bytes are written. The rest of each segment's range stays Missing. The stream becomes a run of Observed bytes, then a run of Missing positions, then Observed again for the next segment, and so on.
+
+`contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
+
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L305) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L51-L58)
+
+</details>
+
+### In what order does the wire HTTP parser apply framing rules?
+
+**Level:** Practitioner
+
+
+Which bytes does the HTTP/1.1 parser receive from a reassembled stream, and in what order does it apply the framing rules (Transfer-Encoding, Content-Length, status codes, a request without framing, a close-delimited response)? What limits apply?
+
+<details>
+<summary>Answer</summary>
+
+The parser receives only the contiguous prefix of one direction, cut to 256 KiB, together with a flag saying whether the stream's end was observed. It parses up to eight messages and stops at the first one it cannot frame, without guessing a later one. A start line must be `HTTP/1.1` with a three-digit status from 100 to 599, or exactly `GET` or `POST`, a target and `HTTP/1.1`. Header lines may be at most 4 KiB, the header section 32 KiB, and the count 100 fields.
+
+The rules then apply in order. First, Transfer-Encoding and Content-Length together are reported as ambiguous and left unframed, because that combination is the classic request-smuggling pattern. Second, a 1xx, 204 or 304 status ends at the headers, except that 101 changes protocol and stops parsing. Third, Transfer-Encoding must be exactly one `chunked`, with at most 1024 chunks. Fourth, Content-Length must be one decimal value up to 256 KiB. Fifth, a request with neither has no body. Last, a response with neither is close-delimited, and counts as framed only when the SYN-to-FIN span was observed without gaps.
+
+**Learn more:** [A length and a delimiter answer different questions](../chapters/31-finding-http-boundaries.md#a-length-and-a-delimiter-answer-different-questions) · [Some apparent boundaries are ambiguous](../chapters/31-finding-http-boundaries.md#some-apparent-boundaries-are-ambiguous) · [Why refuse Transfer-Encoding together with Content-Length?](../chapters/34-defending-the-design.md#why-refuse-transfer-encoding-together-with-content-length) · [`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140-L185) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186-L352)
+
+</details>
+
+### Inputs the wire HTTP parser cannot frame
+
+**Level:** Expert
+
+
+Give concrete inputs on which the wire HTTP framing inspector stops or misframes. Consider a response to HEAD, `101 Switching Protocols`, a PUT request, an HTTP/1.0 response, two identical `Content-Length` headers, and `Transfer-Encoding: gzip, chunked`.
+
+<details>
+<summary>Answer</summary>
+
+The inspector reads each direction alone and never pairs a response with its request. That makes HEAD the most important case. A response to HEAD that carries `Content-Length: 1234` is framed as if 1234 body bytes follow. On a reused connection the next response's bytes are taken as that body, or the message stays unframed while it waits.
+
+A `101` response is labelled "101 changes protocol; later HTTP framing unavailable", and inspection stops, because the later bytes belong to another protocol. A PUT request, or any method other than GET and POST, stops with "No supported GET/POST or HTTP/1.1 response start at prefix". An `HTTP/1.0` status line fails the same check, because only `HTTP/1.1` is accepted as a response start.
+
+Two identical `Content-Length: 5` headers give "Content-Length outside supported single decimal subset". RFC 9110 allows repeated identical values, so this is stricter than the standard. `Transfer-Encoding: gzip, chunked` gives "Transfer coding outside supported single chunked subset". Obsolete line folding and whitespace before the colon fail as invalid header names.
+
+**Learn more:** [How can a response be framed without seeing its request?](../chapters/34-defending-the-design.md#how-can-a-response-be-framed-without-seeing-its-request) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186) · [`lengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L317-L321) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L246-L249)
+
+</details>
