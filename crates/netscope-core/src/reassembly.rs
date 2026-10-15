@@ -41,6 +41,8 @@ pub struct Reassembled {
     pub states: Vec<ByteState>,
     /// Number of agreeing overlapped byte observations, not proof of network loss.
     pub repeated_bytes: usize,
+    /// One-byte keep-alive probes at the last observed byte, not placed as data.
+    pub ignored_probes: usize,
     /// Count of input segments skipped for sequence budgets.
     pub skipped_segments: usize,
     /// Constraints and ambiguous end observations.
@@ -142,7 +144,18 @@ pub fn reassemble(capture: &PacketCapture) -> Reassembly {
             if tcp.declared_payload == 0 && tcp.flags & 5 == 0 {
                 continue;
             }
-            let Some(end) = i64::try_from(tcp.declared_payload)
+            // RFC 1122 4.2.2.12: data on a RST is diagnostic text, not stream content.
+            let declared = if tcp.flags & 4 != 0 {
+                if tcp.declared_payload > 0
+                    && !notes.contains(&"Reset segment payload not placed in the stream")
+                {
+                    notes.push("Reset segment payload not placed in the stream");
+                }
+                0
+            } else {
+                tcp.declared_payload
+            };
+            let Some(end) = i64::try_from(declared)
                 .ok()
                 .and_then(|length| start.checked_add(length))
             else {
@@ -179,11 +192,29 @@ pub fn reassemble(capture: &PacketCapture) -> Reassembly {
         let mut bytes = vec![0; length];
         let mut states = vec![ByteState::Missing; length];
         let mut repeated_bytes = 0;
+        let mut ignored_probes = 0;
+        let mut placed_end = 0;
         for (id, start) in ranges {
             let packet = &capture.packets[id];
             let Some(tcp) = &packet.tcp else { continue };
+            if tcp.flags & 4 != 0 {
+                continue;
+            }
             if let Some(data) = packet.bytes.get(tcp.payload.clone()) {
                 let begin = (start - minimum) as usize;
+                // A keep-alive probe repeats SND.NXT - 1 and may carry one garbage byte
+                // (RFC 1122 4.2.3.6), so a differing byte there is not a conflict.
+                if data.len() == 1
+                    && tcp.declared_payload == 1
+                    && tcp.flags & 3 == 0
+                    && begin + 1 == placed_end
+                    && states.get(begin) == Some(&ByteState::Observed)
+                    && bytes.get(begin) != data.first()
+                {
+                    ignored_probes += 1;
+                    continue;
+                }
+                placed_end = placed_end.max(begin + data.len());
                 for (position, byte) in data.iter().enumerate() {
                     let target = begin + position;
                     let Some(state) = states.get_mut(target) else {
@@ -212,6 +243,7 @@ pub fn reassemble(capture: &PacketCapture) -> Reassembly {
             bytes,
             states,
             repeated_bytes,
+            ignored_probes,
             skipped_segments: skipped,
             notes,
         });

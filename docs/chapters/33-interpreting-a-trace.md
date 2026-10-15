@@ -78,7 +78,7 @@ What are the flow, per-stream and total budgets in TCP reassembly? What happens 
 
 Grouping costs O(P log F) for P packets and F epochs. Placing bytes costs time proportional to the payload bytes examined. Memory is about two bytes per retained position (the byte and its state), so at most around 16 MiB for 8 MiB of span, plus the packet bytes themselves. The PCAP limits of 20,000 packets and 32 MiB apply before any of this.
 
-**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [Sequence observations](../contracts/m8-streams.md#sequence-observations) · [`FLOW_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L6-L10) · [`unassigned_packets`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L100-L105) · [`skipped`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L152-L160)
+**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [Sequence observations](../contracts/m8-streams.md#sequence-observations) · [`FLOW_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L6-L10) · [`unassigned_packets`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L102-L107) · [`skipped`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L165-L173)
 
 </details>
 
@@ -100,7 +100,7 @@ The defence is that a capture cannot tell which copy the receiver accepted. Chec
 
 **Common wrong answer.** "Netscope sorts by timestamp and keeps the first copy, as most stacks do." It neither sorts by time nor picks a winner.
 
-**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L192-L199)
+**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L223-L230)
 
 </details>
 

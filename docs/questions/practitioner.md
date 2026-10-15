@@ -116,7 +116,7 @@ The unit is a directed epoch: one direction (source socket to destination socket
 
 A gap stays `Missing`. Its slot in `bytes` holds a placeholder 0 that means nothing, because a byte value is meaningful only where the state is `Observed`. If two observations of the same position agree, the state stays `Observed` and `repeated_bytes` goes up by one. If they disagree, the position becomes `Conflict`. `contiguous_prefix` returns bytes only up to the first position that is not `Observed`, so later analysis such as HTTP framing never crosses a hole or a disagreement.
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`ByteState`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L13-L20) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L51-L58)
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`ByteState`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L13-L20) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
 
 </details>
 
@@ -310,7 +310,7 @@ Walk through how `reassemble` decides which directed epoch a TCP segment belongs
 
 A segment's position is `sequence.wrapping_sub(anchor)` reinterpreted as a signed 32-bit number. Wrapping subtraction followed by the signed cast gives the correct signed distance across the 2^32 wrap, as long as the distance stays below 2^31 either way, which the 256 KiB span limit guarantees. Segments that carry no payload and no FIN or RST join the epoch but add no positions.
 
-**Learn more:** [Sequence numbers eventually wrap](../chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap) · [How TCP numbers its bytes](../chapters/34-defending-the-design.md#how-tcp-numbers-its-bytes) · [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L87-L124) · [`start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L139-L144)
+**Learn more:** [Sequence numbers eventually wrap](../chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap) · [How TCP numbers its bytes](../chapters/34-defending-the-design.md#how-tcp-numbers-its-bytes) · [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L89-L126) · [`start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L141-L146)
 
 </details>
 
@@ -329,7 +329,7 @@ What are the flow, per-stream and total budgets in TCP reassembly? What happens 
 
 Grouping costs O(P log F) for P packets and F epochs. Placing bytes costs time proportional to the payload bytes examined. Memory is about two bytes per retained position (the byte and its state), so at most around 16 MiB for 8 MiB of span, plus the packet bytes themselves. The PCAP limits of 20,000 packets and 32 MiB apply before any of this.
 
-**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [Sequence observations](../contracts/m8-streams.md#sequence-observations) · [`FLOW_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L6-L10) · [`unassigned_packets`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L100-L105) · [`skipped`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L152-L160)
+**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [Sequence observations](../contracts/m8-streams.md#sequence-observations) · [`FLOW_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L6-L10) · [`unassigned_packets`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L102-L107) · [`skipped`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L165-L173)
 
 </details>
 

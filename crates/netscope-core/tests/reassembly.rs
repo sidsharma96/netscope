@@ -84,3 +84,42 @@ fn without_syn_out_of_order_prefix_is_retained_but_not_claimed_as_connection_sta
     assert_eq!(result.flows[0].first_sequence, 100);
     assert!(!result.flows[0].observed_end());
 }
+#[test]
+fn reset_payload_is_not_stream_data() {
+    let result = reassemble(&capture(vec![
+        segment(1, 10, 2, b""),
+        segment(1, 11, 0x18, b"abc"),
+        segment(1, 12, 0x14, b"diagnostic"),
+    ]));
+    let flow = &result.flows[0];
+    assert!(flow.reset_observed);
+    assert_eq!(flow.bytes, b"abc");
+    assert_eq!(flow.contiguous_prefix(), b"abc");
+    assert!(
+        flow.notes
+            .contains(&"Reset segment payload not placed in the stream")
+    );
+}
+#[test]
+fn one_byte_keepalive_probe_below_next_sequence_is_not_a_conflict() {
+    let result = reassemble(&capture(vec![
+        segment(1, 10, 2, b""),
+        segment(1, 11, 0x18, b"abc"),
+        // A probe at SND.NXT - 1 carrying one garbage byte (RFC 1122 4.2.3.6).
+        segment(1, 13, 0x10, b"\0"),
+        segment(1, 14, 0x18, b"de"),
+        segment(1, 16, 1, b""),
+    ]));
+    let flow = &result.flows[0];
+    assert_eq!(flow.contiguous_prefix(), b"abcde");
+    assert_eq!(flow.ignored_probes, 1);
+    assert!(flow.observed_end());
+    // A differing one-byte segment anywhere else is still a conflict.
+    let result = reassemble(&capture(vec![
+        segment(1, 10, 2, b""),
+        segment(1, 11, 0x18, b"abc"),
+        segment(1, 12, 0x10, b"\0"),
+    ]));
+    assert_eq!(result.flows[0].contiguous_prefix(), b"a");
+    assert_eq!(result.flows[0].ignored_probes, 0);
+}

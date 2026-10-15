@@ -285,6 +285,12 @@ fn stream_lines(analysis: &Reassembly, id: usize) -> Vec<String> {
     if !flow.syn_observed {
         lines.push("Start unknown: capture has no SYN for this directed epoch".into());
     }
+    if flow.ignored_probes > 0 {
+        lines.push(format!(
+            "{} one-byte keep-alive probes ignored at the last observed byte",
+            flow.ignored_probes
+        ));
+    }
     lines.extend(flow.notes.iter().map(|s| s.to_string()));
     lines.push("Sequence ranges · offsets from first retained sequence".into());
     let mut start = 0;

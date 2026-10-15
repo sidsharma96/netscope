@@ -19,7 +19,7 @@ A retransmitted SYN with the same ISN on an open epoch matches the anchor, so it
 
 The weak case is reuse where the new connection's SYN was not captured. Its first packet is not a SYN, so it joins the old closed epoch, and its bytes are placed relative to the old anchor.
 
-**Learn more:** [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`is_none_or`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L97-L99) · [`tuple_reuse_resets_directions_and_budget_does_not_merge_new_epochs_into_old`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L35)
+**Learn more:** [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`is_none_or`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L99-L101) · [`tuple_reuse_resets_directions_and_budget_does_not_merge_new_epochs_into_old`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L35)
 
 </details>
 
@@ -40,7 +40,7 @@ Without a SYN, the anchor is the sequence number of the first packet recorded fo
 
 With a SYN, position 0 is ISN + 1, the first data byte. A segment whose offset is negative cannot belong to this connection's data, so it is skipped and counted in `skipped_segments`. A skipped segment also makes `observed_end` false.
 
-**Learn more:** [A direction needs a beginning, and sometimes we do not have it](../chapters/30-putting-bytes-in-order.md#a-direction-needs-a-beginning-and-sometimes-we-do-not-have-it) · [`first_sequence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L208) · [`without_syn_out_of_order_prefix_is_retained_but_not_claimed_as_connection_start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L77)
+**Learn more:** [A direction needs a beginning, and sometimes we do not have it](../chapters/30-putting-bytes-in-order.md#a-direction-needs-a-beginning-and-sometimes-we-do-not-have-it) · [`first_sequence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L239) · [`without_syn_out_of_order_prefix_is_retained_but_not_claimed_as_connection_start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L77)
 
 </details>
 
@@ -61,7 +61,7 @@ The segment's declared payload comes from the IP length field, not from the capt
 
 `contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L305) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L51-L58)
+**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L157-L161) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L305) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
 
 </details>
 
@@ -260,7 +260,7 @@ The defence is that a capture cannot tell which copy the receiver accepted. Chec
 
 **Common wrong answer.** "Netscope sorts by timestamp and keeps the first copy, as most stacks do." It neither sorts by time nor picks a winner.
 
-**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L192-L199)
+**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L223-L230)
 
 </details>
 
@@ -459,7 +459,7 @@ The far-away segment is accepted first, so the span already covers about 200 KiB
 
 The budgets exist because sequence numbers come from the file, and a dense array sized from a hostile claim would exhaust memory. The cost is that which bytes survive depends on record order. The views report the skipped count, so the loss is visible, not silent.
 
-**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [`STREAM_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L8) · [`TOTAL_STREAM_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L154-L160)
+**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [`STREAM_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L8) · [`TOTAL_STREAM_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L167-L173)
 
 </details>
 
@@ -474,13 +474,13 @@ A client sends a TCP keep-alive probe that carries one garbage byte at SND.NXT -
 <details>
 <summary>Answer</summary>
 
-A keep-alive probe repeats the last byte already sent. RFC 1122 allows it to carry one garbage byte. Netscope has no notion of a probe, so it places that byte at its sequence position like any payload. The position already holds the real last byte, the values differ, and the position becomes `Conflict`. The contiguous prefix now ends one byte early, and `observed_end` becomes false, so the HTTP inspector may label the last message unframed. Linux sends probes without data, so this depends on the sender's stack.
+A keep-alive probe repeats the last byte already sent. RFC 1122 allows it to carry one garbage byte, and Linux sends none, so this depends on the sender's stack. Without special handling, that byte would land on a position that already holds the real last byte, the values would differ, and the position would become `Conflict`, cutting the HTTP prefix one byte early. `reassemble` recognises the case: a one-byte segment with no SYN, FIN or RST, whose byte lands on the last position placed so far in file order and differs from it, is skipped and counted in `ignored_probes`. A differing one-byte segment anywhere else is still a conflict, so the rule cannot hide an injected byte in the middle of the stream.
 
-An RST segment sets `reset_observed`, which already rules out an observed end. Its payload, which RFC 1122 suggests is diagnostic text, is still written into the stream as if the application had sent it.
+An RST segment sets `reset_observed`, which already rules out an observed end. Its declared payload length is treated as zero, so the diagnostic text never enters the stream or extends the span, and the flow carries the note "Reset segment payload not placed in the stream".
 
-The fix is in `reassemble`: ignore payload on segments with RST set, and treat a one-byte segment lying wholly inside already observed data, just before the highest observed position, as a probe with a note instead of a conflict. Both are listed as known defects.
+**Common wrong answer.** "Both create a conflict, so the prefix ends early." Earlier versions did that; both cases are now handled before the overlap rule.
 
-**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [Repeated bytes are visible; their cause may not be](../chapters/33-interpreting-a-trace.md#repeated-bytes-are-visible-their-cause-may-not-be) · [`reset`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L171-L172) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L192-L199)
+**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [Repeated bytes are visible; their cause may not be](../chapters/33-interpreting-a-trace.md#repeated-bytes-are-visible-their-cause-may-not-be) · [`declared`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L147-L156) · [`ignored_probes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L203-L216) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L223-L230)
 
 </details>
 
