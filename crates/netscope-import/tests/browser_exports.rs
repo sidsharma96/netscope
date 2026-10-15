@@ -205,9 +205,9 @@ fn native_connection_timings_keep_unavailable_and_zero_distinct()
     assert_eq!(chrome.requests()[0].timings.dns, Timing::Milliseconds(0.0));
     for index in 1..6 {
         let c = &chrome.requests()[index].timings;
-        assert_eq!(c.dns, Timing::Unavailable);
-        assert_eq!(c.connect, Timing::Unavailable);
-        assert_eq!(c.ssl, Timing::Unavailable);
+        assert_eq!(c.dns, Timing::NotApplicable);
+        assert_eq!(c.connect, Timing::NotApplicable);
+        assert_eq!(c.ssl, Timing::NotApplicable);
         let f = &firefox.requests()[index].timings;
         assert_eq!(f.dns, Timing::Milliseconds(0.0));
         assert_eq!(f.connect, Timing::Milliseconds(0.0));

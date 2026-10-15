@@ -14,7 +14,7 @@ pub enum Timing {
     /// The exporter supplied `-1`. HAR 1.2 defines this for an optional
     /// timing as "does not apply to the current request", for example DNS
     /// and connect on a reused connection. It is not "value unknown".
-    Unavailable,
+    NotApplicable,
     /// A duration in milliseconds. The constructor accepts finite, non-negative values.
     Milliseconds(f64),
     /// A retained nonstandard exporter value, not a measured duration or -1 sentinel.
@@ -52,7 +52,7 @@ impl Timing {
     pub fn from_optional_har(value: Option<f64>) -> Result<Self, InvalidTiming> {
         match value {
             None => Ok(Self::Missing),
-            Some(-1.0) => Ok(Self::Unavailable),
+            Some(-1.0) => Ok(Self::NotApplicable),
             Some(milliseconds) if milliseconds.is_finite() && milliseconds >= 0.0 => {
                 Ok(Self::Milliseconds(milliseconds))
             }

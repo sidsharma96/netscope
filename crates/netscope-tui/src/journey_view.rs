@@ -98,7 +98,7 @@ fn explanation(r: &Request, stage: usize) -> Vec<String> {
         Timing::Missing => {
             "The exporter did not retain a value here. That does not tell us whether the operation happened."
         }
-        Timing::Unavailable => {
+        Timing::NotApplicable => {
             "The exporter recorded -1: under HAR 1.2 this stage did not apply to the request, for example on a reused connection. It does not mean the operation took zero time."
         }
         Timing::ExporterNegative(_) => {
@@ -209,7 +209,7 @@ fn accounting(r: &Request) -> (String, String, bool) {
 fn short_value(value: Timing) -> String {
     match value {
         Timing::Missing => "not recorded".into(),
-        Timing::Unavailable => "n/a (-1)".into(),
+        Timing::NotApplicable => "n/a (-1)".into(),
         Timing::Milliseconds(n) => format!("{n} ms"),
         Timing::ExporterNegative(n) => format!("{n} *"),
     }

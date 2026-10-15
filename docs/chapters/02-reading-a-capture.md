@@ -80,7 +80,7 @@ HAR timings are numbers. Why does Netscope model an optional timing as an enum i
 <details>
 <summary>Answer</summary>
 
-`Timing` has four variants. `Missing` means the exporter left the field out. `Unavailable` means the exporter wrote `-1`, which HAR 1.2 defines as "does not apply to this request", for example DNS on a reused connection. `Milliseconds(f64)` holds a finite, non-negative duration. `ExporterNegative(f64)` keeps a nonstandard negative value that some exporters write for `blocked`, without treating it as a duration.
+`Timing` has four variants. `Missing` means the exporter left the field out. `NotApplicable` means the exporter wrote `-1`, which HAR 1.2 defines as "does not apply to this request", for example DNS on a reused connection. `Milliseconds(f64)` holds a finite, non-negative duration. `ExporterNegative(f64)` keeps a nonstandard negative value that some exporters write for `blocked`, without treating it as a duration.
 
 Storing 0 for an absent value would invent a measurement: a reader could not tell "took no time" from "was not recorded". `Option<f64>` is better but still merges two different facts, an absent field and a field that does not apply. With four variants, every later calculation has to say what it does with each case, and the compiler checks that it does. The required `send`, `wait` and `receive` fields are plain `f64` values, because the importer rejects an entry that lacks them.
 

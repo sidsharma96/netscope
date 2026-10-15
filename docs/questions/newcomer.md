@@ -934,7 +934,7 @@ The program compiles and draws every row. Why does Netscope still need a test th
 <details>
 <summary>Answer</summary>
 
-The compiler checks Rust's rules, not whether the program means the right thing. Turning `-1` into zero is valid Rust and still wrong, and only a test that states the expected `Unavailable` result catches it. Small invented fixtures make the expected result easy to explain. Local data also keeps tests deterministic: the same inputs give the same result, with no public server whose answer or speed can change.
+The compiler checks Rust's rules, not whether the program means the right thing. Turning `-1` into zero is valid Rust and still wrong, and only a test that states the expected `NotApplicable` result catches it. Small invented fixtures make the expected result easy to explain. Local data also keeps tests deterministic: the same inputs give the same result, with no public server whose answer or speed can change.
 
 **Learn more:** [A test makes an expectation precise](../chapters/04-quality-and-tests.md#a-test-makes-an-expectation-precise) · [Control the inputs that affect the answer](../chapters/04-quality-and-tests.md#control-the-inputs-that-affect-the-answer)
 

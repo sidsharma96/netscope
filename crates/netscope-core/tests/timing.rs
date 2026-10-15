@@ -6,7 +6,7 @@ fn absence_unavailability_and_zero_remain_distinct() {
     assert_eq!(Timing::from_optional_har(None), Ok(Timing::Missing));
     assert_eq!(
         Timing::from_optional_har(Some(-1.0)),
-        Ok(Timing::Unavailable)
+        Ok(Timing::NotApplicable)
     );
     assert_eq!(
         Timing::from_optional_har(Some(0.0)),

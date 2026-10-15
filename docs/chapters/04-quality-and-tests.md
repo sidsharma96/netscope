@@ -14,7 +14,7 @@ This is why a successful build matters but does not finish the check. We also ne
 
 ## A test makes an expectation precise
 
-Take the optional timing `-1`. HAR 1.2 defines it as a stage that did not apply to the request, and we expect the importer to retain that meaning. A test supplies that value and compares the result with the `Unavailable` variant that stores it. If the importer changes it to zero, the comparison fails.
+Take the optional timing `-1`. HAR 1.2 defines it as a stage that did not apply to the request, and we expect the importer to retain that meaning. A test supplies that value and compares the result with the `NotApplicable` variant that stores it. If the importer changes it to zero, the comparison fails.
 
 A useful test protects a distinction someone cares about. In this project, examples include preserving duplicate headers, returning to the same selected request, and distinguishing an empty body from an unrecorded body.
 
@@ -140,7 +140,7 @@ The program compiles and draws every row. Why does Netscope still need a test th
 <details>
 <summary>Answer</summary>
 
-The compiler checks Rust's rules, not whether the program means the right thing. Turning `-1` into zero is valid Rust and still wrong, and only a test that states the expected `Unavailable` result catches it. Small invented fixtures make the expected result easy to explain. Local data also keeps tests deterministic: the same inputs give the same result, with no public server whose answer or speed can change.
+The compiler checks Rust's rules, not whether the program means the right thing. Turning `-1` into zero is valid Rust and still wrong, and only a test that states the expected `NotApplicable` result catches it. Small invented fixtures make the expected result easy to explain. Local data also keeps tests deterministic: the same inputs give the same result, with no public server whose answer or speed can change.
 
 **Learn more:** [A test makes an expectation precise](../chapters/04-quality-and-tests.md#a-test-makes-an-expectation-precise) · [Control the inputs that affect the answer](../chapters/04-quality-and-tests.md#control-the-inputs-that-affect-the-answer)
 

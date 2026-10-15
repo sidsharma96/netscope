@@ -32,7 +32,7 @@ fn source_identity_headers_and_timing_survive_import() -> Result<(), Box<dyn std
     );
     assert_eq!(request.body, Body::Text("[]".into()));
     assert_eq!(request.timings.blocked, Timing::Missing);
-    assert_eq!(request.timings.dns, Timing::Unavailable);
+    assert_eq!(request.timings.dns, Timing::NotApplicable);
     assert_eq!(request.timings.connect, Timing::Milliseconds(30.0));
     assert_eq!(request.timings.ssl, Timing::Milliseconds(20.0));
     assert!(request.warnings.is_empty());
@@ -324,7 +324,7 @@ fn optional_stages_preserve_each_state_and_cookie_types_are_checked()
 -> Result<(), Box<dyn std::error::Error>> {
     for (value, expected) in [
         (None, Timing::Missing),
-        (Some(json!(-1)), Timing::Unavailable),
+        (Some(json!(-1)), Timing::NotApplicable),
         (Some(json!(0)), Timing::Milliseconds(0.0)),
         (Some(json!(3.5)), Timing::Milliseconds(3.5)),
     ] {

@@ -16,7 +16,7 @@ This is also the type used by a checked vector lookup. A successful lookup retur
 
 `Some(-1.0)` tells us that a number was supplied. It does not explain the special meaning HAR assigns to that number. For an optional timing, HAR 1.2 says `-1` means the stage does not apply to the current request, for example DNS on a reused connection.
 
-Three variants of our timing type describe standard HAR values. `Missing` means the field was omitted. `Unavailable` means the exporter supplied `-1`. The variant name is older than this explanation: HAR's meaning for a timing is "does not apply", and the interface shows it as `Not applicable (-1)`. For sizes, HAR uses the same `-1` to mean "not available", and there the name fits. `Milliseconds` contains an accepted duration, including zero.
+Three variants of our timing type describe standard HAR values. `Missing` means the field was omitted. `NotApplicable` means the exporter supplied `-1`, which HAR defines for a timing as "does not apply"; the interface shows it as `Not applicable (-1)`. For sizes, HAR uses the same `-1` to mean "not available", so the size type calls that variant `Unavailable`. `Milliseconds` contains an accepted duration, including zero.
 
 These names make later decisions clearer. Drawing a duration and displaying a not-applicable label are different operations, and the stored value tells us which one applies. The value `-2` fits neither case, so validation rejects it.
 
@@ -31,7 +31,7 @@ The timing conversion returns `Result<Timing, InvalidTiming>`. The first type in
 ```rust
 use netscope_core::{InvalidTiming, Timing};
 assert_eq!(Timing::from_optional_har(None), Ok(Timing::Missing));
-assert_eq!(Timing::from_optional_har(Some(-1.0)), Ok(Timing::Unavailable));
+assert_eq!(Timing::from_optional_har(Some(-1.0)), Ok(Timing::NotApplicable));
 assert_eq!(Timing::from_optional_har(Some(0.0)), Ok(Timing::Milliseconds(0.0)));
 assert_eq!(Timing::from_optional_har(Some(-2.0)), Err(InvalidTiming));
 ```
@@ -49,7 +49,7 @@ use netscope_core::Timing;
 let timing = Timing::Missing;
 let label = match timing {
     Timing::Missing => "Not recorded",
-    Timing::Unavailable => "Not applicable",
+    Timing::NotApplicable => "Not applicable",
     Timing::Milliseconds(_) => "Duration recorded",
     Timing::ExporterNegative(_) => "Nonstandard exporter observation",
 };
@@ -131,7 +131,7 @@ HAR timings are numbers. Why does Netscope model an optional timing as an enum i
 <details>
 <summary>Answer</summary>
 
-`Timing` has four variants. `Missing` means the exporter left the field out. `Unavailable` means the exporter wrote `-1`, which HAR 1.2 defines as "does not apply to this request", for example DNS on a reused connection. `Milliseconds(f64)` holds a finite, non-negative duration. `ExporterNegative(f64)` keeps a nonstandard negative value that some exporters write for `blocked`, without treating it as a duration.
+`Timing` has four variants. `Missing` means the exporter left the field out. `NotApplicable` means the exporter wrote `-1`, which HAR 1.2 defines as "does not apply to this request", for example DNS on a reused connection. `Milliseconds(f64)` holds a finite, non-negative duration. `ExporterNegative(f64)` keeps a nonstandard negative value that some exporters write for `blocked`, without treating it as a duration.
 
 Storing 0 for an absent value would invent a measurement: a reader could not tell "took no time" from "was not recorded". `Option<f64>` is better but still merges two different facts, an absent field and a field that does not apply. With four variants, every later calculation has to say what it does with each case, and the compiler checks that it does. The required `send`, `wait` and `receive` fields are plain `f64` values, because the importer rejects an entry that lacks them.
 
