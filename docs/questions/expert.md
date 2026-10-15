@@ -82,7 +82,7 @@ A `101` response is labelled "101 changes protocol; later HTTP framing unavailab
 
 Two identical `Content-Length: 5` headers give "Content-Length outside supported single decimal subset". RFC 9110 allows repeated identical values, so this is stricter than the standard. `Transfer-Encoding: gzip, chunked` gives "Transfer coding outside supported single chunked subset". Obsolete line folding and whitespace before the colon fail as invalid header names.
 
-**Learn more:** [How can a response be framed without seeing its request?](../chapters/34-defending-the-design.md#how-can-a-response-be-framed-without-seeing-its-request) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186) · [`lengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L317-L321) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L246-L249)
+**Learn more:** [How can a response be framed without seeing its request?](../chapters/34-defending-the-design.md#how-can-a-response-be-framed-without-seeing-its-request) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186) · [`lengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L319-L323) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L248-L251)
 
 </details>
 
@@ -409,15 +409,15 @@ A packet capture contains `HTTP/1.1 304 Not Modified` with both `Transfer-Encodi
 <details>
 <summary>Answer</summary>
 
-Netscope labels it "Ambiguous Transfer-Encoding with Content-Length", treats it as unframed, and stops inspecting the stream, so the following response is not examined.
+Netscope labels it "Status-defined header-only boundary", ends it at the empty line after its headers, and goes on to inspect the following response. That is right.
 
-That is a defect in the order of the checks. RFC 9112 says a 1xx, 204, or 304 response ends at the empty line after its headers, whatever length headers it carries. The status rule applies before the Transfer-Encoding rule. In `message`, the check for both headers together runs first and returns early, so the status rule never runs for this message. The same happens to a 204 or a 1xx response with both headers.
+RFC 9112 section 6.3 lists the status rule before the Transfer-Encoding rule: a 1xx, 204, or 304 response has no body, whatever length headers it carries. In `message`, the status block runs first and returns early, so the check for both headers together never sees this message. The same holds for a 204 or a 1xx response with both headers. A 101 is the exception in another direction: it ends at its headers but stops inspection, because the protocol changes.
 
-The ambiguity check is right for other messages. Both headers together are the classic request-smuggling pattern, because two parsers can disagree about where the body ends. The fix is to move the status block above the ambiguity check and add a test for a 304 that carries both headers.
+For any other status, or for a request, both headers together are labelled "Ambiguous Transfer-Encoding with Content-Length" and inspection stops. That combination is the classic request-smuggling pattern, because two parsers can disagree about where the body ends.
 
-**Common wrong answer.** "The parser applies RFC 9112's precedence, so the 304 is header-only." It does not; the ambiguity check comes first.
+**Common wrong answer.** "Both headers are present, so the 304 is labelled ambiguous." The status rule comes first, as the RFC orders it. Earlier versions of Netscope did get this wrong.
 
-**Learn more:** [Why refuse Transfer-Encoding together with Content-Length?](../chapters/34-defending-the-design.md#why-refuse-transfer-encoding-together-with-content-length) · [Some apparent boundaries are ambiguous](../chapters/31-finding-http-boundaries.md#some-apparent-boundaries-are-ambiguous) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L229-L234) · [`status`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L235-L245)
+**Learn more:** [Why refuse Transfer-Encoding together with Content-Length?](../chapters/34-defending-the-design.md#why-refuse-transfer-encoding-together-with-content-length) · [Some apparent boundaries are ambiguous](../chapters/31-finding-http-boundaries.md#some-apparent-boundaries-are-ambiguous) · [`status`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L233-L243) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L244-L247)
 
 </details>
 

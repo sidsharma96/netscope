@@ -1,6 +1,6 @@
 # Defending the design
 
-Suppose an experienced network engineer reads Netscope's source and then questions you about it for an hour. They will not ask what a vector is. They will ask why a `-1` in a HAR is not a zero, why a TCP overlap is not resolved in favour of the first copy, why a 304 response with two length headers is labelled ambiguous, and what happens to a capture taken on a Mac's loopback interface. This chapter collects the answers in one place.
+Suppose an experienced network engineer reads Netscope's source and then questions you about it for an hour. They will not ask what a vector is. They will ask why a `-1` in a HAR is not a zero, why a TCP overlap is not resolved in favour of the first copy, why a response with two length headers is labelled ambiguous, and what happens to a capture taken on a Mac's loopback interface. This chapter collects the answers in one place.
 
 ## How to use this chapter
 
@@ -170,13 +170,13 @@ A sparse structure, such as an interval tree or a map from offset to segment, wo
 
 ### Why refuse Transfer-Encoding together with Content-Length?
 
-[`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140) reads the contiguous prefix of one direction and returns up to eight framed messages and the reason it stopped. When a message carries both headers, the [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L231) check labels it "Ambiguous Transfer-Encoding with Content-Length" and stops.
+[`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140) reads the contiguous prefix of one direction and returns up to eight framed messages and the reason it stopped. When a message carries both headers, the [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L244-L247) check labels it "Ambiguous Transfer-Encoding with Content-Length" and stops.
 
 RFC 9112 tells a receiver to let Transfer-Encoding win and to treat the message as an error. A server must pick one rule to keep working. An inspector should not, because the message's danger is precisely that two parties may have framed it differently. If Netscope applied the RFC rule, it would show one clean boundary when the real proxy in front of the server might have used the other. Labelling the message ambiguous is the conservative choice for a tool meant to reveal what happened. The cost is that a capture of a correct server receiving a smuggling attempt shows no further messages in that direction.
 
 The same function accepts only a single `chunked` coding and only a single plain decimal Content-Length. `gzip, chunked`, repeated lengths, and `Content-Length: 5, 5` are all labelled outside the subset.
 
-The check order has a defect. RFC 9112 applies the status rule (1xx, 204, 304 have no body) before the Transfer-Encoding rule. Netscope runs the [`status`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L235) rule after the ambiguity check, so a 304 that carries both headers is labelled ambiguous when it is unambiguously header-only. The fix is to swap the two blocks and add a test.
+The ambiguity check runs after the status rule, in the order RFC 9112 section 6.3 gives. A 1xx, 204, or 304 response has no body whatever its headers say, so the [`status`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L233) block ends such a response at the empty line before the two length headers are compared. A 304 that carries both headers is therefore header-only, and the next response on the connection is still inspected. The HEAD rule, which RFC 9112 also places first, cannot be applied, because the inspector does not pair a response with its request.
 
 ### How can a response be framed without seeing its request?
 
@@ -262,9 +262,7 @@ A slow or silent server meets the 10-second replay deadline or the 30-second liv
 
 Each of the following is true of the code on main today. The proposed fix is not implemented.
 
-The HTTP framing inspector checks Transfer-Encoding with Content-Length before the status rule, so a 304, 204, or 1xx response that carries both headers is labelled ambiguous instead of header-only. Fix: move the [`status`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L235) block above the ambiguity check and add a test.
-
-A chunk-size line with whitespace before the extension, such as `3 ;name`, is labelled malformed, though RFC 9112 section 7.1.1 allows it. A chunk-size line longer than 4 KiB reports "waiting for complete terminator" instead of a limit. Fix: trim trailing spaces and tabs from the [`size`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L261-L270) field before validating it, and give the long-line case its own label.
+A chunk-size line with whitespace before the extension, such as `3 ;name`, is labelled malformed, though RFC 9112 section 7.1.1 allows it. A chunk-size line longer than 4 KiB reports "waiting for complete terminator" instead of a limit. Fix: trim trailing spaces and tabs from the [`size`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L263-L272) field before validating it, and give the long-line case its own label.
 
 A TCP keep-alive probe carrying one garbage byte at SND.NXT - 1 creates a false conflict, and RST payload is placed as stream data. Fix: in [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L87), ignore payload on segments with RST set, and treat a one-byte segment that lies entirely inside already observed data, immediately before the highest observed position, as a probe rather than a conflict, with a note.
 

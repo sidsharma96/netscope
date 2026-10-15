@@ -75,3 +75,18 @@ fn limits_and_non_http_starts_are_explicit() {
     assert!(!parsed.messages[0].framed);
     assert!(parsed.messages[0].body.len() < 262144);
 }
+#[test]
+fn status_rule_precedes_transfer_and_length_ambiguity() {
+    for status in ["100 Continue", "204 No Content", "304 Not Modified"] {
+        let wire = format!(
+            "HTTP/1.1 {status}\r\nTransfer-Encoding: chunked\r\nContent-Length: 5\r\n\r\nHTTP/1.1 204 Empty\r\n\r\n"
+        );
+        let parsed = inspect_http(wire.as_bytes(), false);
+        assert_eq!(parsed.messages.len(), 2, "{status}");
+        assert!(parsed.messages[0].framed);
+        assert_eq!(
+            parsed.messages[0].framing,
+            "Status-defined header-only boundary"
+        );
+    }
+}

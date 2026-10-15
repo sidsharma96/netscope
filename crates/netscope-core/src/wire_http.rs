@@ -228,10 +228,8 @@ fn message(bytes: &[u8], at: usize, observed_end: bool) -> Result<WireMessage, &
     };
     let transfer = values(&result.headers, "transfer-encoding");
     let lengths = values(&result.headers, "content-length");
-    if !transfer.is_empty() && !lengths.is_empty() {
-        result.framing = "Ambiguous Transfer-Encoding with Content-Length";
-        return Ok(result);
-    }
+    // RFC 9112 section 6.3 applies the status rule first: these responses never
+    // have a body, whatever Transfer-Encoding or Content-Length say.
     if status.is_some_and(|n| (100..200).contains(&n) || n == 204 || n == 304) {
         result.end = head_end;
         result.framed = true;
@@ -241,6 +239,10 @@ fn message(bytes: &[u8], at: usize, observed_end: bool) -> Result<WireMessage, &
             result.framed = false;
             result.framing = "101 changes protocol; later HTTP framing unavailable";
         }
+        return Ok(result);
+    }
+    if !transfer.is_empty() && !lengths.is_empty() {
+        result.framing = "Ambiguous Transfer-Encoding with Content-Length";
         return Ok(result);
     }
     if !transfer.is_empty() {

@@ -430,7 +430,7 @@ Sending a new request built from a reviewed draft. A replay produces a new resul
 
 ## Request smuggling
 
-An attack that relies on two HTTP servers disagreeing about where a request ends, for example one using `Content-Length` and the other `Transfer-Encoding`. Netscope refuses to frame a message that carries both. See [Some apparent boundaries are ambiguous](chapters/31-finding-http-boundaries.md#some-apparent-boundaries-are-ambiguous).
+An attack that relies on two HTTP servers disagreeing about where a request ends, for example one using `Content-Length` and the other `Transfer-Encoding`. Netscope refuses to frame a message that carries both, unless a 1xx, 204, or 304 status already rules out a body. See [Some apparent boundaries are ambiguous](chapters/31-finding-http-boundaries.md#some-apparent-boundaries-are-ambiguous).
 
 ## RequestId
 
