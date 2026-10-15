@@ -274,8 +274,6 @@ A panic on a replay worker thread prints its message over the running interface,
 
 Live SSE reparses and copies its whole buffer on every frame, which is quadratic in the number of frames. Fix: keep an incremental parser position, or reparse only when a frame contains a line ending.
 
-The packet inspector prints every timestamp with nine fractional digits, so microsecond files show invented precision. Fix: in [`packet_lines`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/packet_view.rs#L201-L208), print six digits when the file's resolution is microseconds.
-
 Saved drafts keep the URL query and the body verbatim, and the credential denylist misses common token headers. Fix: extend [`sensitive_saved_header`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L27) with `X-CSRF-Token`, `X-Amz-Security-Token`, and `Private-Token`, and show a warning in the save preview when the query contains a parameter named like a token. The saved-file rename is not followed by a directory sync; fix by syncing the parent directory after `rename` on Unix.
 
 Replay TLS has no revocation checking, ignores the operating-system trust store, reports every TLS failure with one message, and connects to resolved addresses one at a time. Fix, in order of value: report the rustls error kind; add an option to load the platform trust store with `rustls-platform-verifier`; race address families as RFC 8305 describes.

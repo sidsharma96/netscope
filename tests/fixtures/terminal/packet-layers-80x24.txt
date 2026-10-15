@@ -2,7 +2,7 @@ NETSCOPE / PACKET LAYERS
 synthetic.pcap                                                                  
 24 packets · link 1 · offline; capture unchanged                                
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│Packet #0 · recorded timestamp 1700000000.123456000                           │
+│Packet #0 · recorded timestamp 1700000000.123456                              │
 │Retained 54 bytes · original 54 bytes                                         │
 │File record order is not a receiver transcript                                │
 │Ethernet 02:00:00:00:00:01 → 02:00:00:00:00:02                                │

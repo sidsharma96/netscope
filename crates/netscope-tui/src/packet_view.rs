@@ -202,10 +202,16 @@ fn packet_lines(capture: &PacketCapture, id: usize) -> Vec<String> {
     let Some(packet) = capture.packets.get(id) else {
         return vec!["Packet ID unavailable".into()];
     };
+    // Print only the digits the file recorded; microsecond files hold no nanoseconds.
+    let fraction = if capture.nanoseconds {
+        format!("{:09}", packet.nanos)
+    } else {
+        format!("{:06}", packet.nanos / 1000)
+    };
     let mut lines = vec![
         format!(
-            "Packet #{id} · recorded timestamp {}.{:09}",
-            packet.seconds, packet.nanos
+            "Packet #{id} · recorded timestamp {}.{fraction}",
+            packet.seconds
         ),
         format!(
             "Retained {} bytes · original {} bytes",

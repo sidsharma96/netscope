@@ -126,3 +126,20 @@ fn file_level_packet_notes_are_shown() -> Result<(), Box<dyn std::error::Error>>
     assert!(render(&capture, &mut app, 100, 30)?.contains("Final packet record truncated"));
     Ok(())
 }
+#[test]
+fn timestamps_show_the_file_resolution() -> Result<(), Box<dyn std::error::Error>> {
+    use netscope_tui::packet_view::packet_summary;
+    let micro = netscope_import::pcap::import_pcap(include_bytes!(
+        "../../../tests/fixtures/pcap/raw-ip.pcap"
+    ))?;
+    let text = packet_summary(&micro);
+    assert!(
+        text.contains("recorded timestamp 1700000000.123456\n"),
+        "{text}"
+    );
+    let nano = netscope_import::pcap::import_pcap(include_bytes!(
+        "../../../tests/fixtures/pcap/big-nano.pcap"
+    ))?;
+    assert!(packet_summary(&nano).contains("recorded timestamp 1700000000.123456789\n"));
+    Ok(())
+}
