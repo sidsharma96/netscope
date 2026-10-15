@@ -18,7 +18,7 @@ Each step adds understanding. None needs to send a request to the address in the
 
 ## Keep the original observation
 
-Validation does not give us permission to tidy away inconvenient distinctions. Two headers with the same name remain two headers. An omitted body remains unrecorded. An optional timing of `-1` becomes an unavailable timing, while a zero remains a recorded duration.
+Validation does not give us permission to tidy away inconvenient distinctions. Two headers with the same name remain two headers. An omitted body remains unrecorded. An optional timing of `-1` keeps its HAR meaning, a stage that did not apply to this request, while a zero remains a recorded duration.
 
 We also keep the exporter's numbers when they disagree. If the available timing stages do not add up to the reported total, a warning makes that disagreement visible. Replacing the total with our own sum would erase the observation we are trying to investigate.
 
@@ -28,7 +28,7 @@ There is a similar reason to retain timestamp text alongside its parsed value. T
 
 Suppose a form submits two tags, one called `one` and another called `two`. An export may retain the body as text: `tag=one&tag=two`. Here each equals sign separates a field name from its value, and the ampersand separates the two fields. The repeated name matters: replacing the pair with a single value would lose one tag.
 
-Another export may include a list of those fields as well as the text. The list is convenient for reading, while the text preserves the exporter's spelling. Having both is useful. Rejecting the whole request because it has two descriptions would prevent us from inspecting information the browser deliberately recorded.
+Another export may include a list of those fields as well as the text. The list is convenient for reading, while the text preserves the exporter's spelling. Having both is useful, but it departs from the format: [HAR 1.2](https://raw.githubusercontent.com/ahmadnassri/har-spec/master/versions/1.2.md) says `text` and `params` are mutually exclusive. Netscope accepts the departure deliberately. Rejecting the whole request because it has two descriptions would prevent us from inspecting information a real exporter recorded.
 
 Netscope retains each description independently. If the text and fields disagree, it does not silently rewrite either one. Nor does a field list establish the original bytes sent over the connection: file uploads, for example, need separators and file contents that the list may not contain. The inspector shows what was retained and leaves that limit visible.
 
@@ -82,6 +82,6 @@ Now change the second request so only its base64 body is malformed. Explain why 
 
 ## Follow the implementation when ready
 
-The [importer](../../crates/netscope-import/src/lib.rs) implements these field checks, and the [session model](../../crates/netscope-core/src/session.rs) holds the accepted data. The [importer tests](../../crates/netscope-import/tests/har.rs) demonstrate both rejected captures and recoverable body warnings. The [browser compatibility reference](../HAR_COMPATIBILITY.md) records which native exports we have tested. The [verification record](../VERIFICATION.md) records the checks performed.
+The importer [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138) implements these field checks, and the session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197) holds the accepted data. The importer tests [`known_field_failures_have_fixed_paths_and_do_not_leak_values`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/tests/har.rs#L80) demonstrate both rejected captures and recoverable body warnings. The [browser compatibility reference](../HAR_COMPATIBILITY.md) records which native exports we have tested. The [verification record](../VERIFICATION.md) records the checks performed.
 
 For parser details, consult [Chrono's timestamp API](https://docs.rs/chrono/latest/chrono/struct.DateTime.html), the [URL parser](https://docs.rs/url/latest/url/struct.Url.html), and the [base64 library](https://docs.rs/base64/latest/base64/). These are references for implementation work, not prerequisites for the explanation above.

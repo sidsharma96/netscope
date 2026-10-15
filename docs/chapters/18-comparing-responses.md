@@ -89,4 +89,4 @@ Follow the [local-send walkthrough](../DEVELOPMENT.md#try-a-local-send), then pr
 
 Before running the small Rust example, predict its answer for `b"cat"` and `b"catalog"`. Now replace the second argument with `b""`. Explain why the function's answer changes even though neither case proves two whole responses equal.
 
-The [comparison rules](../contracts/m3-response-comparison.md) record the exact scope. The [pure comparison code](../../crates/netscope-net/src/comparison.rs) computes conclusions from borrowed observations; the [paired view](../../crates/netscope-tui/src/comparison_view.rs) handles wrapping, masking, and scrolling. Neither path creates a network operation.
+The [comparison rules](../contracts/m3-response-comparison.md) record the exact scope. The pure comparison code [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L57) computes conclusions from borrowed observations; the paired view [`draw`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/comparison_view.rs#L215) handles wrapping, masking, and scrolling. Neither path creates a network operation.

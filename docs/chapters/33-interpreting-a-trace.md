@@ -8,7 +8,7 @@ An inspector can calculate useful facts while leaving their causes unresolved. T
 
 Two segments can carry the same sequence range because the sender transmitted again. A capture setup can also duplicate an observation. Record order can differ from delivery order, and missing recorded packets can reflect the capture process rather than network loss. Netscope counts agreeing overlapping bytes and marks disagreeing bytes; it does not automatically label every repeat as a loss recovery.
 
-An acknowledgment supplies another kind of evidence. Its number can indicate sequence progress when its ACK flag is present, but it does not provide the contents of unseen payload. The recorded window is a receiver-advertised quantity; TCP can negotiate a multiplier for that field, so the raw number is not always the final advertised byte capacity.
+An acknowledgment supplies another kind of evidence. Its number can indicate sequence progress when its ACK flag is present, but it does not provide the contents of unseen payload. The recorded window is a receiver-advertised quantity, and the 16-bit header field is not always the byte count. The [window scale option](https://www.rfc-editor.org/rfc/rfc7323#section-2) carries a shift count from 0 to 14, and the receiver of the window multiplies the field by 2 to that power. Each side sends its shift count once, in its SYN segment, and only if both SYN segments carry the option does scaling apply. A capture that starts after the handshake cannot know the shift. Netscope does not parse TCP options at all, so it shows the raw field and never claims a byte capacity from it.
 
 ## Sender congestion state is not a header field
 

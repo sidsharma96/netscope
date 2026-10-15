@@ -65,9 +65,9 @@ Binary content adds another representation. A browser may decompress the receive
 
 ## When a connection timing is not a measurement
 
-Now suppose a later request has a connection timing of `-1`. This is the exporter's marker for an unavailable duration. It is not a measured duration of zero. If the field is omitted entirely, the record supplies no value at all. A numeric zero remains a reported zero; its precision and collection rules do not establish that no work happened.
+Now suppose a later request has a connection timing of `-1`. HAR 1.2 defines this marker as "does not apply to the current request": a request on an already open connection had no connection setup of its own. It is not a measured duration of zero. If the field is omitted entirely, the record supplies no value at all. A numeric zero remains a reported zero; its precision and collection rules do not establish that no work happened.
 
-Rust's `Timing` enum keeps these cases separate. An enum value selects one named alternative: missing, unavailable, or a duration carrying a number. The inspector matches that alternative to choose the display. It can show an unavailable label without manufacturing a number that would later enter a calculation.
+Rust's `Timing` enum keeps these cases separate. An enum value selects one named alternative: missing, not applicable (`-1`), or a duration carrying a number. The inspector matches that alternative to choose the display. It can show a not-applicable label without manufacturing a number that would later enter a calculation.
 
 Reusing a connection could explain why a later request has no new connection setup measurement, but the timing field alone cannot prove reuse. Even a reported zero is insufficient. We need separate evidence about which connection handled each request. The [browser compatibility reference](../HAR_COMPATIBILITY.md) keeps our controlled server observations separate from what the HAR inspector can infer.
 
@@ -113,4 +113,4 @@ Open `tests/fixtures/har/protocols.har` using the [walkthrough](06-first-milesto
 
 For each request, write one sentence about the fields that are present and one question that remains unanswered. “The exporter wrote h2” is a different claim from “these requests shared one TCP connection.” Explain what additional evidence the second sentence would need.
 
-Then predict what the Rust example returns for `H2`. Explain whether recognition changes the owned string. The [label classifier](../../crates/netscope-core/src/protocol.rs) and [protocol contract](../contracts/m2-recorded-protocols.md) show the application's full policy once those distinctions are clear.
+Then predict what the Rust example returns for `H2`. Explain whether recognition changes the owned string. The label classifier [`RecordedProtocol`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/protocol.rs#L3) and [protocol contract](../contracts/m2-recorded-protocols.md) show the application's full policy once those distinctions are clear.

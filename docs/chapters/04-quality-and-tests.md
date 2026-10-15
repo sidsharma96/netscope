@@ -1,6 +1,6 @@
 # Knowing whether the program is right
 
-A request can appear on screen with the wrong timing. The program might compile, open the file, and draw every row while still turning an unavailable value into zero. What would tell us that the behaviour is wrong?
+A request can appear on screen with the wrong timing. The program might compile, open the file, and draw every row while still turning a `-1` timing into zero. What would tell us that the behaviour is wrong?
 
 We need to state what a small, controlled input should produce. That expectation gives a test something meaningful to check. Other tools answer different questions about the code, and understanding their limits helps us use them well.
 
@@ -14,7 +14,7 @@ This is why a successful build matters but does not finish the check. We also ne
 
 ## A test makes an expectation precise
 
-Take the optional timing `-1`. We expect the importer to retain it as unavailable. A test supplies that value and compares the result with the unavailable variant. If the importer changes it to zero, the comparison fails.
+Take the optional timing `-1`. HAR 1.2 defines it as a stage that did not apply to the request, and we expect the importer to retain that meaning. A test supplies that value and compares the result with the `Unavailable` variant that stores it. If the importer changes it to zero, the comparison fails.
 
 A useful test protects a distinction someone cares about. In this project, examples include preserving duplicate headers, returning to the same selected request, and distinguishing an empty body from an unrecorded body.
 

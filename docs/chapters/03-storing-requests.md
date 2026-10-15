@@ -71,4 +71,4 @@ Then compare borrowing the original string with cloning it. Which version create
 
 ## Where this appears in Netscope
 
-The [session model](../../crates/netscope-core/src/session.rs) owns request data, and the [view](../../crates/netscope-tui/src/view.rs) borrows it while drawing. You can read [the Rust book's ownership chapter](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html) for a longer treatment of moves and cleanup.
+The session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197) owns request data, and the view [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66) borrows it while drawing. You can read [the Rust book's ownership chapter](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html) for a longer treatment of moves and cleanup.

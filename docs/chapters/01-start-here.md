@@ -34,4 +34,4 @@ The [first version walkthrough](06-first-milestone.md) uses the supplied synthet
 
 In the supplied capture, find the request method, URL, response status, and body. A method such as GET names the requested operation; a status such as 200 describes the reported response outcome.
 
-Then find one unavailable timing. Describe what you know about it without replacing the missing information with a guess. That is the first habit this book asks you to practise.
+Then find one timing recorded as `-1` or not recorded at all. Describe what you know about it without replacing the missing information with a guess. That is the first habit this book asks you to practise.

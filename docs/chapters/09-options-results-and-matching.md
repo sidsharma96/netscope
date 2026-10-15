@@ -14,11 +14,11 @@ This is also the type used by a checked vector lookup. A successful lookup retur
 
 ## A present number still needs a meaning
 
-`Some(-1.0)` tells us that a number was supplied. It does not explain the special meaning HAR assigns to that number. For an optional timing, `-1` means unavailable.
+`Some(-1.0)` tells us that a number was supplied. It does not explain the special meaning HAR assigns to that number. For an optional timing, HAR 1.2 says `-1` means the stage does not apply to the current request, for example DNS on a reused connection.
 
-Three variants of our timing type describe standard HAR values. `Missing` means the field was omitted. `Unavailable` means the exporter supplied `-1`. `Milliseconds` contains an accepted duration, including zero.
+Three variants of our timing type describe standard HAR values. `Missing` means the field was omitted. `Unavailable` means the exporter supplied `-1`. The variant name is older than this explanation: HAR's meaning for a timing is "does not apply", and the interface shows it as `Not applicable (-1)`. For sizes, HAR uses the same `-1` to mean "not available", and there the name fits. `Milliseconds` contains an accepted duration, including zero.
 
-These names make later decisions clearer. Drawing a duration and displaying an unavailable label are different operations, and the stored value tells us which one applies. The value `-2` fits neither case, so validation rejects it.
+These names make later decisions clearer. Drawing a duration and displaying a not-applicable label are different operations, and the stored value tells us which one applies. The value `-2` fits neither case, so validation rejects it.
 
 A recorded number can also contradict its supposed meaning. In a native browser export, a blocked timing just below zero is not elapsed time travelling backward. Netscope retains that narrow exporter case separately, with a warning, instead of clamping it to zero or pretending it was the standard -1 sentinel. Its fourth variant, `ExporterNegative`, preserves the number without making it a measured duration. The standard conversion below remains strict; the [compatibility reference](../HAR_COMPATIBILITY.md) records the importer exception and its evidence.
 
@@ -49,7 +49,7 @@ use netscope_core::Timing;
 let timing = Timing::Missing;
 let label = match timing {
     Timing::Missing => "Not recorded",
-    Timing::Unavailable => "Unavailable",
+    Timing::Unavailable => "Not applicable",
     Timing::Milliseconds(_) => "Duration recorded",
     Timing::ExporterNegative(_) => "Nonstandard exporter observation",
 };
@@ -95,4 +95,4 @@ Then explain why accepting an optional DNS timing does not prove that the same v
 
 ## Where this appears in Netscope
 
-Read the [timing conversion](../../crates/netscope-core/src/lib.rs) and its [numeric tests](../../crates/netscope-core/tests/timing.rs) after working through the cases. The [importer tests](../../crates/netscope-import/tests/har.rs) cover the additional JSON rules. [Recoverable errors with Result](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html) provides more language examples.
+Read the timing conversion [`Timing::from_optional_har`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/lib.rs#L52) and its numeric tests [`absence_unavailability_and_zero_remain_distinct`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/timing.rs#L5) after working through the cases. The importer tests [`optional_stages_preserve_each_state_and_cookie_types_are_checked`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/tests/har.rs#L323) cover the additional JSON rules. [Recoverable errors with Result](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html) provides more language examples.

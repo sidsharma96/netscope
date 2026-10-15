@@ -103,4 +103,4 @@ Which request does the second displayed row refer to? Explain why using that row
 
 ## Where this appears in Netscope
 
-The [session model](../../crates/netscope-core/src/session.rs) keeps request data and display order separately. The [ordering tests](../../crates/netscope-import/tests/har.rs) check that equal instants retain source order, including timestamps written with different time-zone offsets.
+The session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197) keeps request data and display order separately. The ordering tests [`chronological_order_retains_offset_ties`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/tests/har.rs#L45) check that equal instants retain source order, including timestamps written with different time-zone offsets.

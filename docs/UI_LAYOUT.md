@@ -15,7 +15,7 @@ Inspector sections use number keys:
 | 1 | Summary | Status, reported total, retained representation, capture boundaries |
 | 2 | Headers | Request/response fields, query fields, cookies; duplicates retained |
 | 3 | Body | Request and response previews; retained SSE analysis when eligible |
-| 4 | Timing | Reported stages, including missing/unavailable/non-duration distinctions |
+| 4 | Timing | Reported stages, including missing, not-applicable (-1), and non-duration distinctions |
 | 5 | Evidence | Import warnings, protocol labels, WebSocket upgrade metadata, redirect/retry candidates |
 | 6 | All | Complete original report, including sizes and exporter connection/IP fields |
 

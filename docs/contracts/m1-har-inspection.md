@@ -48,7 +48,7 @@ Preserve missing optional fields separately from `-1`, zero, and positive values
 
 The overview shows entry.time as `Reported total`. The inspector lists captured timing fields with units. SSL is displayed as a detail within connect, not an additional sequential stage. A missing DNS timing does not identify the resolver or prove caching. A connect value of `-1` is not enough to reconstruct a connection history.
 
-For a timing comparison, sum available blocked, DNS, connect, send, wait, and receive values, excluding SSL and unavailable values. If the difference from reported total exceeds 0.01 ms, show a consistency warning. This tolerance is a chosen display policy, not a guarantee from HAR. Never rewrite a captured duration to make totals agree.
+For a timing comparison, sum available blocked, DNS, connect, send, wait, and receive values, excluding SSL, `-1` (not applicable), and missing values. If the difference from reported total exceeds 0.01 ms, show a consistency warning. This tolerance is a chosen display policy, not a guarantee from HAR. Never rewrite a captured duration to make totals agree.
 
 If non-negative SSL exceeds a recorded non-negative connect duration, or SSL is available while connect is not, show a consistency warning and retain both fields. Do not derive negative TCP setup time. M1 does not derive a transport handshake diagram from these fields.
 

@@ -50,7 +50,7 @@ The two `*-h2.har` files each contain a page and five sequential fetches. The se
 
 These numbers describe this fixed payload and server, not typical compression ratios. Content-Length matched the server's encoded body length. Chrome reported HAR response bodySize as -1; Firefox reported 234 for gzip text and 220 for Brotli text, rather than 52 and 40. Netscope retains those exporter values without relabelling them as compressed payload length or using them to calculate savings. The importer already avoided double decompression and required no change for these bodies.
 
-Later Chrome entries have unavailable DNS/connect/SSL timings (-1); Firefox records zero for the same fields in its later entries. A derived test additionally omits connect to check the missing state. No duration threshold is asserted. Firefox's page entry has SSL 4 ms and connect 0 ms; the existing consistency warning retains both observations without repair. The server log supplies independent evidence that each browser used one H2 session for the recorded sequence; Netscope does not infer that fact from the HAR timings.
+Later Chrome entries record DNS/connect/SSL as -1, which HAR 1.2 defines as "does not apply to the current request"; Firefox records zero for the same fields in its later entries. A derived test additionally omits connect to check the missing state. No duration threshold is asserted. Firefox's page entry has SSL 4 ms and connect 0 ms; the existing consistency warning retains both observations without repair. The server log supplies independent evidence that each browser used one H2 session for the recorded sequence; Netscope does not infer that fact from the HAR timings.
 
 ### Reproduce the HTTPS scenarios
 

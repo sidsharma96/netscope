@@ -8,9 +8,9 @@ A millisecond is one thousandth of a second. In a HAR, the total duration and th
 
 Suppose the DNS timing is zero. DNS is the system used to look up an address for a hostname such as example.test. A recorded zero means the exporter reported zero at its measurement precision. It does not establish that no lookup work occurred.
 
-Now suppose the DNS field is absent. The export gives us no timing in that field. HAR also permits the number `-1` for an unavailable optional timing. Absence and `-1` are different ways the file can represent missing information; neither reports a duration of zero.
+Now suppose the DNS field is absent. The export gives us no timing in that field. HAR also permits the number `-1` in an optional timing. The [HAR 1.2 specification](https://raw.githubusercontent.com/ahmadnassri/har-spec/master/versions/1.2.md) defines it for `blocked`, `dns`, `connect`, and `ssl` as "the timing does not apply to the current request". The usual case is a request sent on a connection the browser had already opened: there was no DNS lookup and no connection setup for that request, so the exporter writes `-1` for both. Absence and `-1` therefore say different things. Absence says nothing at all. `-1` says the stage did not happen for this request. Neither reports a duration of zero.
 
-This matters on screen. A bar with zero length suggests a known duration. A label such as `Not recorded` or `Unavailable` tells the reader that the duration is unknown. We need to preserve that distinction before choosing how to draw it.
+This matters on screen. A bar with zero length suggests a known duration. A label such as `Not recorded` tells the reader that the duration is unknown, and `Not applicable (-1)` tells the reader that the exporter says the stage did not happen for this request. We need to preserve that distinction before choosing how to draw it.
 
 Later, [missing values and errors](09-options-results-and-matching.md) shows how Rust gives these states separate names. For now, the important question is what each observation allows us to say.
 

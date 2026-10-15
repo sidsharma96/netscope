@@ -49,10 +49,11 @@ Read [the writing principles](chapters/05-decisions.md) before editing prose. Th
 30. [Shaping the program](chapters/23-shaping-the-program.md)
 31. [Checking our work](chapters/04-quality-and-tests.md)
 32. [Try the first version](chapters/06-first-milestone.md)
-33. [Writing this book](chapters/05-decisions.md)
+33. [Defending the design](chapters/34-defending-the-design.md)
+34. [Writing this book](chapters/05-decisions.md)
 
 Chapter links are relative to their Markdown source files. The generator translates chapter links into reader routes and adjusts other local paths for docs/index.html. The binary does not require a documentation website.
 
-The [architecture audit and decision record](ARCHITECTURE.md) distinguishes previously recorded choices from current assessments, links evidence, and records alternatives and open questions. The teaching chapters explain the reasoning in context.
+[Defending the design](chapters/34-defending-the-design.md) gathers the questions an expert reviewer would ask, in order, with answers, the threat model, and known defects. The [architecture audit and decision record](ARCHITECTURE.md) distinguishes previously recorded choices from current assessments, links evidence, and records alternatives and open questions. The teaching chapters explain the reasoning in context.
 
 The [120-scenario compatibility campaign](COMPATIBILITY_CAMPAIGN.md) records native browser traffic, production probes, fixes and evidence differences. Its frozen corpus is checked offline.

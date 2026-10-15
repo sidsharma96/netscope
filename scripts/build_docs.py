@@ -48,8 +48,8 @@ def render(text):
             title = line[level:].strip()
             anchor = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
             out.append(f'<h{level} id="{anchor}">{inline(title)}</h{level}>')
-            if level == 2:
-                headings.append((anchor, title))
+            if level >= 2:
+                headings.append((level, anchor, title))
         elif line == '<!-- redirect-evidence-demo -->':
             flush()
             out.append('<figure class="import-flow"><figcaption>FIG. 10.1 · One instruction, two possible follow-ups <em>Illustrative</em></figcaption><pre aria-label="Request zero ends at ten milliseconds; requests one and two are both possible follow-ups">#0  GET /old-books    start 0 ms · end 10 ms\n    302 · Location: /books\n             │\n             ├ · · possible · · → #1 GET /books · start 20 ms\n             │\n             └ · · possible · · → #2 GET /books · start 30 ms\n\nRecorded: status, Location, URLs, methods, times\nSuggested: either later request could be a follow-up</pre></figure>')
@@ -82,9 +82,12 @@ chapters = json.loads((DOCS / 'chapters.json').read_text())
 nav, articles, outlines = [], [], []
 for position, chapter in enumerate(chapters, start=1):
     slug, title = chapter['slug'], chapter['title']
-    body, headings = render((DOCS / 'chapters' / f'{slug}.md').read_text())
-    for anchor, _ in headings:
+    body, all_headings = render((DOCS / 'chapters' / f'{slug}.md').read_text())
+    # Prefix every heading ID so subsection anchors stay unique across chapters.
+    for _, anchor, _ in all_headings:
         body = body.replace(f'id="{anchor}"', f'id="{slug}--{anchor}"')
+    # The outline lists only top-level sections.
+    headings = [(anchor, title) for level, anchor, title in all_headings if level == 2]
     for old, target in chapter.get('section_aliases', {}).items():
         if target not in {anchor for anchor, _ in headings}:
             raise ValueError(f'Unknown alias target: {slug}/{target}')
