@@ -12,6 +12,8 @@ pub enum BodyComparison {
     DifferentByte(usize),
     /// Available lengths differ after a matching shared prefix.
     DifferentLengths,
+    /// One complete body is empty and the other is not, so no bytes are shared.
+    OneSideEmpty,
     /// An incomplete replay matches this many available bytes only.
     MatchingPrefix(usize),
     /// An incomplete replay differs within the shared prefix.
@@ -30,6 +32,7 @@ impl BodyComparison {
                 format!("Stored bytes differ at byte {n}")
             }
             Self::DifferentLengths => "Stored lengths differ; shared bytes match".into(),
+            Self::OneSideEmpty => "Stored lengths differ; one body is empty".into(),
             Self::MatchingPrefix(n) => {
                 format!("Partial replay: shared prefix matches ({n} bytes only)")
             }
@@ -81,6 +84,7 @@ pub fn compare_body(captured: &Request, replay: &ReplayResult) -> BodyComparison
     }
     match difference {
         Some(offset) => BodyComparison::DifferentByte(offset),
+        None if left.is_empty() != replay.body.is_empty() => BodyComparison::OneSideEmpty,
         None if left.len() != replay.body.len() => BodyComparison::DifferentLengths,
         None => BodyComparison::Equal(left.len()),
     }

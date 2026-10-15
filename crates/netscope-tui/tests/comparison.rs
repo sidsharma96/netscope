@@ -100,6 +100,10 @@ fn incomplete_results_describe_only_available_prefixes() -> Result<(), Box<dyn s
         compare_body(&captured, &replay),
         BodyComparison::DifferentByte(1)
     );
+    // With one side empty there are no shared bytes to call matching.
+    replay.body.clear();
+    let empty = compare_body(&captured, &replay);
+    assert_eq!(empty.label(), "Stored lengths differ; one body is empty");
     Ok(())
 }
 #[test]

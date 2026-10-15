@@ -298,11 +298,11 @@ After a replay, how is the captured body compared with the replayed body? When d
 
 `compare_body` refuses in three cases. The replay has no status because no headers arrived. The captured body was not recorded or could not be decoded. Or either side names a Content-Encoding other than identity. The last case matters most: a browser usually stores the decoded text in the HAR, while replay keeps the encoded bytes, so there is no common representation to compare.
 
-Otherwise it finds the first differing byte across the shared prefix. If the replay did not complete (cancelled, timed out, size-limited, or failed), the answer is about a prefix only: a difference offset, a matching prefix length, or no overlap. If it completed, the answer is a differing byte, different lengths, or equal. The captured side is the HAR text as UTF-8 bytes, or the decoded base64 bytes.
+Otherwise it finds the first differing byte across the shared prefix. If the replay did not complete (cancelled, timed out, size-limited, or failed), the answer is about a prefix only: a difference offset, a matching prefix length, or no overlap. If it completed, the answer is a differing byte, one body empty and the other not, different lengths with a matching shared prefix, or equal. The captured side is the HAR text as UTF-8 bytes, or the decoded base64 bytes.
 
 Equality does not prove the capture was complete, since HAR bodies are often cut or omitted. It does not prove the server state was the same, or that the browser's text matches the bytes that crossed the wire, since the browser may have changed the character encoding. The label says "capture completeness unproven".
 
-**Learn more:** [Bytes need a common meaning](../chapters/18-comparing-responses.md#bytes-need-a-common-meaning) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L57-L87) · [`encoded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L52-L55)
+**Learn more:** [Bytes need a common meaning](../chapters/18-comparing-responses.md#bytes-need-a-common-meaning) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L60-L91) · [`encoded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L55-L58)
 
 </details>
 

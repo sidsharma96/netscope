@@ -622,7 +622,7 @@ Not necessarily. It means every byte the capture retained equals the replay's by
 
 **Common wrong answer.** "The responses are identical." The comparison speaks only about the bytes both sides have.
 
-**Learn more:** [Absence is different from emptiness](../chapters/18-comparing-responses.md#absence-is-different-from-emptiness) · [Ask a smaller question about a partial body](../chapters/18-comparing-responses.md#ask-a-smaller-question-about-a-partial-body) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L57)
+**Learn more:** [Absence is different from emptiness](../chapters/18-comparing-responses.md#absence-is-different-from-emptiness) · [Ask a smaller question about a partial body](../chapters/18-comparing-responses.md#ask-a-smaller-question-about-a-partial-body) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L60)
 
 </details>
 

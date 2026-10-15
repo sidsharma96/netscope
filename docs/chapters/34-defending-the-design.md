@@ -230,7 +230,7 @@ Address selection is also basic. [`TcpStream::connect`](https://github.com/sidsh
 
 The [`request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L99-L155) builder always sets `Accept-Encoding: identity`, and the header is reserved so a user cannot change it. The reasons are size and honesty. The 2 MiB limit should apply to the bytes Netscope retains. With compression, a small transfer can expand to far more than 2 MiB, so a decompressor needs its own output limit and its own failure states. Without a decompressor, the retained bytes are exactly what arrived.
 
-A server may ignore the preference. If the response still carries a Content-Encoding other than identity, Netscope keeps the encoded bytes and the header, and does not claim they are decoded. Comparison then refuses to compare bodies: [`encoded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L52) makes the result "content encoding prevents a common byte representation" whenever either the captured or the replayed response names an encoding. Most browser captures name one, so body comparison against a browser HAR is often unavailable for this reason. Replay's request also differs from the browser's, which asked for compressed content; that is a disclosed difference, not a reproduction.
+A server may ignore the preference. If the response still carries a Content-Encoding other than identity, Netscope keeps the encoded bytes and the header, and does not claim they are decoded. Comparison then refuses to compare bodies: [`encoded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L55) makes the result "content encoding prevents a common byte representation" whenever either the captured or the replayed response names an encoding. Most browser captures name one, so body comparison against a browser HAR is often unavailable for this reason. Replay's request also differs from the browser's, which asked for compressed content; that is a disclosed difference, not a reproduction.
 
 ## Threat and failure model
 
@@ -267,8 +267,6 @@ A chunk-size line longer than 4 KiB reports "Chunked; waiting for complete termi
 PCAPNG is rejected, and link types other than 0, 1, 101, 113, 228, 229, and 276 open with no decoded layers. Fix: read PCAPNG's section header, interface description, and enhanced packet blocks, with each interface's own link type.
 
 Host summaries drop a status outside 0 and 100 to 599 without counting it. The HAR importer never produces one, but `Session::new` is public and does not validate. Fix: add an "other" count in [`record`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/hosts.rs#L46-L54), or validate in `Session::new`.
-
-Body comparison says "Stored lengths differ; shared bytes match" even when one side is empty and nothing was shared. Fix: return a distinct label from [`DifferentLengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L32) when the shorter body is empty.
 
 If Esc is pressed after the worker has already finished but before the UI has accepted the result, [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161) shows "Operation stopped" while the retained result says Complete. Fix: base the message on the result's outcome rather than on the cancel flag, and add a test for this order.
 
