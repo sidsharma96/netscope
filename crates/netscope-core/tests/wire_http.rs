@@ -90,3 +90,14 @@ fn status_rule_precedes_transfer_and_length_ambiguity() {
         );
     }
 }
+#[test]
+fn chunk_size_may_have_whitespace_before_extension() {
+    let wire = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n3 ;name=v\r\nabc\r\n2\t;x\r\nde\r\n0\r\n\r\n";
+    let parsed = inspect_http(wire, false);
+    assert!(parsed.messages[0].framed, "{}", parsed.messages[0].framing);
+    assert_eq!(parsed.messages[0].body, b"abcde");
+    // Whitespace is allowed only before an extension, not after a bare size.
+    let bare = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n3 \r\nabc\r\n0\r\n\r\n";
+    let parsed = inspect_http(bare, false);
+    assert_eq!(parsed.messages[0].framing, "Malformed chunk size/extension");
+}

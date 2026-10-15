@@ -262,7 +262,7 @@ A slow or silent server meets the 10-second replay deadline or the 30-second liv
 
 Each of the following is true of the code on main today. The proposed fix is not implemented.
 
-A chunk-size line with whitespace before the extension, such as `3 ;name`, is labelled malformed, though RFC 9112 section 7.1.1 allows it. A chunk-size line longer than 4 KiB reports "waiting for complete terminator" instead of a limit. Fix: trim trailing spaces and tabs from the [`size`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L263-L272) field before validating it, and give the long-line case its own label.
+A chunk-size line longer than 4 KiB reports "Chunked; waiting for complete terminator" instead of naming the limit, because [`line`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L45-L52) returns nothing for both a missing CRLF and an over-long line. Fix: return a distinct result for the over-long case and give it its own label.
 
 A TCP keep-alive probe carrying one garbage byte at SND.NXT - 1 creates a false conflict, and RST payload is placed as stream data. Fix: in [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L87), ignore payload on segments with RST set, and treat a one-byte segment that lies entirely inside already observed data, immediately before the highest observed position, as a probe rather than a conflict, with a note.
 

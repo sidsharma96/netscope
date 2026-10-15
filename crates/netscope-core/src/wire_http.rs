@@ -260,14 +260,20 @@ fn message(bytes: &[u8], at: usize, observed_end: bool) -> Result<WireMessage, &
                 return Ok(result);
             };
             let raw = &bytes[range.clone()];
-            let size = raw
-                .split(|b| *b == b';')
-                .next()
-                .ok_or("Missing chunk size")?;
+            let mut parts = raw.split(|b| *b == b';');
+            let mut size = parts.next().ok_or("Missing chunk size")?;
+            // RFC 9112 chunk-ext allows spaces or tabs (BWS) before ';', not after a bare size.
+            if parts.next().is_some() {
+                let end = size
+                    .iter()
+                    .rposition(|b| !matches!(b, b' ' | b'\t'))
+                    .map_or(0, |n| n + 1);
+                size = &size[..end];
+            }
             if size.is_empty()
                 || size.len() > 16
                 || !size.iter().all(u8::is_ascii_hexdigit)
-                || raw.iter().any(|b| *b < 32 || *b > 126)
+                || raw.iter().any(|b| (*b < 32 && *b != b'\t') || *b > 126)
             {
                 result.framing = "Malformed chunk size/extension";
                 return Ok(result);

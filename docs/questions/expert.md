@@ -82,7 +82,7 @@ A `101` response is labelled "101 changes protocol; later HTTP framing unavailab
 
 Two identical `Content-Length: 5` headers give "Content-Length outside supported single decimal subset". RFC 9110 allows repeated identical values, so this is stricter than the standard. `Transfer-Encoding: gzip, chunked` gives "Transfer coding outside supported single chunked subset". Obsolete line folding and whitespace before the colon fail as invalid header names.
 
-**Learn more:** [How can a response be framed without seeing its request?](../chapters/34-defending-the-design.md#how-can-a-response-be-framed-without-seeing-its-request) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186) · [`lengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L319-L323) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L248-L251)
+**Learn more:** [How can a response be framed without seeing its request?](../chapters/34-defending-the-design.md#how-can-a-response-be-framed-without-seeing-its-request) · [`message`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L186) · [`lengths`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L325-L329) · [`transfer`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L248-L251)
 
 </details>
 
