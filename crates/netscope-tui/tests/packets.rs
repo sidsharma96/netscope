@@ -204,3 +204,57 @@ fn sequence_wrap_and_non_tcp_absence_stay_explicit() -> Result<(), Box<dyn std::
     assert!(!udp.contains("ACK field 0"));
     Ok(())
 }
+
+#[test]
+fn stream_workbench_links_ranges_bytes_and_explanations() -> Result<(), Box<dyn std::error::Error>>
+{
+    let capture = netscope_import::pcap::import_pcap(include_bytes!(
+        "../../../tests/fixtures/pcap/streams.pcap"
+    ))?;
+    let original = netscope_tui::packet_view::packet_summary(&capture);
+    for (width, height) in [(80, 24), (100, 30), (160, 50)] {
+        let mut app = PacketApp::new(&capture);
+        for code in [
+            KeyCode::Char('s'),
+            KeyCode::Down,
+            KeyCode::Down,
+            KeyCode::Enter,
+        ] {
+            app.key(KeyEvent::from(code), &capture);
+        }
+        let gap = render(&capture, &mut app, width, height)?;
+        assert!(gap.contains("MISSING FROM THE CAPTURE"));
+        assert!(gap.contains("reading stops before this gap"), "{gap}");
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../tests/fixtures/terminal/stream-gap-{width}x{height}.txt"
+        ));
+        if std::env::var_os("NETSCOPE_UPDATE_PACKET_VIEWS").is_some() {
+            std::fs::write(&path, &gap)?;
+        }
+        assert_eq!(gap, std::fs::read_to_string(path)?);
+        app.key(KeyEvent::from(KeyCode::Char('b')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("?? ??"));
+        app.key(KeyEvent::from(KeyCode::End), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("LATER BYTES ARE AVAILABLE"));
+        app.key(KeyEvent::from(KeyCode::Char('2')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("Directed epoch #2"));
+        app.key(KeyEvent::from(KeyCode::Char('1')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("LATER BYTES ARE AVAILABLE"));
+        assert!(render(&capture, &mut app, 50, 10)?.contains("resize"));
+        assert!(render(&capture, &mut app, width, height)?.contains("LATER BYTES ARE AVAILABLE"));
+        app.key(KeyEvent::from(KeyCode::Home), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("THE BEGINNING IS READABLE"));
+        app.key(KeyEvent::from(KeyCode::Esc), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("> #2"));
+        app.key(KeyEvent::from(KeyCode::Down), &capture);
+        app.key(KeyEvent::from(KeyCode::Enter), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("RECORDED COPIES DISAGREE"));
+        app.key(KeyEvent::from(KeyCode::Char('b')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("!!"));
+    }
+    assert_eq!(
+        netscope_tui::packet_view::packet_summary(&capture),
+        original
+    );
+    Ok(())
+}

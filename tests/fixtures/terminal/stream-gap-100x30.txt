@@ -1,0 +1,30 @@
+NETSCOPE / STREAM EVIDENCE                                                                          
+synthetic.pcap                                                                                      
+24 packets · link 1 · offline; capture unchanged                                                    
+[1 Inspect]  2 Recorded report · offline capture                                                    
+Stream #2 · 192.0.2.1:9001 → 198.51.100.2:80 · one direction                                        
+21 captured · 20 missing · 0 conflicting · readable start 19 bytes                                  
+┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────┐
+│0                                                                                               41│
+│==============================================????????????????????????????????????????????????====│
+│= captured  ? missing  ! conflict · highlighted cells touch selected range                        │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ RANGES · 2 / 3 · ↑↓ ───────────────────────────┐┌ UNDERSTAND THIS RANGE ─────────────────────────┐
+│  Offsets         Bytes  Evidence               ││MISSING FROM THE CAPTURE                        │
+│  0–18               19  = Captured             ││No captured data supplies these positions. This │
+│> 19–38              20  ? Missing              ││alone does not prove network loss.              │
+│  39–40               2  = Captured             ││                                                │
+│                                                ││WHAT THIS CHANGES                               │
+│                                                ││HTTP reading stops before this gap. Joining the │
+│                                                ││two sides would invent adjacent bytes.          │
+└────────────────────────────────────────────────┘│                                                │
+┌ BYTES · text · b toggles · [ ] page ───────────┐│Offsets 19–38 include both ends: 20 bytes.      │
+│    19  ????????????????????                    ││                                                │
+│                                                ││Readable start: 19 bytes. Press 2 for HTTP      │
+│                                                ││findings and the full recorded report.          │
+│                                                ││                                                │
+│                                                ││READING THE PREVIEW                             │
+│                                                ││? means missing; ! means conflict. In hex mode  │
+│                                                ││these become ?? and !!. Text shows ASCII bytes; │
+└────────────────────────────────────────────────┘└ 1–16 / 38 · PgUp/PgDn ─────────────────────────┘
+↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit                     

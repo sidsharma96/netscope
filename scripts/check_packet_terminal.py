@@ -43,10 +43,10 @@ try:
         if stage == 12 and 'TCP STREAMS' in visible and 'directed epochs' in visible:
             os.write(master, b'j\r')
             stage = 20
-        if stage == 20 and 'READ THE MAP' in visible:
-            os.write(master, b'j')
+        if stage == 20 and 'THE BEGINNING IS READABLE' in visible:
+            os.write(master, b'b')
             stage = 21
-        if stage == 21 and 'HOW TO READ' in visible:
+        if stage == 21 and 'BYTES · hex' in visible:
             os.write(master, b'2')
             stage = 2
         if stage == 2 and 'STREAM EVIDENCE' in visible and 'Chunked terminator' in visible:

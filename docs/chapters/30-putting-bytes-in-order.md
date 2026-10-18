@@ -57,7 +57,32 @@ Exact ranges:           [0..3) observed
 
 A terminal cannot give every byte its own cell in a large stream. Netscope groups neighbouring positions into map cells. A cell shows `!` if any position conflicts, otherwise `?` if any position is missing, otherwise `=` for observed positions. Conflict takes priority, so one cell can contain both a conflict and a gap while displaying `!`. Exact counts and the range list preserve that distinction. An `=` cell never conceals a missing position.
 
-Select Ranges to read the exact start, excluded end and byte count for each displayed run of matching evidence. The display limits the number of runs, and says when it has shortened the list; the retained analysis is unchanged. The map covers the retained span only. It does not claim that the capture contains the entire connection, especially when the beginning was not observed or analysis limits excluded segments.
+The stream inspector keeps a range table beside an explanation of the selected evidence. Its range labels include both ends: `3–5` is another way to describe `[3..6)`. Both mean three bytes. The recorded report retains the end-exclusive notation above. Selecting a row highlights the map cells that touch that range; a highlighted cell can also contain neighbouring positions when the map is compressed. The table gives the exact boundaries.
+
+The map covers the retained span only. It does not claim that the capture contains the entire connection, especially when the beginning was not observed or analysis limits excluded segments.
+
+## Follow a gap to its consequence
+
+Return to `abc???ghi`. You want to know why the later letters are visible but cannot complete the message. Selecting the missing range brings its unknown bytes into the preview and explains what prevents continuous reading. Selecting the final range instead shows `ghi`, alongside the reason it cannot be attached directly to `abc`.
+
+The illustration below shows these linked views with the missing range selected. The arrows connect the selection to its explanation; they do not represent network traffic.
+
+```text
+Illustrative byte map:    ===???===
+                            ^^^
+Selected range:           3–5 · 3 bytes · Missing
+                             |
+                             +--> Preview: ? ? ?
+                             |
+                             +--> HTTP reading stops before this gap.
+                                  Later bytes remain inspectable.
+```
+
+This arrangement lets you investigate a particular piece of evidence before reading the longer lesson. A stream opens at its first missing or conflicting range, if one exists. Moving to another range changes the map highlight, byte preview and explanation together. All retained ranges remain reachable by scrolling the table. Scrolling the explanation or paging through a long byte preview leaves the selected range unchanged.
+
+The preview has text and hexadecimal representations. Hexadecimal writes each byte as two base-sixteen digits: a recorded zero becomes `00`. Unknown bytes appear as `??`, and conflicting positions as `!!`; neither is replaced with a guessed value. Text mode displays printable ASCII bytes directly, uses `\r` and `\n` for line endings, and escapes other bytes. For example, `\x1b` represents one byte whose hexadecimal value is `1b`; it cannot act as a terminal control command. Literal question marks and exclamation marks are also escaped so they cannot be mistaken for missing or conflicting evidence. This is a byte representation, not a decoder for every text encoding.
+
+A range with agreeing observations is still not proof that the receiver accepted those bytes. Nor does a readable beginning prove a complete HTTP message. The full recorded report remains available for the HTTP findings, control flags and capture limitations. The [inspection walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams) gives the keys for trying each view.
 
 ## Remember absence separately from the value
 

@@ -5,11 +5,7 @@ use crate::{
     workspace_view::block,
 };
 use crossterm::event::KeyCode;
-use netscope_core::{
-    packets::Packet,
-    reassembly::{ByteState, Reassembled},
-    terminal_text,
-};
+use netscope_core::{packets::Packet, terminal_text};
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
@@ -116,69 +112,6 @@ impl Learning {
                 2 => vec!["WHAT BYTES ARE STORED?".into(), format!("This record retains {} of its {} reported original bytes.", packet.bytes.len(), packet.original_len), "Press 2 for the byte report and hex preview. Hexadecimal writes each byte with two base-sixteen digits; it is a representation, not decryption.".into()],
                 _ => vec!["WHAT IS STILL UNKNOWN?".into(), "A recorded packet does not prove receiver acceptance. The reader does not verify checksums, reassemble IP fragments or decrypt encrypted application data.".into(), "Unsupported bytes remain stored. Press 2 for the full report, including any parsed datagram evidence.".into()],
              })
-        };
-        self.draw(frame, area, diagram, labels, explanation);
-    }
-    pub(crate) fn stream(&mut self, frame: &mut Frame, area: Rect, flow: &Reassembled, id: usize) {
-        let missing = flow
-            .states
-            .iter()
-            .filter(|s| **s == ByteState::Missing)
-            .count();
-        let conflict = flow
-            .states
-            .iter()
-            .filter(|s| **s == ByteState::Conflict)
-            .count();
-        let prefix = flow.contiguous_prefix().len();
-        let diagram = vec![
-            format!(
-                "Stream #{id} · {} → {} · one direction",
-                flow.source, flow.destination
-            ),
-            format!(
-                "0 [{}] {} positions",
-                coverage(&flow.states, 40),
-                flow.states.len()
-            ),
-            "= observed · ? missing · ! conflict · each cell groups positions".into(),
-            format!(
-                "{} observed · {missing} missing · {conflict} conflicting · prefix {prefix}",
-                flow.states.len() - missing - conflict
-            ),
-        ];
-        let labels = vec![
-            "Coverage · what is known?".into(),
-            "Ranges · exact positions".into(),
-            "Beginning and end".into(),
-            "What can HTTP read?".into(),
-        ];
-        let explanation = match self.topic {
-            0 => vec!["READ THE MAP FROM LEFT TO RIGHT".into(),
-                "This is byte position, not time. One cell groups neighbouring positions; ! takes priority over ?, then =. A gap cannot hide inside an = cell; the counts remain exact.".into(),
-                "Observed means recorded copies agree. Missing means no retained payload supplies that position. Conflict means copies disagree.".into(),
-                format!("The first {prefix} positions are uniquely observed. A parser can read this prefix without crossing a hole or choosing between conflicting bytes."),
-                format!("{} agreeing repeated byte observations. A repeat can be retransmission or duplicate capture; the cause is not established.", flow.repeated_bytes),
-                format!("{} segments were skipped by analysis limits. The map describes only the retained span, not the entire connection.", flow.skipped_segments)],
-            1 => {
-                let mut lines = vec!["HOW TO READ [START..END)".into(),
-                    "The start is included; the end is excluded. [3..6) contains positions 3, 4 and 5: three bytes.".into(),
-                    format!("Position 0 corresponds to TCP sequence {}. Add an offset with 32-bit wrap-around to find its sequence number.", flow.first_sequence),
-                    "EXACT RETAINED RANGES".into()];
-                lines.extend(ranges(&flow.states)); lines
-            }
-            2 => vec!["DID WE SEE THE WHOLE DIRECTION?".into(),
-                format!("SYN recorded: {} · FIN recorded: {} · reset recorded: {}", flow.syn_observed, flow.fin_observed, flow.reset_observed),
-                "SYN starts sequence numbering; FIN ends data in this direction; RST signals an abrupt reset.".into(),
-                if flow.syn_observed { "A SYN supplied the beginning of this grouping. That alone does not prove a successful handshake.".into() } else { "Start unknown: there is no SYN for this grouping. Position 0 is an observation anchor, not necessarily the connection's first byte.".into() },
-                "An epoch is a separate group of observations in one direction. Netscope does not pair both directions into a verified connection history.".into(),
-                "A FIN alone does not prove a complete capture. Gaps, conflicts, skipped segments and ambiguous end observations still matter.".into()],
-            _ => vec!["WHY STOP AT A HOLE?".into(),
-                format!("Uniquely observed prefix: {prefix} bytes. HTTP inspection stops before the first missing or conflicting position."),
-                "Illustration: abc???ghi must not become abcghi. Removing the gap would invent adjacent bytes.".into(),
-                "Even a gap-free prefix may be encrypted, incomplete, or another protocol. Coverage is not proof of a complete HTTP message.".into(),
-                "Press 2 to read the existing HTTP framing evidence, headers, chunks, trailers and byte previews.".into(),
-                "Responses are not paired with request methods. Message interpretation remains conditional; encrypted content stays unreadable.".into()],
         };
         self.draw(frame, area, diagram, labels, explanation);
     }
@@ -392,47 +325,6 @@ fn flag_explanation(flags: u8) -> Vec<String> {
     lines.push("These are recorded signals, not proof that the peer accepted them.".into());
     lines
 }
-fn coverage(states: &[ByteState], width: usize) -> String {
-    if states.is_empty() {
-        return "no payload positions".into();
-    }
-    let cells = width.max(1).min(states.len());
-    (0..cells)
-        .map(|i| {
-            let slice = &states[i * states.len() / cells..(i + 1) * states.len() / cells];
-            if slice.contains(&ByteState::Conflict) {
-                '!'
-            } else if slice.contains(&ByteState::Missing) {
-                '?'
-            } else {
-                '='
-            }
-        })
-        .collect()
-}
-fn ranges(states: &[ByteState]) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut start = 0;
-    while start < states.len() && result.len() < 64 {
-        let state = states[start];
-        let end = states[start..]
-            .iter()
-            .position(|s| *s != state)
-            .map_or(states.len(), |n| start + n);
-        result.push(format!(
-            "[{start}..{end}) · {} bytes · {state:?}",
-            end - start
-        ));
-        start = end;
-    }
-    if start < states.len() {
-        result.push("Range display stops after 64 runs; retained bytes are unchanged.".into());
-    }
-    if states.is_empty() {
-        result.push("No payload positions retained.".into());
-    }
-    result
-}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -442,17 +334,6 @@ mod tests {
             explanation_lines(&["Peer → Sender\nPeer ← Sender".into()], 80),
             vec!["Peer → Sender", "Peer ← Sender", ""]
         );
-    }
-    #[test]
-    fn coverage_preserves_small_holes_and_conflicts_and_handles_empty_spans() {
-        let mut states = vec![ByteState::Observed; 100];
-        states[1] = ByteState::Missing;
-        states[99] = ByteState::Conflict;
-        assert_eq!(coverage(&states, 4), "?==!");
-        assert_eq!(coverage(&[], 4), "no payload positions");
-        assert_eq!(coverage(&[ByteState::Observed], 40), "=");
-        assert_eq!(coverage(&states, 0), "!");
-        assert_eq!(ranges(&states)[1], "[1..2) · 1 bytes · Missing");
     }
     #[test]
     fn ack_and_combined_flags_do_not_invent_receiver_progress() {

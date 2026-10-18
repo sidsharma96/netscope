@@ -1,30 +1,30 @@
 NETSCOPE / STREAM EVIDENCE                                                                          
 synthetic.pcap                                                                                      
 24 packets · link 1 · offline; capture unchanged                                                    
-[1 Explain]  2 Recorded report · ↑↓ topic · PgUp/PgDn explanation                                   
-┌ Recorded values · diagrams are not a delivery trace ─────────────────────────────────────────────┐
-│Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                                      │
-│0 [========================================] 343 positions                                        │
-│= observed · ? missing · ! conflict · each cell groups positions                                  │
-│343 observed · 0 missing · 0 conflicting · prefix 343                                             │
+[1 Inspect]  2 Recorded report · offline capture                                                    
+Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                                        
+343 captured · 0 missing · 0 conflicting · readable start 343 bytes                                 
+┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────┐
+│0                                                                                              343│
+│==================================================================================================│
+│= captured  ? missing  ! conflict · highlighted cells touch selected range                        │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ Choose a topic ───────────┐┌ What this means ────────────────────────────────────────────────────┐
-│> Coverage · what is known?││READ THE MAP FROM LEFT TO RIGHT                                      │
-│  Ranges · exact positions ││                                                                     │
-│  Beginning and end        ││This is byte position, not time. One cell groups neighbouring        │
-│  What can HTTP read?      ││positions; ! takes priority over ?, then =. A gap cannot hide inside │
-│                           ││an = cell; the counts remain exact.                                  │
-│                           ││                                                                     │
-│                           ││Observed means recorded copies agree. Missing means no retained      │
-│                           ││payload supplies that position. Conflict means copies disagree.      │
-│                           ││                                                                     │
-│                           ││The first 343 positions are uniquely observed. A parser can read     │
-│                           ││this prefix without crossing a hole or choosing between conflicting  │
-│                           ││bytes.                                                               │
-│                           ││                                                                     │
-│                           ││0 agreeing repeated byte observations. A repeat can be               │
-│                           ││retransmission or duplicate capture; the cause is not established.   │
-│                           ││                                                                     │
-│                           ││0 segments were skipped by analysis limits. The map describes only   │
-└───────────────────────────┘└ 1–17 / 19 · PgDn for more ──────────────────────────────────────────┘
-↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit                          
+┌ RANGES · 1 / 1 · ↑↓ ───────────────────────────┐┌ UNDERSTAND THIS RANGE ─────────────────────────┐
+│  Offsets         Bytes  Evidence               ││THE BEGINNING IS READABLE                       │
+│> 0–342             343  = Captured             ││Captured copies agree. These bytes can be read  │
+│                                                ││in order from this grouping's start.            │
+│                                                ││                                                │
+│                                                ││WHAT THIS CHANGES                               │
+│                                                ││This is the prefix available to HTTP            │
+│                                                ││inspection. It can still be incomplete,         │
+└────────────────────────────────────────────────┘│encrypted, or another protocol.                 │
+┌ BYTES · text · b toggles · [ ] page ───────────┐│                                                │
+│     0  HTTP/1.1 200 OK\r\nContent-Type: applica││Offsets 0–342 include both ends: 343 bytes.     │
+│    38  tion/sdp\r\nTransfer-Encoding: chunked\r││                                                │
+│    75  \n\r\n2f;piece=one\r\nv=0\r\no=- 1 1 IN ││Readable start: 343 bytes. Press 2 for HTTP     │
+│   108  IP4 192.0.2.1\r\ns=Illustration\r\n\r\nb││findings and the full recorded report.          │
+│   142  3\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVP││                                                │
+│   178  F 111\r\na=ice-ufrag:sample\r\na=fingerp││READING THE PREVIEW                             │
+│   214  rint:sha-256 00:00:00:00:00:00:00:00:00:││? means missing; ! means conflict. In hex mode  │
+└────────────────────────────────────────────────┘└ 1–16 / 39 · PgUp/PgDn ─────────────────────────┘
+↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit                     
