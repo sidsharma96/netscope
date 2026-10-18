@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add packet/stream learning panes for TCP flags, ACK direction, sequence positions and byte-coverage maps, with a separate complete recorded report. Extend the beginner book with worked acknowledgement and range examples.
+
+
 - Clarify inspection for beginners with full section names, reading prompts, host outcome bars, packet direction guides and numbered replay steps. Add a deterministic active-operation indicator with reduced-motion support.
 
 

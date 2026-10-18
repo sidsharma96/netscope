@@ -40,6 +40,26 @@ assert_eq!(port, 443);
 
 IP and transport fields use network byte order. A classic PCAP file can use a different byte order for its container fields, identified by a fixed marker often called magic bytes. One reader therefore needs separate conversion rules for the file header and the packet inside it. Converting all numbers using the host computer's preferred order would work accidentally on some inputs and fail on others. The [PCAP format description](https://www.ietf.org/archive/id/draft-ietf-opsawg-pcap-06.html) is a versioned work-in-progress reference for that container distinction.
 
+## What do the flags ask the receiver to do?
+
+A TCP header shows `0x18` beside its flags. That number is compact, but it does not tell a newcomer what to look for. Flags are independent bits: each is either on or off, and several can be on in the same segment. Here `0x18` combines the ACK bit (`0x10`) with the PSH bit (`0x08`). It does not mean “packet eighteen” or “state eighteen.”
+
+ACK makes the acknowledgement number meaningful. PSH asks TCP to push data onward to the receiving application rather than wait for more data to fill a buffer. PSH does not mark the end of an HTTP response. HTTP needs its own message-length rules, which we will examine after putting the bytes in order.
+
+The following table gives the most common control bits a concrete purpose. “Set” means that the bit is on in this recorded header; it does not establish whether the peer accepted the segment.
+
+| Flag | Meaning when set | What it does not establish |
+|---|---|---|
+| SYN | Establish initial sequence numbering | That the handshake succeeded |
+| ACK | Treat the acknowledgement number as active | That an application processed the data |
+| PSH | Push data onward to the application | An application-message boundary |
+| FIN | This sender has no more data to send | That both directions have closed |
+| RST | Reset the connection | The cause of the reset |
+
+Other recorded bits include URG, which makes the urgent-pointer field active, and ECE/CWR, used for explicit congestion notification. Their meaning depends on other fields and negotiated behaviour. Netscope labels these bits, but does not decode the urgent pointer or reconstruct congestion control. The [TCP header specification](https://www.rfc-editor.org/rfc/rfc9293#section-3.1) defines the fields and their control-bit meanings.
+
+In the packet inspector, Explain shows both the flag names and their raw hexadecimal value. Selecting Flags opens the definitions; selecting ACK explains whether this particular number is active. The Recorded report remains available for the checked layer descriptions and byte preview. If there is no supported TCP header—for example, the packet carries UDP—the view explains that absence instead of displaying invented zero-valued TCP fields.
+
 ## Check availability before indexing
 
 A file containing one byte cannot supply a two-byte field. Rust's `get` method lets a reader ask for a slice, a borrowed view of existing elements, and receive an optional result. The range `..2` means from the beginning up to, but excluding, element two.

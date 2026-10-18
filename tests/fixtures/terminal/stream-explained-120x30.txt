@@ -1,0 +1,30 @@
+NETSCOPE / STREAM EVIDENCE                                                                                              
+synthetic.pcap                                                                                                          
+24 packets · link 1 · offline; capture unchanged                                                                        
+[1 Explain]  2 Recorded report · ↑↓ topic · PgUp/PgDn explanation                                                       
+┌ Recorded values · diagrams are not a delivery trace ─────────────────────────────────────────────────────────────────┐
+│Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                                                          │
+│0 [========================================] 343 positions                                                            │
+│= observed · ? missing · ! conflict · each cell groups positions                                                      │
+│343 observed · 0 missing · 0 conflicting · prefix 343                                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ Choose a topic ───────────┐┌ What this means ────────────────────────────────────────────────────────────────────────┐
+│> Coverage · what is known?││READ THE MAP FROM LEFT TO RIGHT                                                          │
+│  Ranges · exact positions ││                                                                                         │
+│  Beginning and end        ││This is byte position, not time. One cell groups neighbouring positions; ! takes         │
+│  What can HTTP read?      ││priority over ?, then =. A gap cannot hide inside an = cell; the counts remain exact.    │
+│                           ││                                                                                         │
+│                           ││Observed means recorded copies agree. Missing means no retained payload supplies that    │
+│                           ││position. Conflict means copies disagree.                                                │
+│                           ││                                                                                         │
+│                           ││The first 343 positions are uniquely observed. A parser can read this prefix without     │
+│                           ││crossing a hole or choosing between conflicting bytes.                                   │
+│                           ││                                                                                         │
+│                           ││0 agreeing repeated byte observations. A repeat can be retransmission or duplicate       │
+│                           ││capture; the cause is not established.                                                   │
+│                           ││                                                                                         │
+│                           ││0 segments were skipped by analysis limits. The map describes only the retained span,    │
+│                           ││not the entire connection.                                                               │
+│                           ││                                                                                         │
+└───────────────────────────┘└─────────────────────────────────────────────────────────────────────────────────────────┘
+↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit                                              

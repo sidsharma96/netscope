@@ -32,6 +32,8 @@ pub struct PacketApp {
     quit: bool,
     page: usize,
     small: bool,
+    recorded: bool,
+    learning: crate::packet_learning::Learning,
 }
 impl PacketApp {
     /// Derive bounded stream observations once without performing network I/O.
@@ -47,6 +49,8 @@ impl PacketApp {
             quit: false,
             page: 16,
             small: false,
+            recorded: false,
+            learning: crate::packet_learning::Learning::default(),
         }
     }
     /// Whether an explicit quit key was accepted.
@@ -109,6 +113,24 @@ impl PacketApp {
             self.offset = 0;
             return;
         }
+        if matches!(self.screen, Screen::Packet(_) | Screen::Stream(_)) {
+            match key.code {
+                KeyCode::Char('1') => {
+                    self.recorded = false;
+                    return;
+                }
+                KeyCode::Char('2') => {
+                    self.recorded = true;
+                    self.offset = 0;
+                    return;
+                }
+                _ if !self.recorded => {
+                    self.learning.key(key.code);
+                    return;
+                }
+                _ => {}
+            }
+        }
         let count = match self.screen {
             Screen::Packets => capture.packets.len(),
             Screen::Streams => self.analysis.flows.len(),
@@ -153,6 +175,8 @@ impl PacketApp {
                 }
             }
             KeyCode::Enter if count > 0 => {
+                self.recorded = false;
+                self.learning = crate::packet_learning::Learning::default();
                 self.screen = match self.screen {
                     Screen::Packets => Screen::Packet(self.selected),
                     Screen::Streams => Screen::Stream(self.selected),
@@ -387,6 +411,7 @@ pub fn draw_packets(
         Constraint::Length(1),
     ])
     .areas(area);
+    let learning_area = body;
     let [guide, body] = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).areas(body);
     app.page = usize::from(body.height.saturating_sub(2)).max(1);
     let (question, explanation) = match app.screen {
@@ -456,12 +481,39 @@ pub fn draw_packets(
         )),
         header,
     );
+    if !app.help && !app.recorded && matches!(app.screen, Screen::Packet(_) | Screen::Stream(_)) {
+        frame.render_widget(ratatui::widgets::Clear, learning_area);
+        frame.render_widget(
+            Block::default().style(crate::presentation::base()),
+            learning_area,
+        );
+        match app.screen {
+            Screen::Packet(id) => {
+                if let Some(packet) = capture.packets.get(id) {
+                    app.learning.packet(frame, learning_area, packet, id);
+                }
+            }
+            Screen::Stream(id) => {
+                if let Some(flow) = app.analysis.flows.get(id) {
+                    app.learning.stream(frame, learning_area, flow, id);
+                }
+            }
+            _ => {}
+        }
+        frame.render_widget(
+            Paragraph::new(
+                "↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit",
+            ),
+            footer,
+        );
+        return;
+    }
     let block = crate::workspace_view::block(
         match app.screen {
             Screen::Packets => " Packets · ↑↓ select · Enter inspect ",
             Screen::Streams => " One-way streams · ↑↓ select · Enter inspect ",
-            Screen::Packet(_) => " Packet layers · ↑↓ scroll · Esc returns ",
-            Screen::Stream(_) => " Reassembled evidence · ↑↓ scroll · Esc returns ",
+            Screen::Packet(_) => " Packet layers · 1 Explain · [2 Recorded] · ↑↓ scroll ",
+            Screen::Stream(_) => " Reassembled evidence · 1 Explain · [2 Recorded] · ↑↓ scroll ",
         }
         .into(),
         true,
@@ -473,6 +525,8 @@ pub fn draw_packets(
             "↑/↓ or j/k move · PageUp/PageDown page · Home/End bounds".into(),
             "Enter inspects · Esc returns and preserves list selection".into(),
             "p packets · s directed TCP epochs · ? help · q / Ctrl+c quit".into(),
+            "Inspectors: 1 Explain · 2 Recorded report; Esc returns to the list".into(),
+            "Explain: ↑↓ chooses a topic; PgUp/PgDn scrolls its explanation".into(),
             "PCAP clocks are recorded metadata, not guaranteed event-delivery times".into(),
             "Gaps/conflicts stop HTTP prefix inspection; encryption stays unavailable".into(),
         ]

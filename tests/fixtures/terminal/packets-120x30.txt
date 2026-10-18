@@ -1,0 +1,30 @@
+NETSCOPE / PACKETS                                                                                                      
+synthetic.pcap                                                                                                          
+24 packets · link 1 · offline; capture unchanged                                                                        
+What travelled between these addresses?                                                                                 
+A packet is one recorded piece of network traffic. Enter shows its layers.                                              
+192.0.2.1:9000 ── TCP → 198.51.100.2:80                                                                                 
+Recorded direction only · gaps and encryption can limit what is readable                                                
+                                                                                                                        
+┌ Packets · ↑↓ select · Enter inspect ─────────────────────────────────────────────────────────────────────────────────┐
+│> #0 · 54/54 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x02                                                │
+│  #1 · 54/54 bytes · TCP 198.51.100.2:80 → 192.0.2.1:9000 · flags 0x12                                                │
+│  #2 · 84/84 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x18                                                │
+│  #3 · 67/67 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x18                                                │
+│  #4 · 67/67 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x18                                                │
+│  #5 · 54/54 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x11                                                │
+│  #6 · 307/307 bytes · TCP 198.51.100.2:80 → 192.0.2.1:9000 · flags 0x18                                              │
+│  #7 · 144/144 bytes · TCP 198.51.100.2:80 → 192.0.2.1:9000 · flags 0x18                                              │
+│  #8 · 54/54 bytes · TCP 198.51.100.2:80 → 192.0.2.1:9000 · flags 0x11                                                │
+│  #9 · 54/54 bytes · TCP 192.0.2.1:9001 → 198.51.100.2:80 · flags 0x02                                                │
+│  #10 · 73/73 bytes · TCP 192.0.2.1:9001 → 198.51.100.2:80 · flags 0x18                                               │
+│  #11 · 56/56 bytes · TCP 192.0.2.1:9001 → 198.51.100.2:80 · flags 0x18                                               │
+│  #12 · 54/54 bytes · TCP 192.0.2.1:9002 → 198.51.100.2:80 · flags 0x02                                               │
+│  #13 · 56/56 bytes · TCP 192.0.2.1:9002 → 198.51.100.2:80 · flags 0x18                                               │
+│  #14 · 56/56 bytes · TCP 192.0.2.1:9002 → 198.51.100.2:80 · flags 0x18                                               │
+│  #15 · 54/54 bytes · TCP 192.0.2.1:9003 → 198.51.100.2:80 · flags 0x02                                               │
+│  #16 · 57/60 bytes · TCP 192.0.2.1:9003 → 198.51.100.2:80 · flags 0x18                                               │
+│  #17 · 54/54 bytes · TCP 192.0.2.1:9004 → 198.51.100.2:80 · flags 0x02                                               │
+│  #18 · 57/57 bytes · TCP 192.0.2.1:9004 → 198.51.100.2:80 · flags 0x18                                               │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+↑/↓ move · Enter inspect · Esc back · p packets · s streams · ? help · q quit                                           

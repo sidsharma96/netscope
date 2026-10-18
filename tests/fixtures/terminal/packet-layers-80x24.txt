@@ -6,7 +6,7 @@ A packet is one recorded piece of network traffic. Enter shows its layers.
 192.0.2.1:9000 ── TCP → 198.51.100.2:80                                         
 Recorded direction only · gaps and encryption can limit what is readable        
                                                                                 
-┌ Packet layers · ↑↓ scroll · Esc returns ─────────────────────────────────────┐
+┌ Packet layers · 1 Explain · [2 Recorded] · ↑↓ scroll ────────────────────────┐
 │Packet #0 · recorded timestamp 1700000000.123456                              │
 │Retained 54 bytes · original 54 bytes                                         │
 │File record order is not a receiver transcript                                │

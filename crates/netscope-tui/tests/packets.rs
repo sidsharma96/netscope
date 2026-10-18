@@ -26,13 +26,14 @@ fn packet_views_and_navigation_preserve_selected_records() -> Result<(), Box<dyn
     let capture = netscope_import::pcap::import_pcap(include_bytes!(
         "../../../tests/fixtures/pcap/streams.pcap"
     ))?;
-    for (width, height) in [(80, 24), (100, 30)] {
+    for (width, height) in [(80, 24), (100, 30), (120, 30)] {
         let mut app = PacketApp::new(&capture);
         for (name, keys) in [
             ("packets", vec![]),
-            ("packet-layers", vec![KeyCode::Enter]),
+            ("packet-explained", vec![KeyCode::Enter]),
+            ("packet-layers", vec![KeyCode::Char('2')]),
             (
-                "stream-evidence",
+                "stream-explained",
                 vec![
                     KeyCode::Esc,
                     KeyCode::Char('s'),
@@ -40,6 +41,7 @@ fn packet_views_and_navigation_preserve_selected_records() -> Result<(), Box<dyn
                     KeyCode::Enter,
                 ],
             ),
+            ("stream-evidence", vec![KeyCode::Char('2')]),
         ] {
             for code in keys {
                 app.key(KeyEvent::from(code), &capture);
@@ -99,6 +101,7 @@ fn inspector_bounds_do_not_change_list_selection_and_empty_files_are_safe()
         app.key(KeyEvent::from(KeyCode::Down), &capture);
     }
     app.key(KeyEvent::from(KeyCode::Enter), &capture);
+    app.key(KeyEvent::from(KeyCode::Char('2')), &capture);
     app.key(KeyEvent::from(KeyCode::End), &capture);
     assert!(render(&capture, &mut app, 80, 24)?.contains("Answer books.test"));
     app.key(KeyEvent::from(KeyCode::Home), &capture);
@@ -141,5 +144,63 @@ fn timestamps_show_the_file_resolution() -> Result<(), Box<dyn std::error::Error
         "../../../tests/fixtures/pcap/big-nano.pcap"
     ))?;
     assert!(packet_summary(&nano).contains("recorded timestamp 1700000000.123456789\n"));
+    Ok(())
+}
+
+#[test]
+fn explanations_preserve_identity_and_report_access_across_topics_and_resize()
+-> Result<(), Box<dyn std::error::Error>> {
+    let capture = netscope_import::pcap::import_pcap(include_bytes!(
+        "../../../tests/fixtures/pcap/streams.pcap"
+    ))?;
+    let original = netscope_tui::packet_view::packet_summary(&capture);
+    for (width, height) in [(80, 24), (100, 30), (160, 50)] {
+        let mut app = PacketApp::new(&capture);
+        app.key(KeyEvent::from(KeyCode::Enter), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("[1 Explain]"));
+        app.key(KeyEvent::from(KeyCode::Down), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("WHERE DO THESE BYTES"));
+        app.key(KeyEvent::from(KeyCode::Down), &capture);
+        let ack = render(&capture, &mut app, width, height)?;
+        assert!(ack.contains("ACK flag is off"));
+        app.key(KeyEvent::from(KeyCode::PageDown), &capture);
+        let _ = render(&capture, &mut app, width, height)?;
+        assert!(render(&capture, &mut app, 50, 10)?.contains("resize"));
+        let _ = render(&capture, &mut app, width, height)?;
+        app.key(KeyEvent::from(KeyCode::Char('2')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("recorded timestamp"));
+        app.key(KeyEvent::from(KeyCode::Esc), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("> #0"));
+    }
+    assert_eq!(
+        netscope_tui::packet_view::packet_summary(&capture),
+        original
+    );
+    Ok(())
+}
+
+#[test]
+fn sequence_wrap_and_non_tcp_absence_stay_explicit() -> Result<(), Box<dyn std::error::Error>> {
+    let mut capture = netscope_import::pcap::import_pcap(include_bytes!(
+        "../../../tests/fixtures/pcap/streams.pcap"
+    ))?;
+    let tcp = capture.packets[0].tcp.as_mut().ok_or("missing TCP")?;
+    tcp.sequence = u32::MAX;
+    tcp.declared_payload = 2;
+    let mut app = PacketApp::new(&capture);
+    app.key(KeyEvent::from(KeyCode::Enter), &capture);
+    app.key(KeyEvent::from(KeyCode::Down), &capture);
+    let screen = render(&capture, &mut app, 120, 30)?;
+    assert!(screen.contains("starts at 0"));
+    assert!(!screen.contains("limit what is readable"));
+    app.key(KeyEvent::from(KeyCode::Esc), &capture);
+    for _ in 0..20 {
+        app.key(KeyEvent::from(KeyCode::Down), &capture);
+    }
+    app.key(KeyEvent::from(KeyCode::Enter), &capture);
+    app.key(KeyEvent::from(KeyCode::Down), &capture);
+    let udp = render(&capture, &mut app, 120, 30)?;
+    assert!(udp.contains("This packet carries UDP"));
+    assert!(!udp.contains("ACK field 0"));
     Ok(())
 }

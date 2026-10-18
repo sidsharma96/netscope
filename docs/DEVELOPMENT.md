@@ -189,3 +189,7 @@ Classic PCAP only: Ethernet with bounded VLAN tags, BSD loopback (link type 0, m
 ### Reduced motion during terminal review
 
 Run `NETSCOPE_REDUCE_MOTION=1 cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/multi-host.har` from the repository root for a stationary indicator during active replay. Omitting the variable enables the activity animation. Recorded views never animate. The terminal supplies elapsed time, while tests supply fixed durations; regenerating screen buffers does not require sleeps or a network service.
+
+### Explore a packet explanation
+
+From the repository root, run `cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap`. Enter opens the selected packet in Explain. Use Up/Down to choose Flags, Sequence, ACK or Layers; Page Down reads more of the selected explanation. Press 2 for the full recorded report, 1 to return, or Esc for the list. From a list, s opens one-way streams; Enter then shows coverage and range explanations. The same file includes gaps and conflicts for comparison.

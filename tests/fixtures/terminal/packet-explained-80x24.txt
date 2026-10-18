@@ -1,0 +1,24 @@
+NETSCOPE / PACKET LAYERS                                                        
+synthetic.pcap                                                                  
+24 packets · link 1 · offline; capture unchanged                                
+[1 Explain]  2 Recorded report · ↑↓ topic · PgUp/PgDn explanation               
+┌ Recorded values · diagrams are not a delivery trace ─────────────────────────┐
+│Packet #0 · 192.0.2.1:9000 ── TCP → 198.51.100.2:80                           │
+│Sequence 100 · 0 retained / 0 declared data bytes                             │
+│Flags: SYN · raw 0x02                                                         │
+│ACK field 0 · inactive (ACK flag off)                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌ Choose a topic ───────────┐┌ What this means ────────────────────────────────┐
+│> Flags · control bits     ││WHAT IS THIS SEGMENT SAYING?                     │
+│  Sequence · this direction││                                                 │
+│  ACK · other direction    ││Flags are independent on/off bits in the TCP     │
+│  Layers and stored bytes  ││header. Several can be set together. Hexadecimal │
+│                           ││(0x) is a compact way to write those bits.       │
+│                           ││                                                 │
+│                           ││SYN [on] · when set: Start sequence numbering;   │
+│                           ││consumes one sequence position.                  │
+│                           ││                                                 │
+│                           ││ACK [off] · when set: The acknowledgement field  │
+│                           ││is active; it describes the other direction.     │
+└───────────────────────────┘└ 1–11 / 36 · PgDn for more ──────────────────────┘
+↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit      

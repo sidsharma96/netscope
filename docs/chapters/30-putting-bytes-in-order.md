@@ -4,6 +4,26 @@ Three packet records contain parts of a book response. One arrives in the record
 
 A TCP segment is a piece of one direction's byte stream plus its transport header. Its sequence number identifies a position, rather than a display row. Sending the same bytes again can produce overlapping sequence ranges. A capture may also record the same traffic twice. Those possibilities mean an overlap is useful evidence without being a complete explanation of why it happened.
 
+## Sequence describes one direction; ACK describes the other
+
+Imagine a sender transmitting the three bytes `abc`, beginning at sequence position 100. Those bytes occupy positions 100, 101 and 102. If its peer receives them in order, the peer can report ACK 103: the next position it expects. It is acknowledging progress through sequence space, not counting three packets.
+
+The drawing below is an invented exchange. Read the upper arrow as data moving toward the peer and the lower arrow as a report coming back. The sequence numbers of any data travelling on the lower arrow belong to a separate numbering space; they need not be close to 100.
+
+```text
+Illustration: ACK flag is set on the reply
+
+Sender                                      Peer
+       Sequence 100, data "abc" ────────────→
+       positions: 100 101 102
+                               ←──────────── ACK 103
+                                             expects position 103 next
+```
+
+Now suppose position 101 is missing but position 102 arrives. The cumulative acknowledgement cannot advance past the hole merely because a later byte is available. An ACK reports the next expected position after the contiguous sequence space received so far. It does not supply the contents of missing captured bytes, and it does not show that the receiving application read them.
+
+The ACK flag is essential to this interpretation. When it is off, the raw acknowledgement field is not an active acknowledgement. A displayed zero is not evidence that the peer is waiting for byte zero. Conversely, an active ACK of zero can be meaningful because sequence numbers wrap. The packet view therefore states whether the flag is on before interpreting the number. These rules follow the [TCP sequence and acknowledgement definitions](https://www.rfc-editor.org/rfc/rfc9293#section-3.4).
+
 ## Put bytes at positions before reading their meaning
 
 This invented example shows three observations. The bracketed ranges include their starting position and exclude their end. The last row describes a repeated observation, not new data appended to the response.
@@ -17,6 +37,27 @@ observed third:   [0..3) "abc"  -> abcdef, 3 agreeing overlap bytes
 The final application bytes are `abcdef`. If the third observation instead contains `abX`, position two has conflicting evidence. Choosing whichever record appeared first or last would hide that disagreement. Netscope marks the position as conflicting and refuses to treat it as a uniquely observed byte.
 
 Likewise, `abc`, a three-byte hole, and `ghi` must not become `abcghi`. Removing the hole manufactures adjacency. HTTP inspection uses only the uniquely observed prefix before the first hole or conflict. Later recorded bytes remain visible as sequence ranges even when application interpretation cannot continue.
+
+## Read a coverage map without hiding a hole
+
+Suppose a recording retains `abc`, then three unknown positions, then `ghi`. A useful map must preserve the unknown space between the two pieces. It must also distinguish absence from conflicting copies of a byte.
+
+Read this illustration from left to right by byte position. It is not a timeline, and its widths do not describe how long transmission took.
+
+```text
+Illustrative positions:  0 1 2 3 4 5 6 7 8
+Recorded evidence:      a b c ? ? ? g h i
+Coverage:               = = = ? ? ? = = =
+Exact ranges:           [0..3) observed
+                        [3..6) missing
+                        [6..9) observed
+```
+
+`[3..6)` includes position 3 and excludes position 6, so it contains exactly three positions: 3, 4 and 5. These are offsets relative to the stream's retained starting sequence. They are different from offsets inside a packet's stored byte vector. Adding a stream offset to its starting sequence, with the wrap-around described below, gives the corresponding TCP sequence number.
+
+A terminal cannot give every byte its own cell in a large stream. Netscope groups neighbouring positions into map cells. A cell shows `!` if any position conflicts, otherwise `?` if any position is missing, otherwise `=` for observed positions. Conflict takes priority, so one cell can contain both a conflict and a gap while displaying `!`. Exact counts and the range list preserve that distinction. An `=` cell never conceals a missing position.
+
+Select Ranges to read the exact start, excluded end and byte count for each displayed run of matching evidence. The display limits the number of runs, and says when it has shortened the list; the retained analysis is unchanged. The map covers the retained span only. It does not claim that the capture contains the entire connection, especially when the beginning was not observed or analysis limits excluded segments.
 
 ## Remember absence separately from the value
 

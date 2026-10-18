@@ -42,6 +42,12 @@ try:
             stage = 12
         if stage == 12 and 'TCP STREAMS' in visible and 'directed epochs' in visible:
             os.write(master, b'j\r')
+            stage = 20
+        if stage == 20 and 'READ THE MAP' in visible:
+            os.write(master, b'j')
+            stage = 21
+        if stage == 21 and 'HOW TO READ' in visible:
+            os.write(master, b'2')
             stage = 2
         if stage == 2 and 'STREAM EVIDENCE' in visible and 'Chunked terminator' in visible:
             os.write(master, b'\x1b[6~')
@@ -59,7 +65,7 @@ try:
             os.write(master, b'\x1b')
             stage = 6
         if stage == 6 and 'TCP STREAMS' in visible:
-            os.write(master, b'j\r')
+            os.write(master, b'j\r2')
             stage = 7
         if stage == 7 and 'missing' in visible and 'Start unknown' not in visible and 'Directed epoch #2' in visible and 'HTTP inspection stopped' in visible:
             assert 'HTTP inspection stopped' in visible
