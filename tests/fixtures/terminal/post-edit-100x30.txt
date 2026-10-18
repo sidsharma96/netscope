@@ -1,20 +1,20 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-[ Edit ]  Review    Send    Result                                                                  
+[ 1 Edit ]  2 Review →  3 Send →  4 Result                                                          
+Editing a field · Enter saves this edit · Esc discards it.                                          
                                                                                                     
 ┌ Editing · Enter saves ────────────────────┐┌ Context / retained result ──────────────────────────┐
-│Source #0 · POST · HTTP/1.1 · 17 request bo││No request is sent while editing.                    │
-│dy bytes                                   ││Review the destination, headers and body before Send.│
-│Only Enter or s from Review sends a request││                                                     │
-│EDIT BODY · Ctrl+n newline · Tab inserts ta││Changing the destination clears body and header      │
-│b                                          ││choices.                                             │
-│←/→ move · Home/End start/end · Backspace/D││Enter saves a field; Esc discards an unfinished edit.│
-│elete remove · Ctrl+u clear                ││Header values remain masked until v reveals them.    │
-│{"title":"café"}                           ││                                                     │
-│[type at cursor · Enter saves · Esc cancels││No retained result yet.                              │
-│]                                          ││                                                     │
-│                                           ││                                                     │
+│Source #0 · POST · HTTP/1.1 · 17 request bo││PREPARE → CHECK → SEND                               │
+│dy bytes                                   ││No request is sent while editing.                    │
+│Only Enter or s from Review sends a request││Review the destination, headers and body before Send.│
+│EDIT BODY · Ctrl+n newline · Tab inserts ta││                                                     │
+│b                                          ││Changing the destination clears body and header      │
+│←/→ move · Home/End start/end · Backspace/D││choices.                                             │
+│elete remove · Ctrl+u clear                ││Enter saves a field; Esc discards an unfinished edit.│
+│{"title":"café"}                           ││Header values remain masked until v reveals them.    │
+│[type at cursor · Enter saves · Esc cancels││                                                     │
+│]                                          ││No retained result yet.                              │
 │                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │

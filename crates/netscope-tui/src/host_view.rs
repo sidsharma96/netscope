@@ -7,8 +7,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
-    widgets::{Block, Borders, Paragraph},
+    widgets::Paragraph,
 };
 
 fn duration(sum: Option<f64>) -> String {
@@ -19,9 +18,10 @@ fn duration(sum: Option<f64>) -> String {
     }
 }
 pub(crate) fn draw_hosts(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Hosts · alphabetical ");
+    let block = crate::workspace_view::block(
+        " Hosts · alphabetical · Enter filters requests ".into(),
+        true,
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
     if session.hosts().is_empty() {
@@ -57,8 +57,8 @@ pub(crate) fn draw_hosts(frame: &mut Frame, area: Rect, session: &Session, app: 
             let selected = app.host_selected == Some(row);
             let style = if selected {
                 Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Rgb(128, 225, 178))
+                    .fg(crate::presentation::MINT)
+                    .bg(crate::presentation::SELECTED)
                     .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
@@ -103,32 +103,42 @@ pub(crate) fn draw_hosts(frame: &mut Frame, area: Rect, session: &Session, app: 
         && let (Some(host), Some(summary)) = (session.host(*id), session.host_summary(*id))
     {
         let name_lines = wrap(
-            &format!("Host: {}", terminal_text(&host.name)),
+            &format!("SELECTED HOST · {}", terminal_text(&host.name)),
             usize::from(details.width),
         );
-        let truncated = name_lines.len() > 4;
-        let mut content: Vec<String> = name_lines.into_iter().take(4).collect();
-        if truncated && let Some(last) = content.last_mut() {
-            *last = "Host name shortened here; inspect a request for its full URL".into();
-        }
+        let mut content: Vec<String> = name_lines.into_iter().take(2).collect();
         let counts = &summary.statuses;
+        let total = summary.request_ids.len().max(1);
+        for (label, count) in [
+            ("2xx success", counts.successful),
+            ("4xx request errors", counts.client_error),
+            ("5xx server errors", counts.server_error),
+        ] {
+            let fill = count * 16 / total;
+            content.push(format!(
+                "{label:<19} {}{} {count}",
+                "━".repeat(fill),
+                "·".repeat(16 - fill)
+            ));
+        }
         content.extend([
             format!(
-                "Statuses: 1xx {} · 2xx {} · 3xx {}",
-                counts.informational, counts.successful, counts.redirection
+                "1xx interim {} · 3xx redirect/cache {} · no status {}",
+                counts.informational, counts.redirection, counts.not_recorded
             ),
             format!(
-                "          4xx {} · 5xx {} · no status {}",
-                counts.client_error, counts.server_error, counts.not_recorded
-            ),
-            format!(
-                "Requests with import warnings: {}",
+                "Warnings: {} requests · bars show share of this host's requests",
                 summary.warning_requests
             ),
-            "Reported durations are summed; requests can overlap.".into(),
+            "Enter shows requests · a restores all · requests can overlap".into(),
         ]);
         frame.render_widget(
-            Paragraph::new(content.into_iter().map(Line::from).collect::<Vec<_>>()),
+            Paragraph::new(
+                content
+                    .into_iter()
+                    .map(crate::presentation::report_line)
+                    .collect::<Vec<_>>(),
+            ),
             details,
         );
     }

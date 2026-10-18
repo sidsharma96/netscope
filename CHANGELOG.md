@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Clarify inspection for beginners with full section names, reading prompts, host outcome bars, packet direction guides and numbered replay steps. Add a deterministic active-operation indicator with reduced-motion support.
+
+
 - Publish the book with mdBook 0.5.4 from `docs/SUMMARY.md`, grouped into parts, with search, a reading-path front page, a glossary and a three-level question bank whose answers link to the teaching sections. Teaching chapters end with generated questions. The custom HTML reader and its builder are retired; the documentation checks now run on the Markdown and also verify heading anchors and question format. A workflow builds the site and deploys it to Cloudflare Pages.
 
 - Replace the journey's full-width text report with a compact exchange diagram, selectable timing stages and a focused explanation pane. Show partial timing sums and discrepancies without inventing missing durations; keep stage navigation and explanation paging separate.

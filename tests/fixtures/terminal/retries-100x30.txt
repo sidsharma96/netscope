@@ -1,11 +1,11 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 8 requests                                                                          
 Captured data · 1–6 sections · g journey · Tab changes focus                                        
-┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
-│ ID   Verb   Code   Path              ││#0 GET · 503                                              │
+┌ Requests · Enter opens details ──────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Method Status Path              ││#0 GET · 503                                              │
 │                                      ││URL: https://example.test/books                           │
-│> 0    GET    503  /books             ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
-│  1    GET    200  /books             ││contain binary data                                       │
+│> 0    GET    503  /books             ││1 Summary  2 Headers  3 Body                              │
+│  1    GET    200  /books             ││4 Timing  5 Evidence  6 All                               │
 │  2    GET    503  /books             ││These HAR fields provide no packet/frame trace or stream I│
 │  3    HEAD   429  /availability      ││Ds                                                        │
 │  4    HEAD   503  /availability      ││No compression savings or connection reuse are established│
@@ -25,6 +25,6 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │                                      ││idence                                                    │
 │                                      ││Candidate #1: GET 2026-10-09T12:00:00.020Z                │
 │                                      ││Candidate #2: GET 2026-10-09T12:00:00.030Z                │
-│Row 1 / 8                             ││Esc returns to the list; candidate numbers are source IDs │
-└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+│1 / 8 · ↑↓ choose · Enter inspect     ││Esc returns to the list; candidate numbers are source IDs │
+└──────────────────────────────────────┘└ 53–72 / 72 · ↑↓ scroll ──────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

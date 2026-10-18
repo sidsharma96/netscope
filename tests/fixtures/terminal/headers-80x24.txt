@@ -4,7 +4,10 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · Headers ─────────────────────────────────────────────────────────┐
 │#0 GET · 200 OK                                                               │
 │URL: https://example.test/api/books                                           │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
+│Headers describe the message; repeated fields stay separate.                  │
+│                                                                              │
 │REQUEST · exporter-reported                                                   │
 │Request headers                                                               │
 │  X-Example: one                                                              │
@@ -17,8 +20,5 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │RESPONSE · exporter-reported                                                  │
 │Response headers                                                              │
 │  Content-Type: application/json                                              │
-│Response cookies                                                              │
-│  No captured cookies                                                         │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 1–14 / 16 · ↑↓ scroll ───────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

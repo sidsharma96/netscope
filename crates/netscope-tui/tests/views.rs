@@ -46,7 +46,7 @@ fn workspace_focus_sections_and_resize_preserve_capture_identity()
         app.apply(Action::Open, &session);
         app.apply(Action::Section(InspectorTab::All), &session);
         app.apply(Action::PageDown, &session);
-        assert_eq!(app.inspector_offset, usize::from(height - 9));
+        assert_eq!(app.inspector_offset, usize::from(height - 10));
         app.apply(Action::PageUp, &session);
         assert_eq!(app.inspector_offset, 0);
     }
@@ -226,7 +226,7 @@ fn workbench_render_and_resize_never_queue_send_or_save() -> Result<(), Box<dyn 
     let mut app = reviewed_app(&session);
     for (width, height) in [(120, 30), (80, 24), (100, 30)] {
         let text = render(&session, &mut app, width, height)?;
-        assert!(text.contains("[ Review ]"));
+        assert!(text.contains("[ 2 Review ]"));
         assert!(text.contains("Enter / s send"));
         assert_eq!(
             text.contains("Request · separate from capture"),
@@ -237,7 +237,7 @@ fn workbench_render_and_resize_never_queue_send_or_save() -> Result<(), Box<dyn 
         assert!(editor.take_save().is_none());
     }
     press(&mut app, &session, KeyCode::Esc);
-    assert!(render(&session, &mut app, 100, 30)?.contains("[ Edit ]"));
+    assert!(render(&session, &mut app, 100, 30)?.contains("[ 1 Edit ]"));
     assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
     Ok(())
 }
@@ -417,11 +417,7 @@ fn fixed_overviews_keep_labels_selection_and_bars() -> Result<(), Box<dyn std::e
         terminal.draw(|f| draw(f, &session, &mut app, "synthetic.har"))?;
         assert_eq!(
             terminal.backend().buffer()[(1, 6)].bg,
-            if width == 80 {
-                Color::Rgb(128, 225, 178)
-            } else {
-                Color::Rgb(32, 65, 54)
-            }
+            Color::Rgb(32, 65, 54)
         );
     }
     Ok(())
@@ -546,7 +542,7 @@ fn keyboard_aliases_and_help_are_deterministic() -> Result<(), Box<dyn std::erro
     let session = session()?;
     let mut app = App::new(&session);
     app.apply(Action::Help, &session);
-    assert!(render(&session, &mut app, 100, 30)?.contains("quit and restore terminal"));
+    assert!(render(&session, &mut app, 100, 30)?.contains("quits and restores the terminal"));
     app.apply(Action::Help, &session);
     assert!(!app.help);
     Ok(())
@@ -733,23 +729,19 @@ fn host_buffers_and_filter_labels_match_reviewed_fixtures() -> Result<(), Box<dy
         if filtered {
             assert!(text.contains("Host: api.example.test"));
             assert!(text.contains("3 / 6 requests"));
-            assert!(text.contains("Row 1 / 3"));
+            assert!(text.contains("1 / 3"));
             assert!(!text.contains("assets.example.test"));
         } else {
             assert!(text.contains("No status"));
             assert!(text.contains("120.00"));
             assert!(text.contains("requests can overlap"));
-            assert!(text.contains("Requests with import warnings: 1"));
+            assert!(text.contains("Warnings: 1 requests"));
         }
         let mut terminal = Terminal::new(TestBackend::new(width, height))?;
         terminal.draw(|frame| draw(frame, &session, &mut app, "synthetic.har"))?;
         assert_eq!(
             terminal.backend().buffer()[(1, 6)].bg,
-            if width == 80 || !filtered {
-                Color::Rgb(128, 225, 178)
-            } else {
-                Color::Rgb(32, 65, 54)
-            }
+            Color::Rgb(32, 65, 54)
         );
     }
     Ok(())
@@ -2538,7 +2530,7 @@ fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::
         for _ in 0..100 {
             if output
                 .lines()
-                .nth(7)
+                .nth(8)
                 .is_some_and(|line| line.contains("SSE EVENTS"))
             {
                 break;
@@ -2549,7 +2541,7 @@ fn sse_event_buffers_match_reviewed_screens() -> Result<(), Box<dyn std::error::
         assert!(
             output
                 .lines()
-                .nth(7)
+                .nth(8)
                 .is_some_and(|line| line.contains("SSE EVENTS"))
         );
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(

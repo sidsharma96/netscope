@@ -1,7 +1,7 @@
 NETSCOPE / CAPTURE                                                              
 synthetic.har · 6 requests                                                      
 Host: api.example.test · 3 / 6 requests                                         
-┌ Requests ────────────────────────────────────────────────────────────────────┐
+┌ Requests · ↑↓ choose · Enter inspect ────────────────────────────────────────┐
 │  ID   METHOD   HOST / PATH            Status  Total (ms) Timeline            │
 │                                                                              │
 │> 1    GET      api.example.test/books 200       50.00 ms ━                   │

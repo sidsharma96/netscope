@@ -1,30 +1,30 @@
 NETSCOPE / CAPTURE                                                                                  
 synthetic.har · 6 requests                                                                          
 Host: api.example.test · 3 / 6 requests                                                             
-┌ Requests · focus: Tab ───────────────┐┌ Preview · Summary ───────────────────────────────────────┐
-│ ID   Verb   Code   Path              ││#1 GET · 200                                              │
+┌ Requests · Enter opens details ──────┐┌ Preview · Summary ───────────────────────────────────────┐
+│ ID   Method Status Path              ││#1 GET · 200                                              │
 │                                      ││URL: https://api.example.test/books                       │
-│> 1    GET    200  /books             ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
-│  2    GET    503  /books             ││Status: 200                                               │
-│  3    GET    none /empty             ││Reported total: 50 ms                                     │
-│                                      ││Started: 2026-10-09T12:00:00.000Z                         │
+│> 1    GET    200  /books             ││1 Summary  2 Headers  3 Body                              │
+│  2    GET    503  /books             ││4 Timing  5 Evidence  6 All                               │
+│  3    GET    none /empty             ││WHAT HAPPENED?                                            │
+│                                      ││                                                          │
+│                                      ││Status: 200                                               │
+│                                      ││The server reported success for this request.             │
+│                                      ││                                                          │
+│                                      ││RECORDED MEASUREMENTS                                     │
+│                                      ││Reported total: 50 ms                                     │
 │                                      ││Reported content: 2 bytes                                 │
 │                                      ││Content type: application/json                            │
-│                                      ││                                                          │
-│                                      ││Response representation                                   │
+│                                      ││RESPONSE CONTENT                                          │
 │                                      ││Exported text                                             │
 │                                      ││                                                          │
-│                                      ││Capture boundaries                                        │
+│                                      ││WHAT IS MISSING?                                          │
 │                                      ││Body text may differ from transferred bytes.              │
-│                                      ││Reported timing does not retain handshake messages.       │
+│                                      ││g explains timing; 6 All shows every recorded field.      │
 │                                      ││Import warnings: 0 · see Evidence                         │
 │                                      ││                                                          │
-│                                      ││2 Headers · 3 Body · 4 Timing · 5 Evidence                │
-│                                      ││6 All keeps the complete captured report available.       │
 │                                      ││                                                          │
 │                                      ││                                                          │
-│                                      ││                                                          │
-│                                      ││                                                          │
-│Row 1 / 3                             ││                                                          │
+│1 / 3 · ↑↓ choose · Enter inspect     ││                                                          │
 └──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
 ↑/↓ move · Enter inspect · Tab focus · / search · h hosts · a all · ? · q quit                      

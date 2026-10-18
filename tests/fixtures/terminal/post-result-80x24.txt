@@ -1,7 +1,8 @@
 NETSCOPE / NEW RESULT                                                           
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-  Edit    Review    Send  [ Result ]                                            
+  1 Edit →  2 Review →  3 Send →[ 4 Result ]                                    
+This is a new observation. c compares it with the captured response.            
                                                                                 
 ┌ New result · scroll for details ─────────────────────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes                           │
@@ -14,7 +15,6 @@ Capture unchanged · only Review → Send starts network traffic
 │  content-type: [hidden; v reveals all values]                                │
 │Body preview (content encoding is not decoded):                               │
 │hello                                                                         │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │

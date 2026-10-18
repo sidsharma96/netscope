@@ -61,6 +61,16 @@ Suppose a capture reports a 70 ms total, a 5 ms wait, and no duration for findin
 
 Selecting Wait changes the explanation beside the stage list. Page Down can move through that explanation while Wait stays selected. Selecting another stage begins its explanation at the top. This is the same distinction between selection and scroll position that we needed for requests: one value identifies what we are reading, while another records our place within its text. Keeping them separate lets a smaller window require more scrolling without changing the selected measurement.
 
+## What should a moving indicator mean?
+
+You send a request and the screen stays unchanged for a few seconds. Has the program stopped, or is it still waiting? A small moving indicator can answer that narrow question: the operation is still active. It cannot tell us how much work remains. The server may reply immediately, send a long body, or keep an event stream open.
+
+Netscope therefore moves an indicator only during an active send or stream. Recorded requests stay still. Imagine replaying a capture whose connection time was never recorded: animating a connection step would make a missing observation look like a measured event. Keeping the stored evidence still avoids that implication. A stationary indicator is also available for readers who prefer reduced motion; the words describing the operation still convey its state.
+
+The movement needs time, but drawing does not need to ask a clock for it. The terminal loop measures elapsed time and supplies it as another piece of view state. Drawing then chooses one of four symbols. Supply the same state twice and the same symbol appears twice. A test can advance the supplied time deliberately and check the next symbol without waiting in real time.
+
+This separates two responsibilities. The network operation determines whether work is active or complete. The display decides how to communicate that state. Advancing the animation cannot send another request, invent an event, or make an incomplete result complete.
+
 ## Borrow data, change selection
 
 Drawing needs read access to the capture. Navigation needs to change the view state. Rust distinguishes those permissions in the references passed to a function.

@@ -1,7 +1,7 @@
 NETSCOPE / HOSTS                                                                                    
 synthetic.har · 6 requests                                                                          
-Grouped by URL host · derived counts and duration sums                                              
-┌ Hosts · alphabetical ────────────────────────────────────────────────────────────────────────────┐
+Which server? Choose a host, then Enter to see only its requests.                                   
+┌ Hosts · alphabetical · Enter filters requests ───────────────────────────────────────────────────┐
 │  HOST                                                     Count   4xx   5xx No status   Sum (ms) │
 │                                                                                                  │
 │> api.example.test                                             3     0     1         1     120.00 │
@@ -18,13 +18,13 @@ Grouped by URL host · derived counts and duration sums
 │                                                                                                  │
 │                                                                                                  │
 │Host 1 / 3                                                                                        │
-│Host: api.example.test                                                                            │
-│Statuses: 1xx 0 · 2xx 1 · 3xx 0                                                                   │
-│          4xx 0 · 5xx 1 · no status 1                                                             │
-│Requests with import warnings: 1                                                                  │
-│Reported durations are summed; requests can overlap.                                              │
-│                                                                                                  │
-│                                                                                                  │
+│SELECTED HOST · api.example.test                                                                  │
+│2xx success         ━━━━━··········· 1                                                            │
+│4xx request errors  ················ 0                                                            │
+│5xx server errors   ━━━━━··········· 1                                                            │
+│1xx interim 0 · 3xx redirect/cache 0 · no status 1                                                │
+│Warnings: 1 requests · bars show share of this host's requests                                    │
+│Enter shows requests · a restores all · requests can overlap                                      │
 │                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ↑/↓ j/k move · Enter filter · Esc back · a all · ? help · q quit                                    

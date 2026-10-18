@@ -1,20 +1,20 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 0 requests                                                                          
 Saved request · no capture · only Review → Send starts network traffic                              
-[ Edit ]  Review    Send    Result                                                                  
+[ 1 Edit ]  2 Review →  3 Send →  4 Result                                                          
+Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.                             
                                                                                                     
 ┌ Draft · Enter chooses ────────────────────┐┌ Context / retained result ──────────────────────────┐
-│Saved draft · no capture · POST · HTTP/1.1 ││No request is sent while editing.                    │
-│· 17 request body bytes                    ││Review the destination, headers and body before Send.│
-│Only Enter or s from Review sends a request││                                                     │
-│m: method POST · t: application/json · b:  ││Changing the destination clears body and header      │
-│edit body                                  ││choices.                                             │
-│> Edit URL: http://127.0.0.1:8080/books    ││Enter saves a field; Esc discards an unfinished edit.│
-│  Add a header                             ││Header values remain masked until v reveals them.    │
-│  Review request                           ││                                                     │
+│Saved draft · no capture · POST · HTTP/1.1 ││PREPARE → CHECK → SEND                               │
+│· 17 request body bytes                    ││No request is sent while editing.                    │
+│Only Enter or s from Review sends a request││Review the destination, headers and body before Send.│
+│m: method POST · t: application/json · b:  ││                                                     │
+│edit body                                  ││Changing the destination clears body and header      │
+│> Edit URL: http://127.0.0.1:8080/books    ││choices.                                             │
+│  Add a header                             ││Enter saves a field; Esc discards an unfinished edit.│
+│  Review request                           ││Header values remain masked until v reveals them.    │
+│                                           ││                                                     │
 │                                           ││No retained result yet.                              │
-│                                           ││                                                     │
-│                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │

@@ -4,8 +4,8 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · All ─────────────────────────────────────────────────────────────┐
 │#0 GET · 503                                                                  │
 │URL: https://example.test/books                                               │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
-│These HAR fields provide no packet/frame trace or stream IDs                  │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
 │No compression savings or connection reuse are established                    │
 │REDIRECT EVIDENCE                                                             │
 │Not analyzed: only statuses 301, 302, 303, 307, 308                           │
@@ -20,5 +20,5 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │Candidate #1: GET 2026-10-09T12:00:00.020Z                                    │
 │Candidate #2: GET 2026-10-09T12:00:00.030Z                                    │
 │Esc returns to the list; candidate numbers are source IDs                     │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 52–65 / 65 · ↑↓ scroll ──────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

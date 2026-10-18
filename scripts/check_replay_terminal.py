@@ -267,6 +267,7 @@ def check_captured_sse():
             cwd=WORKING_DIRECTORY, stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
         output = bytearray()
         stage = 0
+        seen = set()
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             if select.select([master], [], [], .05)[0]:
@@ -275,19 +276,21 @@ def check_captured_sse():
             if stage == 0 and 'NETSCOPE' in visible:
                 os.write(master, b'\r3')
                 stage = 1
-            if stage == 1 and 'SSE EVENTS' in visible and 'first line\\ncafé' in visible:
-                os.write(master, b'jjjjjj')
-                stage = 2
-            # Join the right pane's wrapped rows; metadata now has fewer columns.
-            detail = ''.join(line[41:99].rstrip() for line in visible.splitlines()[7:28])
-            if stage == 2 and all(marker in detail for marker in (
-                'first line\\ncafé', 'Unfinished trailing block',
-                'instruction, not an observed retry')):
-                os.write(master, b'q')
-                stage = 3
+            if stage == 1 and 'Inspector · Body' in visible:
+                # Inspect real wrapped cells while scrolling; the observations
+                # need not all fit in the same viewport.
+                detail = ''.join(line[41:99].rstrip() for line in visible.splitlines()[8:28])
+                markers = ('SSE EVENTS', 'first line\\ncafé', 'Unfinished trailing block',
+                           'instruction, not an observed retry')
+                seen.update(marker for marker in markers if ''.join(marker.split()) in ''.join(detail.split()))
+                if len(seen) == len(markers):
+                    os.write(master, b'q')
+                    stage = 3
+                else:
+                    os.write(master, b'j')
             if process.poll() is not None:
                 break
-        assert stage == 3, 'captured SSE inspection was not reached'
+        assert stage == 3, f'captured SSE inspection missed markers: {set(markers) - seen}'
         assert process.wait(timeout=3) == 0
         while select.select([master], [], [], 0)[0]:
             output.extend(os.read(master, 65536))

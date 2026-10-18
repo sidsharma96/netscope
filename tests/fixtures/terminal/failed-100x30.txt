@@ -1,21 +1,21 @@
 NETSCOPE / NEW RESULT                                                                               
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-  Edit    Review    Send  [ Result ]                                                                
+  1 Edit →  2 Review →  3 Send →[ 4 Result ]                                                        
+This is a new observation. c compares it with the captured response.                                
                                                                                                     
 ┌ Request · separate from capture ──────────┐┌ New result · scroll for details ────────────────────┐
-│GET https://example.test/api/books         ││Source #0 · GET · HTTP/1.1 · no body                 │
-│0 request body bytes · HTTP/1.1            ││Only Enter or s from Review sends a request          │
-│                                           ││New request: https://example.test/api/books          │
-│Capture unchanged                          ││Outcome: Failed: Response body ended with a read     │
-│A replay result belongs to this send, not  ││error                                                │
-│the imported capture.                      ││Elapsed: 0.025s · retained 5 bytes                   │
-│Esc returns to editing; editing requires a ││Response: HTTP/1.1 · 200                             │
-│fresh review.                              ││Response headers (v reveals values):                 │
-│                                           ││  content-type: [hidden; v reveals all values]       │
+│DESTINATION OF THIS REQUEST                ││Source #0 · GET · HTTP/1.1 · no body                 │
+│GET https://example.test/api/books         ││Only Enter or s from Review sends a request          │
+│0 request body bytes · HTTP/1.1            ││New request: https://example.test/api/books          │
+│                                           ││Outcome: Failed: Response body ended with a read     │
+│Capture unchanged                          ││error                                                │
+│A replay result belongs to this send, not  ││Elapsed: 0.025s · retained 5 bytes                   │
+│the imported capture.                      ││Response: HTTP/1.1 · 200                             │
+│Esc returns to editing; editing requires a ││Response headers (v reveals values):                 │
+│fresh review.                              ││  content-type: [hidden; v reveals all values]       │
 │                                           ││Body preview (content encoding is not decoded):      │
 │                                           ││hello                                                │
-│                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │

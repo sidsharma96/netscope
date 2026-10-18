@@ -1,10 +1,13 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 1 requests                                                                          
 Captured data · 1–6 sections · g journey · Tab changes focus                                        
-┌ Requests · focus: Tab ───────────────┐┌ Inspector · Body ────────────────────────────────────────┐
-│ ID   Verb   Code   Path              ││#0 GET · 200 OK                                           │
+┌ Requests · Enter opens details ──────┐┌ Inspector · Body ────────────────────────────────────────┐
+│ ID   Method Status Path              ││#0 GET · 200 OK                                           │
 │                                      ││URL: https://example.test/api/books                       │
-│> 0    GET    200  /api/books         ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
+│> 0    GET    200  /api/books         ││1 Summary  2 Headers  3 Body                              │
+│                                      ││4 Timing  5 Evidence  6 All                               │
+│                                      ││Bodies carry content. A missing body is not an empty body.│
+│                                      ││                                                          │
 │                                      ││Request body                                              │
 │                                      ││Request body not recorded                                 │
 │                                      ││                                                          │
@@ -22,9 +25,6 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │                                      ││                                                          │
 │                                      ││                                                          │
 │                                      ││                                                          │
-│                                      ││                                                          │
-│                                      ││                                                          │
-│                                      ││                                                          │
-│Row 1 / 1                             ││                                                          │
+│1 / 1 · ↑↓ choose · Enter inspect     ││                                                          │
 └──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

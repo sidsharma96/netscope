@@ -894,9 +894,7 @@ pub(super) fn line(frame: &mut Frame, area: Rect, text: String, style: Style) {
 pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str) {
     let area = frame.area();
     app.resize(area.width, area.height, session);
-    let base = Style::default()
-        .fg(Color::Rgb(226, 234, 230))
-        .bg(Color::Rgb(12, 17, 17));
+    let base = crate::presentation::base();
     frame.render_widget(Block::default().style(base), area);
     if !app.usable() {
         frame.render_widget(
@@ -969,7 +967,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                         app.request_order(session).len(),
                         session.requests().len()
                     ),
-                    None => "Chronological order · Reported total (ms) and recorded start".into(),
+                    None =>
+                        "Reported total (ms) · ↑↓ choose · Enter inspect · g explains timing".into(),
                 },
                 Screen::Inspector(_) if app.journey && app.notice.is_empty() =>
                     "Reported values · select a stage for its explanation".into(),
@@ -990,7 +989,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                     } else {
                         "Capture unchanged · only Review → Send starts network traffic".into()
                     },
-                Screen::Hosts => "Grouped by URL host · derived counts and duration sums".into(),
+                Screen::Hosts =>
+                    "Which server? Choose a host, then Enter to see only its requests.".into(),
             }
         ),
         Style::default().fg(Color::Rgb(128, 225, 178)),
@@ -1021,7 +1021,7 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         Style::default().fg(Color::Gray),
     );
     if app.help {
-        frame.render_widget(Paragraph::new("KEYS\n\n↑/↓ or j/k  move in the focused pane\nPgUp/PgDn   move by visible rows · Home/End first/last\nEnter / Tab focus details · Tab / Esc returns to list\n1 Summary · 2 Headers · 3 Body\n4 Timing · 5 Evidence · 6 All (complete report)\ng           journey / return · ↑/↓ stage · PgUp/PgDn explanation\nh           Hosts / return from Hosts\n/           URL search (from list)\na           clear host and URL filters (from lists)\nr           replay draft (from details)\nEsc         back / close help\n?           help · q / Ctrl+c quit and restore terminal\n\nCaptured values remain unchanged.\nJourney arrows illustrate direction, not recorded packets.\nMissing capture data remains missing.").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
+        frame.render_widget(Paragraph::new("START WITH A QUESTION\n\nWhat happened?  ↑↓ chooses a request; Enter opens its details.\nRead Summary first, then 2 Headers, 3 Body or 4 Timing.\ng opens a journey with explanations of each timing stage.\n\nFIND YOUR WAY\nThe bright border receives keys. The filled row is selected.\nTab switches list / details. Esc returns without losing your place.\n↑↓ or j/k moves; PgUp/PgDn pages; Home/End jumps to the ends.\nh groups by host; / searches URL text; a clears both filters.\n5 Evidence shows limitations and candidates; 6 All keeps every field.\n\nTRY A NEW REQUEST\nr from details opens a separate draft. Edit, review, then Send.\nOnly Send starts traffic. A replay never replaces the capture.\n\n? or Esc closes help · q or Ctrl+c quits and restores the terminal").block(Block::default().borders(Borders::ALL).title(" Help ")),body);
         return;
     }
     match app.screen {
@@ -1035,7 +1035,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
         }
         Screen::Hosts => crate::host_view::draw_hosts(frame, body, session, app),
         Screen::Overview => {
-            let block = Block::default().borders(Borders::ALL).title(" Requests ");
+            let block =
+                crate::workspace_view::block(" Requests · ↑↓ choose · Enter inspect ".into(), true);
             let inner = block.inner(body);
             frame.render_widget(block, body);
             if app.request_order(session).is_empty() {
@@ -1123,8 +1124,8 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                     );
                     let style = if selected {
                         Style::default()
-                            .fg(Color::Black)
-                            .bg(Color::Rgb(128, 225, 178))
+                            .fg(crate::presentation::MINT)
+                            .bg(crate::presentation::SELECTED)
                             .add_modifier(Modifier::BOLD)
                     } else {
                         Style::default()

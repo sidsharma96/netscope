@@ -60,9 +60,6 @@ def check(command, expected_exit, quit_key, small=False):
         assert b'\x1b[?25h' in output, 'cursor was not shown on exit'
         if quit_key:
             assert sent, 'quit path was not exercised'
-            # The title is emitted as cell differences, so HOSTS need not be
-            # contiguous. This new border label replaces only blank rule cells.
-            assert b'alphabetical' in output, 'host navigation was not exercised'
             assert b'URL search:' in output, 'search editor was not exercised'
         print('PASS:', 'keyboard exit' if quit_key else 'injected rendering error', 'restored terminal attributes, screen, and cursor')
     finally:
@@ -98,8 +95,10 @@ def check_workspace(width, height):
             ('Set up encryption', b'\x1b'),
             ('Inspector · Headers', b'3'),
             ('Response body', b'r'),
-            ('[ Edit ]', b'\x1b'),
+            ('[ 1 Edit ]', b'\x1b'),
             ('Inspector · Body', b'\t'),
+            ('NETSCOPE / CAPTURE', b'h'),
+            ('Hosts · alphabetical', b'\x1b'),
             ('NETSCOPE / CAPTURE', b'q'),
         ]
         stage = 0

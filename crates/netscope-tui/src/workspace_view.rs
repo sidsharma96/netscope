@@ -11,9 +11,9 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 pub(super) const MINT: Color = Color::Rgb(128, 225, 178);
-const MUTED: Color = Color::Rgb(159, 181, 176);
+pub(super) const MUTED: Color = Color::Rgb(159, 181, 176);
 const RULE: Color = Color::Rgb(60, 83, 77);
-const SELECTED: Color = Color::Rgb(32, 65, 54);
+pub(super) const SELECTED: Color = Color::Rgb(32, 65, 54);
 
 /// A section changes presentation, never the captured request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,7 +61,7 @@ pub(super) fn detail_size(width: u16, height: u16) -> (u16, u16) {
     } else {
         width
     };
-    (pane.saturating_sub(2), height.saturating_sub(9))
+    (pane.saturating_sub(2), height.saturating_sub(10))
 }
 
 fn timing_lines(r: &Request) -> Vec<String> {
@@ -135,8 +135,18 @@ fn sections(session: &Session, r: &Request, id: RequestId, tab: InspectorTab) ->
         InspectorTab::Summary => {
             let mut lines = vec![
                 format!("Status: {}", view::status(r)),
+                match r.status {
+                    0 => "No response status was recorded.".into(),
+                    100..=199 => "An interim response or protocol switch was recorded.".into(),
+                    200..=299 => "The server reported success for this request.".into(),
+                    300..=399 => "The response concerns redirection or cached content.".into(),
+                    400..=499 => "The server reported a problem with the request.".into(),
+                    500..=599 => "The server reported that it could not fulfil the request.".into(),
+                    _ => "This status is outside the standard HTTP classes.".into(),
+                },
+                String::new(),
+                "RECORDED MEASUREMENTS".into(),
                 format!("Reported total: {} ms", r.total_ms),
-                format!("Started: {}", terminal_text(&r.started_at)),
                 format!("Reported content: {} bytes", r.content_size),
                 format!(
                     "Content type: {}",
@@ -146,20 +156,16 @@ fn sections(session: &Session, r: &Request, id: RequestId, tab: InspectorTab) ->
                         terminal_text(&r.mime_type)
                     }
                 ),
-                String::new(),
-                "Response representation".into(),
+                "RESPONSE CONTENT".into(),
             ];
             // The label states the representation without repeating a large body.
             lines.push(view::response_body_label(r));
             lines.extend([
                 String::new(),
-                "Capture boundaries".into(),
+                "WHAT IS MISSING?".into(),
                 "Body text may differ from transferred bytes.".into(),
-                "Reported timing does not retain handshake messages.".into(),
+                "g explains timing; 6 All shows every recorded field.".into(),
                 format!("Import warnings: {} · see Evidence", r.warnings.len()),
-                String::new(),
-                "2 Headers · 3 Body · 4 Timing · 5 Evidence".into(),
-                "6 All keeps the complete captured report available.".into(),
             ]);
             if netscope_core::websocket_evidence(r).is_some() {
                 lines.push("WebSocket upgrade metadata: see Evidence.".into());
@@ -213,16 +219,28 @@ pub(super) fn detail_lines(
     if tab == InspectorTab::All {
         return view::wrapped_inspector(session, r, id, width);
     }
-    let lines = sections(session, r, id, tab);
+    let mut lines = vec![
+        match tab {
+            InspectorTab::Summary => "WHAT HAPPENED?",
+            InspectorTab::Headers => "Headers describe the message; repeated fields stay separate.",
+            InspectorTab::Body => "Bodies carry content. A missing body is not an empty body.",
+            InspectorTab::Timing => "Where was time reported? Press g to explore each stage.",
+            InspectorTab::Evidence => "What can this capture support? Candidates are not proof.",
+            InspectorTab::All => "Complete captured report",
+        }
+        .into(),
+        String::new(),
+    ];
+    lines.extend(sections(session, r, id, tab));
     lines
         .iter()
-        .flat_map(|s| view::wrap(s, usize::from(width).max(2)))
+        .flat_map(|s| view::wrap_words(s, usize::from(width).max(2)))
         .collect()
 }
 
 fn draw_list(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
     let b = block(
-        " Requests · focus: Tab ".into(),
+        " Requests · Enter opens details ".into(),
         app.screen == Screen::Overview,
     );
     let inner = b.inner(area);
@@ -236,7 +254,7 @@ fn draw_list(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
     view::line(
         frame,
         labels,
-        " ID   Verb   Code   Path".into(),
+        " ID   Method Status Path".into(),
         Style::default().fg(MUTED),
     );
     let order = app.request_order(session);
@@ -305,10 +323,14 @@ fn draw_list(frame: &mut Frame, area: Rect, session: &Session, app: &App) {
             if session.requests().is_empty() {
                 "No requests recorded".into()
             } else {
-                "No requests match these filters".into()
+                "No matches · / change search · a clear filters".into()
             }
         } else {
-            format!("Row {} / {}", app.selected.unwrap_or(0) + 1, order.len())
+            format!(
+                "{} / {} · ↑↓ choose · Enter inspect",
+                app.selected.unwrap_or(0) + 1,
+                order.len()
+            )
         },
         Style::default().fg(MUTED),
     );
@@ -367,7 +389,7 @@ pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) 
     };
     let [heading, tabs, content] = Layout::vertical([
         Constraint::Length(2),
-        Constraint::Length(1),
+        Constraint::Length(2),
         Constraint::Min(1),
     ])
     .areas(inner);
@@ -384,66 +406,68 @@ pub(super) fn draw(frame: &mut Frame, area: Rect, session: &Session, app: &App) 
         Style::default().fg(MINT),
     );
     {
-        let mut spans = Vec::new();
-        for (i, tab) in [
-            InspectorTab::Summary,
-            InspectorTab::Headers,
-            InspectorTab::Body,
-            InspectorTab::Timing,
-            InspectorTab::Evidence,
-            InspectorTab::All,
-        ]
-        .iter()
-        .enumerate()
-        {
-            spans.push(Span::styled(
-                format!("{} {} ", i + 1, tab.title()),
-                if app.inspector_tab == *tab {
-                    Style::default().fg(MINT).bg(SELECTED)
-                } else {
-                    Style::default().fg(MUTED)
-                },
-            ));
-        }
-        // Use shorter labels when the split leaves fewer terminal columns.
-        if tabs.width < 66 {
-            spans.clear();
-            for (i, label) in ["Sum", "Hdr", "Body", "Time", "Ev", "All"]
-                .iter()
-                .enumerate()
-            {
-                spans.push(Span::styled(
-                    format!("{} {label} ", i + 1),
-                    if i == app.inspector_tab as usize {
-                        Style::default().fg(MINT).bg(SELECTED)
-                    } else {
-                        Style::default().fg(MUTED)
-                    },
-                ));
-            }
-        }
-        frame.render_widget(Paragraph::new(Line::from(spans)), tabs);
+        // Two rows preserve full words in the narrow split pane.
+        let labels = ["Summary", "Headers", "Body", "Timing", "Evidence", "All"];
+        let rows = labels
+            .chunks(3)
+            .enumerate()
+            .map(|(row, labels)| {
+                Line::from(
+                    labels
+                        .iter()
+                        .enumerate()
+                        .map(|(column, label)| {
+                            let i = row * 3 + column;
+                            Span::styled(
+                                format!("{} {label}  ", i + 1),
+                                if i == app.inspector_tab as usize {
+                                    Style::default()
+                                        .fg(MINT)
+                                        .bg(SELECTED)
+                                        .add_modifier(Modifier::BOLD)
+                                } else {
+                                    Style::default().fg(MUTED)
+                                },
+                            )
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>();
+        frame.render_widget(Paragraph::new(rows), tabs);
     }
     let lines = detail_lines(session, r, id, app.inspector_tab, content.width);
+    let total = lines.len();
     let offset = if focused { app.inspector_offset } else { 0 };
     let content_lines = lines
         .into_iter()
         .skip(offset)
         .take(usize::from(content.height))
-        .map(|s| {
-            let style = if s.starts_with("WARNINGS")
-                || s.starts_with("WEBSOCKET")
-                || s.starts_with("SSE EVENTS")
-                || s.starts_with("TIMINGS")
-                || s.starts_with("REQUEST")
-                || s.starts_with("RESPONSE")
-            {
-                Style::default().fg(MINT).add_modifier(Modifier::BOLD)
-            } else {
-                Style::default()
-            };
-            Line::styled(s, style)
-        })
+        .map(crate::presentation::report_line)
         .collect::<Vec<_>>();
     frame.render_widget(Paragraph::new(content_lines), content);
+    if total > usize::from(content.height) {
+        let label = format!(
+            " {}–{} / {} · {} ",
+            offset + 1,
+            (offset + usize::from(content.height)).min(total),
+            total,
+            if focused {
+                "↑↓ scroll"
+            } else {
+                "Tab to scroll"
+            }
+        );
+        view::line(
+            frame,
+            Rect::new(
+                detail.x + 1,
+                detail.bottom().saturating_sub(1),
+                detail.width.saturating_sub(2),
+                1,
+            ),
+            label,
+            Style::default().fg(MUTED),
+        );
+    }
 }

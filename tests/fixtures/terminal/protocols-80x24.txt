@@ -4,8 +4,8 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · All ─────────────────────────────────────────────────────────────┐
 │#0 GET · 200 OK                                                               │
 │URL: https://example.test/api/books                                           │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
-│Send: 0 ms                                                                    │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
 │Waiting for response: 10 ms                                                   │
 │Receive: 5 ms                                                                 │
 │WARNINGS                                                                      │
@@ -20,5 +20,5 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │No compression savings or connection reuse are established                    │
 │REDIRECT EVIDENCE                                                             │
 │Not analyzed: only statuses 301, 302, 303, 307, 308                           │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 41–54 / 54 · ↑↓ scroll ──────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

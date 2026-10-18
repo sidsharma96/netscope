@@ -4,21 +4,21 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · Summary ─────────────────────────────────────────────────────────┐
 │#0 GET · 200 OK                                                               │
 │URL: https://example.test/api/books                                           │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
+│WHAT HAPPENED?                                                                │
+│                                                                              │
 │Status: 200 OK                                                                │
+│The server reported success for this request.                                 │
+│                                                                              │
+│RECORDED MEASUREMENTS                                                         │
 │Reported total: 45 ms                                                         │
-│Started: 2026-10-09T12:00:00Z                                                 │
 │Reported content: 2 bytes                                                     │
 │Content type: application/json                                                │
-│                                                                              │
-│Response representation                                                       │
+│RESPONSE CONTENT                                                              │
 │Exported text                                                                 │
 │                                                                              │
-│Capture boundaries                                                            │
+│WHAT IS MISSING?                                                              │
 │Body text may differ from transferred bytes.                                  │
-│Reported timing does not retain handshake messages.                           │
-│Import warnings: 0 · see Evidence                                             │
-│                                                                              │
-│2 Headers · 3 Body · 4 Timing · 5 Evidence                                    │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 1–14 / 16 · ↑↓ scroll ───────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

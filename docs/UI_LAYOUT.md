@@ -19,7 +19,7 @@ Inspector sections use number keys:
 | 5 | Evidence | Import warnings, protocol labels, WebSocket upgrade metadata, redirect/retry candidates |
 | 6 | All | Complete original report, including sizes and exporter connection/IP fields |
 
-Short tab names fit the split pane; the expanded names appear in the panel title and help. Changing section resets its scroll position. A wide list shows paths, with the selected request's host and URL available in its details. Long URLs remain fully accessible in All; the two-line heading is a clipped summary. Original previews and their existing byte limits remain unchanged; this layout adds neither decompression nor body normalization. Replay header masking follows its existing rules; captured headers retain their previous display policy.
+Full tab names occupy two rows, including in the split pane. The selected tab has a filled background. A bottom-border position label indicates additional content and whether Tab is needed before scrolling. Changing section resets its scroll position. A wide list shows paths, with the selected request's host and URL available in its details. Long URLs remain fully accessible in All; the two-line heading is a clipped summary. Original previews and their existing byte limits remain unchanged; this layout adds neither decompression nor body normalization. Replay header masking follows its existing rules; captured headers retain their previous display policy.
 
 Press g from the list or inspector for a request journey. It presents HTTP-direction arrows explicitly labelled as an illustration, reported stage values, and short explanations of those stages. It does not reconstruct DNS/TCP/TLS messages, certificate checks, server processing time, or event arrival times. Missing stages remain missing; SSL is part of connect. Press g or Esc to return to the chosen section at its beginning. Number keys also return directly to a section.
 
@@ -42,3 +42,15 @@ The strip describes the current state, not four independently clickable controls
 Fixed cell buffers cover both original sizes and new 120-column section/journey views. State tests exercise focus, identity, resize, text-key routing, missing evidence, and absence of send/save effects from rendering. Process checks exercise terminal restoration, real local sends, comparison, cancellation, saved drafts, and SSE. These checks establish specified behaviour; they do not substitute for user review of the appearance or guarantee identical Unicode rendering in every terminal.
 
 The [architecture record](ARCHITECTURE.md) explains alternatives and costs. [Development](DEVELOPMENT.md) contains the exact commands; the [book](chapters/11-drawing-and-navigation.md) explains how focus differs from selection.
+
+## Beginner guidance and activity
+
+The October 18, 2026 pass gives each inspection section a short reading prompt. Summary explains the recorded status class before listing measurements. Headers, Body, Timing and Evidence explain what to look for; All retains the full original report. Help begins with a route through inspection before listing navigation and replay controls. Empty search results offer a way to change or clear the filters.
+
+Hosts retain the alphabetical table and add outcome bars for the selected host. Each bar uses that host's request count as its denominator; the displayed counts remain exact even when the bar rounds down to a terminal cell. Other status classes and missing statuses remain labelled. Summed request durations do not measure elapsed page-load time because requests can overlap.
+
+Packet and stream views share the charcoal background, mint focus border and selected-row fill. A guide above the records explains a packet or one-way TCP stream and shows the selected endpoints when available. These arrows represent recorded direction, not packet animation or a verified receiver transcript. The record pane uses its actual remaining height for paging. The comparison view keeps aligned rows and marks differing statuses and header values with both words and amber colour.
+
+Replay has numbered Edit → Review → Send → Result steps and a short next-action hint. The active network operation has a rotating indicator, advancing every 180 ms. This indicates activity only: it is not a percentage, a handshake stage, or proof of response progress. Observed SSE data continues to use the existing retained-byte and event observations. The terminal supplies elapsed time; the renderer reads no clock. Fixed-buffer fixtures therefore keep a stable initial phase.
+
+Set `NETSCOPE_REDUCE_MOTION=1` before starting Netscope for a stationary activity indicator. Any presence of this variable enables reduced motion, including a value of `0`. Captured data, editing and completed results do not animate. Colour supplements labels and selection markers; it is never the only indication of state.

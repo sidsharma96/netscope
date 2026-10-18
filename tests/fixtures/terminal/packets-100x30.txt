@@ -1,7 +1,12 @@
 NETSCOPE / PACKETS                                                                                  
 synthetic.pcap                                                                                      
 24 packets · link 1 · offline; capture unchanged                                                    
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+What travelled between these addresses?                                                             
+A packet is one recorded piece of network traffic. Enter shows its layers.                          
+192.0.2.1:9000 ── TCP → 198.51.100.2:80                                                             
+Recorded direction only · gaps and encryption can limit what is readable                            
+                                                                                                    
+┌ Packets · ↑↓ select · Enter inspect ─────────────────────────────────────────────────────────────┐
 │> #0 · 54/54 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x02                            │
 │  #1 · 54/54 bytes · TCP 198.51.100.2:80 → 192.0.2.1:9000 · flags 0x12                            │
 │  #2 · 84/84 bytes · TCP 192.0.2.1:9000 → 198.51.100.2:80 · flags 0x18                            │
@@ -21,10 +26,5 @@ synthetic.pcap
 │  #16 · 57/60 bytes · TCP 192.0.2.1:9003 → 198.51.100.2:80 · flags 0x18                           │
 │  #17 · 54/54 bytes · TCP 192.0.2.1:9004 → 198.51.100.2:80 · flags 0x02                           │
 │  #18 · 57/57 bytes · TCP 192.0.2.1:9004 → 198.51.100.2:80 · flags 0x18                           │
-│  #19 · 54/54 bytes · TCP 192.0.2.1:9004 → 198.51.100.2:80 · flags 0x11                           │
-│  #20 · 130/130 bytes · UDP 198.51.100.2:53 → 192.0.2.1:53000                                     │
-│  #21 · 86/86 bytes · UDP [2001:db8::1]:50000 → [2001:db8::2]:3478                                │
-│  #22 · 62/62 bytes · IPv4 fragmented payload: transport/reassembly unavailable                   │
-│  #23 · 36/36 bytes · Ethernet payload type unsupported; bytes retained                           │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ↑/↓ move · Enter inspect · Esc back · p packets · s streams · ? help · q quit                       

@@ -4,16 +4,16 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · Body ────────────────────────────────────────────────────────────┐
 │#0 GET · 200 OK                                                               │
 │URL: https://example.test/api/books                                           │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
+│Bodies carry content. A missing body is not an empty body.                    │
+│                                                                              │
 │Request body                                                                  │
 │Request body not recorded                                                     │
 │                                                                              │
 │Response body                                                                 │
 │Exported text                                                                 │
 │[]                                                                            │
-│                                                                              │
-│                                                                              │
-│                                                                              │
 │                                                                              │
 │                                                                              │
 │                                                                              │

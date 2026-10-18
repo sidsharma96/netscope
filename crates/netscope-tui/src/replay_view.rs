@@ -43,6 +43,8 @@ pub struct ReplayEditor {
     result: Option<netscope_net::ReplayResult>,
     streaming: bool,
     stream: Option<netscope_net::StreamSnapshot>,
+    activity_elapsed: std::time::Duration,
+    reduced_motion: bool,
 }
 impl ReplayEditor {
     pub(crate) fn new(draft: ReplayDraft) -> Self {
@@ -61,6 +63,8 @@ impl ReplayEditor {
             result: None,
             streaming: false,
             stream: None,
+            activity_elapsed: std::time::Duration::ZERO,
+            reduced_motion: false,
         }
     }
     /// Whether ordinary characters belong to a text field.
@@ -74,6 +78,11 @@ impl ReplayEditor {
                 | Mode::SaveName(_)
                 | Mode::SavePath(_, _)
         )
+    }
+    // The terminal supplies time; drawing the same state produces the same cells.
+    pub(crate) fn update_activity(&mut self, elapsed: std::time::Duration, reduced: bool) {
+        self.activity_elapsed = elapsed;
+        self.reduced_motion = reduced;
     }
     pub(crate) fn waiting(&self) -> bool {
         matches!(self.mode, Mode::Running(_))
@@ -904,7 +913,7 @@ impl ReplayEditor {
     }
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
         let [steps, content] =
-            Layout::vertical([Constraint::Length(2), Constraint::Min(1)]).areas(area);
+            Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(area);
         let active = match self.mode {
             Mode::Review | Mode::StreamReview => 1,
             Mode::Running(_) => 2,
@@ -917,9 +926,9 @@ impl ReplayEditor {
             .map(|(i, name)| {
                 ratatui::text::Span::styled(
                     if i == active {
-                        format!("[ {name} ]")
+                        format!("[ {} {name} ]", i + 1)
                     } else {
-                        format!("  {name}  ")
+                        format!("  {} {name}{}", i + 1, if i < 3 { " →" } else { "" })
                     },
                     Style::default().fg(if i == active {
                         crate::workspace_view::MINT
@@ -929,7 +938,31 @@ impl ReplayEditor {
                 )
             })
             .collect::<Vec<_>>();
-        frame.render_widget(Paragraph::new(Line::from(spans)), steps);
+        let guidance = match self.mode {
+            Mode::Review | Mode::StreamReview => {
+                "Check the destination and included fields. s sends a real request."
+            }
+            Mode::Running(_) => {
+                "Active network operation · Esc cancels; retained data stays available."
+            }
+            Mode::Compare => "Aligned rows compare observations. ↑↓ scrolls both columns.",
+            Mode::Result if self.draft.has_capture() => {
+                "This is a new observation. c compares it with the captured response."
+            }
+            Mode::Result => "This is a new observation. Esc returns to the saved request draft.",
+            Mode::SaveReview(_, _) => {
+                "Check the file contents and path. Enter confirms the save; Esc cancels."
+            }
+            _ if self.editing() => "Editing a field · Enter saves this edit · Esc discards it.",
+            _ => "Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.",
+        };
+        frame.render_widget(
+            Paragraph::new(vec![
+                Line::from(spans),
+                Line::styled(guidance, Style::default().fg(crate::presentation::MUTED)),
+            ]),
+            steps,
+        );
         if content.width < 100 || matches!(self.mode, Mode::Compare | Mode::SaveReview(_, _)) {
             self.draw_panel(frame, content, session);
             return;
@@ -949,6 +982,7 @@ impl ReplayEditor {
         frame.render_widget(block, passive);
         let mut lines = if editing {
             vec![
+                "PREPARE → CHECK → SEND".into(),
                 "No request is sent while editing.".into(),
                 "Review the destination, headers and body before Send.".into(),
                 String::new(),
@@ -968,6 +1002,7 @@ impl ReplayEditor {
                     self.draft.body().len(),
                 ));
             vec![
+                "DESTINATION OF THIS REQUEST".into(),
                 format!("{} {}", method.as_str(), terminal_text(destination)),
                 format!("{bytes} request body bytes · HTTP/1.1"),
                 String::new(),
@@ -1027,7 +1062,15 @@ impl ReplayEditor {
         } else {
             " Draft · Enter chooses "
         };
-        let block = crate::workspace_view::block(title.into(), true);
+        let title = if self.waiting() {
+            format!(
+                " {} Active · Esc cancels ",
+                crate::presentation::activity(self.activity_elapsed, self.reduced_motion)
+            )
+        } else {
+            title.into()
+        };
+        let block = crate::workspace_view::block(title, true);
         let inner = block.inner(area);
         frame.render_widget(block, area);
         let content = self.content();
@@ -1084,8 +1127,8 @@ impl ReplayEditor {
                     .into_iter()
                     .skip(self.offset)
                     .take(height)
-                    .collect::<Vec<_>>()
-                    .join("\n"),
+                    .map(crate::presentation::report_line)
+                    .collect::<Vec<_>>(),
             ),
             inner,
         );
@@ -1118,6 +1161,42 @@ mod stream_tests {
         let mut editor = ReplayEditor::new(saved.to_draft()?);
         editor.mode = Mode::Review;
         Ok(editor)
+    }
+    #[test]
+    fn animation_changes_only_the_active_indicator_and_never_queues_work()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use ratatui::{Terminal, backend::TestBackend};
+        let mut editor = editor()?;
+        let mut counter = Some(1);
+        editor.key(KeyEvent::from(KeyCode::Char('l')), &mut counter);
+        let session = netscope_core::Session::new(vec![]);
+        let mut terminal = Terminal::new(TestBackend::new(100, 30))?;
+        editor.update_activity(std::time::Duration::from_millis(180), false);
+        terminal.draw(|f| editor.draw(f, f.area(), &session))?;
+        assert!(editor.take_send().is_none());
+        editor.key(KeyEvent::from(KeyCode::Enter), &mut counter);
+        let sent = editor.take_send().ok_or("missing explicit send")?;
+        let mut images = Vec::new();
+        for ms in [0, 180, 180] {
+            editor.update_activity(std::time::Duration::from_millis(ms), false);
+            terminal.draw(|f| editor.draw(f, f.area(), &session))?;
+            images.push(terminal.backend().buffer().clone());
+            assert!(editor.take_send().is_none());
+            assert!(editor.take_save().is_none());
+        }
+        assert_ne!(images[0], images[1]);
+        assert_eq!(images[1], images[2]);
+        for ms in [0, 180] {
+            editor.update_activity(std::time::Duration::from_millis(ms), true);
+            terminal.draw(|f| editor.draw(f, f.area(), &session))?;
+            images.push(terminal.backend().buffer().clone());
+        }
+        assert_eq!(images[3], images[4]);
+        assert_eq!(sent.0, 1);
+        assert_eq!(counter, Some(2));
+        editor.key(KeyEvent::from(KeyCode::Esc), &mut counter);
+        assert!(editor.cancellation_requested());
+        Ok(())
     }
     #[test]
     fn live_review_is_separate_and_stale_progress_cannot_replace_it() -> Result<(), &'static str> {

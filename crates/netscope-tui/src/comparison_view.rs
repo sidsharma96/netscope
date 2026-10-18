@@ -7,7 +7,7 @@ use netscope_net::{
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    widgets::{Block, Borders, Paragraph},
+    widgets::Paragraph,
 };
 
 fn preview(bytes: &[u8]) -> String {
@@ -223,12 +223,8 @@ pub(crate) fn draw(
     let [left, right] =
         Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).areas(area);
     let blocks = [
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" Captured response "),
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" Replay response "),
+        crate::workspace_view::block(" Captured response · original ".into(), false),
+        crate::workspace_view::block(" Replay response · new observation ".into(), true),
     ];
     let areas = [blocks[0].inner(left), blocks[1].inner(right)];
     frame.render_widget(&blocks[0], left);
@@ -252,8 +248,8 @@ pub(crate) fn draw(
                     .into_iter()
                     .skip(*offset)
                     .take(height)
-                    .collect::<Vec<_>>()
-                    .join("\n"),
+                    .map(crate::presentation::report_line)
+                    .collect::<Vec<_>>(),
             ),
             area,
         );

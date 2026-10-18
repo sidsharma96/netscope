@@ -4,7 +4,8 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · All ─────────────────────────────────────────────────────────────┐
 │#0 GET · 200 OK                                                               │
 │URL: https://example.test/stream/0                                            │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
 │SSE EVENTS · derived from retained text                                       │
 │Order only · event arrival times and actual browser delivery are not recorded │
 │2 complete events in examined text                                            │
@@ -19,6 +20,5 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │Last examined ID buffer: "book-7"                                             │
 │Last retry setting: "1500" ms · instruction, not an observed retry            │
 │Unfinished trailing block · no event emitted from this block                  │
-│  Retained tail: "event: pending\ndata: unfinished"                           │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 32–45 / 73 · ↑↓ scroll ──────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

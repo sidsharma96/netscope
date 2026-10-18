@@ -1,7 +1,8 @@
 NETSCOPE / REPLAY DRAFT                                                         
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-[ Edit ]  Review    Send    Result                                              
+[ 1 Edit ]  2 Review →  3 Send →  4 Result                                      
+Check the file contents and path. Enter confirms the save; Esc cancels.         
                                                                                 
 ┌ Save preview · Enter writes file · Esc cancels ──────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
@@ -19,6 +20,5 @@ Capture unchanged · only Review → Send starts network traffic
 │  "format": "plain",                                                          │
 │  "body": "",                                                                 │
 │  "headers": []                                                               │
-│}                                                                             │
 └──────────────────────────────────────────────────────────────────────────────┘
 ↑/↓ scroll · Enter writes file · Esc cancel · q quit                            

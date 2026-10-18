@@ -9,7 +9,7 @@ use netscope_core::{
 use ratatui::{
     Frame,
     layout::{Constraint, Layout},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Paragraph},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -372,6 +372,7 @@ pub fn draw_packets(
     filename: &str,
 ) {
     let area = frame.area();
+    frame.render_widget(Block::default().style(crate::presentation::base()), area);
     app.small = area.width < 80 || area.height < 24;
     if app.small {
         frame.render_widget(
@@ -386,7 +387,54 @@ pub fn draw_packets(
         Constraint::Length(1),
     ])
     .areas(area);
+    let [guide, body] = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).areas(body);
     app.page = usize::from(body.height.saturating_sub(2)).max(1);
+    let (question, explanation) = match app.screen {
+        Screen::Packets | Screen::Packet(_) => (
+            "What travelled between these addresses?",
+            "A packet is one recorded piece of network traffic. Enter shows its layers.",
+        ),
+        Screen::Streams | Screen::Stream(_) => (
+            "What bytes can be put back in order?",
+            "A stream here groups TCP bytes in one direction and connection lifetime.",
+        ),
+    };
+    let direction = match app.screen {
+        Screen::Packets | Screen::Packet(_) => capture.packets.get(app.selected).and_then(|p| {
+            p.tcp
+                .as_ref()
+                .map(|t| format!("{} ── TCP → {}", t.source, t.destination))
+                .or_else(|| {
+                    p.udp
+                        .as_ref()
+                        .map(|u| format!("{} ── UDP → {}", u.source, u.destination))
+                })
+        }),
+        Screen::Streams | Screen::Stream(_) => app
+            .analysis
+            .flows
+            .get(app.selected)
+            .map(|f| format!("{} ── recorded direction → {}", f.source, f.destination)),
+    };
+    let guide_lines = vec![
+        ratatui::text::Line::styled(
+            question,
+            ratatui::style::Style::default().fg(crate::presentation::MINT),
+        ),
+        ratatui::text::Line::from(explanation),
+        ratatui::text::Line::styled(
+            crate::view::clip(
+                &direction.unwrap_or_else(|| "No transport addresses available".into()),
+                usize::from(guide.width),
+            ),
+            ratatui::style::Style::default().fg(crate::presentation::MINT),
+        ),
+        ratatui::text::Line::styled(
+            "Recorded direction only · gaps and encryption can limit what is readable",
+            ratatui::style::Style::default().fg(crate::presentation::MUTED),
+        ),
+    ];
+    frame.render_widget(Paragraph::new(guide_lines), guide);
     let title = match app.screen {
         Screen::Packets => "PACKETS",
         Screen::Packet(_) => "PACKET LAYERS",
@@ -408,7 +456,16 @@ pub fn draw_packets(
         )),
         header,
     );
-    let block = Block::default().borders(Borders::ALL);
+    let block = crate::workspace_view::block(
+        match app.screen {
+            Screen::Packets => " Packets · ↑↓ select · Enter inspect ",
+            Screen::Streams => " One-way streams · ↑↓ select · Enter inspect ",
+            Screen::Packet(_) => " Packet layers · ↑↓ scroll · Esc returns ",
+            Screen::Stream(_) => " Reassembled evidence · ↑↓ scroll · Esc returns ",
+        }
+        .into(),
+        true,
+    );
     let inner = block.inner(body);
     frame.render_widget(block, body);
     let lines = if app.help {
@@ -512,8 +569,8 @@ pub fn draw_packets(
                 .into_iter()
                 .skip(app.offset)
                 .take(usize::from(inner.height))
-                .collect::<Vec<_>>()
-                .join("\n"),
+                .map(crate::presentation::report_line)
+                .collect::<Vec<_>>(),
         ),
         inner,
     );

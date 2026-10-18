@@ -1,9 +1,10 @@
 NETSCOPE / RESPONSE COMPARISON                                                  
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-  Edit    Review    Send  [ Result ]                                            
+  1 Edit →  2 Review →  3 Send →[ 4 Result ]                                    
+Aligned rows compare observations. ↑↓ scrolls both columns.                     
                                                                                 
-┌ Captured response ───────────────────┐┌ Replay response ─────────────────────┐
+┌ Captured response · original ────────┐┌ Replay response · new observation ───┐
 │Captured method: GET                  ││Reviewed: GET; 0 body bytes           │
 │Source #0                             ││New request; capture unchanged        │
 │https://example.test/api/books        ││https://example.test/api/books        │
@@ -19,6 +20,5 @@ Capture unchanged · only Review → Send starts network traffic
 │[]                                    ││hello                                 │
 │RESPONSE HEADERS                      ││Names ignore case; values/order exact │
 │content-type                          ││Stored values differ                  │
-│[hidden; v reveals values]            ││[hidden; v reveals values]            │
 └──────────────────────────────────────┘└──────────────────────────────────────┘
 ↑/↓ scroll both · v reveal headers · c / Esc result · q quit                    

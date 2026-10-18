@@ -166,6 +166,7 @@ fn run_app(
         let mut terminal: Terminal<CrosstermBackend<Stdout>> =
             Terminal::new(CrosstermBackend::new(io::stdout()))?;
         let mut worker: Option<(u64, netscope_net::Worker)> = None;
+        let reduced_motion = std::env::var_os("NETSCOPE_REDUCE_MOTION").is_some();
         while !app.quit {
             if let Some(editor) = &mut app.replay {
                 if let Some((path, saved)) = editor.take_save() {
@@ -204,6 +205,12 @@ fn run_app(
                 }
             }
 
+            if let Some(editor) = &mut app.replay {
+                let elapsed = editor
+                    .started_at()
+                    .map_or(std::time::Duration::ZERO, |at| at.elapsed());
+                editor.update_activity(elapsed, reduced_motion);
+            }
             let mut rendered = Ok(());
             terminal.draw(|frame| {
                 rendered = render(frame, session, &mut app, filename);

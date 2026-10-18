@@ -1,24 +1,24 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-[ Edit ]  Review    Send    Result                                                                  
+[ 1 Edit ]  2 Review →  3 Send →  4 Result                                                          
+Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.                             
                                                                                                     
 ┌ Draft · Enter chooses ────────────────────┐┌ Context / retained result ──────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body       ││No request is sent while editing.                    │
-│Only Enter or s from Review sends a request││Review the destination, headers and body before Send.│
-│URL changed; all header choices cleared;   ││                                                     │
-│body cleared                               ││Changing the destination clears body and header      │
-│m: method GET · t: bodyless · b: edit body ││choices.                                             │
-│Draft: Use an absolute HTTP(S) URL without ││Enter saves a field; Esc discards an unfinished edit.│
-│whitespace, controls, or backslashes       ││Header values remain masked until v reveals them.    │
-│> Edit URL:                                ││                                                     │
-│  [ ] X-Example: [hidden; v reveals all    ││No retained result yet.                              │
-│values]                                    ││                                                     │
+│Source #0 · GET · HTTP/1.1 · no body       ││PREPARE → CHECK → SEND                               │
+│Only Enter or s from Review sends a request││No request is sent while editing.                    │
+│URL changed; all header choices cleared;   ││Review the destination, headers and body before Send.│
+│body cleared                               ││                                                     │
+│m: method GET · t: bodyless · b: edit body ││Changing the destination clears body and header      │
+│Draft: Use an absolute HTTP(S) URL without ││choices.                                             │
+│whitespace, controls, or backslashes       ││Enter saves a field; Esc discards an unfinished edit.│
+│> Edit URL:                                ││Header values remain masked until v reveals them.    │
+│  [ ] X-Example: [hidden; v reveals all    ││                                                     │
+│values]                                    ││No retained result yet.                              │
 │  [ ] X-Example: [hidden; v reveals all    ││                                                     │
 │values]                                    ││                                                     │
 │  Add a header                             ││                                                     │
 │  Review request                           ││                                                     │
-│                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │

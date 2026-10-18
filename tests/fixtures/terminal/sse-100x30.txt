@@ -1,13 +1,14 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 4 requests                                                                          
 Captured data · 1–6 sections · g journey · Tab changes focus                                        
-┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
-│ ID   Verb   Code   Path              ││#0 GET · 200 OK                                           │
+┌ Requests · Enter opens details ──────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Method Status Path              ││#0 GET · 200 OK                                           │
 │                                      ││URL: https://example.test/stream/0                        │
-│> 0    GET    200  /stream/0          ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
-│  1    GET    200  /stream/1          ││SSE EVENTS · derived from retained text                   │
-│  2    GET    200  /stream/2          ││Order only · event arrival times and actual browser delive│
-│  3    GET    200  /stream/3          ││ry are not recorded                                       │
+│> 0    GET    200  /stream/0          ││1 Summary  2 Headers  3 Body                              │
+│  1    GET    200  /stream/1          ││4 Timing  5 Evidence  6 All                               │
+│  2    GET    200  /stream/2          ││SSE EVENTS · derived from retained text                   │
+│  3    GET    200  /stream/3          ││Order only · event arrival times and actual browser delive│
+│                                      ││ry are not recorded                                       │
 │                                      ││2 complete events in examined text                        │
 │                                      ││ID buffer starts empty here; earlier connection state is u│
 │                                      ││nknown                                                    │
@@ -24,7 +25,6 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │                                      ││Unfinished trailing block · no event emitted from this blo│
 │                                      ││ck                                                        │
 │                                      ││  Retained tail: "event: pending\ndata: unfinished"       │
-│                                      ││Blank-line boundaries do not establish that the capture is│
-│Row 1 / 4                             ││ complete                                                 │
-└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+│1 / 4 · ↑↓ choose · Enter inspect     ││Blank-line boundaries do not establish that the capture is│
+└──────────────────────────────────────┘└ 32–51 / 82 · ↑↓ scroll ──────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

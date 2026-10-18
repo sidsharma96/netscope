@@ -1,11 +1,11 @@
 NETSCOPE / INSPECTOR                                                                                
 synthetic.har · 6 requests                                                                          
 Captured data · 1–6 sections · g journey · Tab changes focus                                        
-┌ Requests · focus: Tab ───────────────┐┌ Inspector · All ─────────────────────────────────────────┐
-│ ID   Verb   Code   Path              ││#0 GET · 302 Found                                        │
+┌ Requests · Enter opens details ──────┐┌ Inspector · All ─────────────────────────────────────────┐
+│ ID   Method Status Path              ││#0 GET · 302 Found                                        │
 │                                      ││URL: https://example.test/old                             │
-│> 0    GET    302  /old               ││1 Sum 2 Hdr 3 Body 4 Time 5 Ev 6 All                      │
-│  1    GET    200  /new               ││Response label: "HTTP/1.1" -> HTTP/1.1                    │
+│> 0    GET    302  /old               ││1 Summary  2 Headers  3 Body                              │
+│  1    GET    200  /new               ││4 Timing  5 Evidence  6 All                               │
 │  2    GET    200  /new               ││Labels agree on a recognized version; this is exporter evi│
 │  3    GET    307  /unique            ││dence                                                     │
 │  4    GET    200  /final             ││General protocol behaviour, not observed messages:        │
@@ -25,6 +25,6 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │                                      ││Candidate #1: GET 2026-10-09T12:00:00.020Z                │
 │                                      ││Candidate #2: GET 2026-10-09T12:00:00.030Z                │
 │                                      ││Esc returns to the list; candidate numbers are source IDs │
-│Row 1 / 6                             ││From the list, a clears a host filter to show other hosts │
-└──────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+│1 / 6 · ↑↓ choose · Enter inspect     ││From the list, a clears a host filter to show other hosts │
+└──────────────────────────────────────┘└ 48–67 / 67 · ↑↓ scroll ──────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit                     

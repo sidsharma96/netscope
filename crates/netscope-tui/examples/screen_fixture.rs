@@ -178,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if mode == "sse" {
         for _ in 0..100 {
             let text = (0..width)
-                .map(|x| terminal.backend().buffer()[(x, 7)].symbol())
+                .map(|x| terminal.backend().buffer()[(x, 8)].symbol())
                 .collect::<String>();
             if text.contains("SSE EVENTS") {
                 break;

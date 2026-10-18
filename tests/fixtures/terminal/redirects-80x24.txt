@@ -4,8 +4,8 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 ┌ Inspector · All ─────────────────────────────────────────────────────────────┐
 │#0 GET · 302 Found                                                            │
 │URL: https://example.test/old                                                 │
-│1 Summary 2 Headers 3 Body 4 Timing 5 Evidence 6 All                          │
-│Response label: "HTTP/1.1" -> HTTP/1.1                                        │
+│1 Summary  2 Headers  3 Body                                                  │
+│4 Timing  5 Evidence  6 All                                                   │
 │Labels agree on a recognized version; this is exporter evidence               │
 │General protocol behaviour, not observed messages:                            │
 │HTTP/1.1 uses textual start lines and headers; bodies can contain binary data │
@@ -20,5 +20,5 @@ Captured data · 1–6 sections · g journey · Tab changes focus
 │Candidate #2: GET 2026-10-09T12:00:00.030Z                                    │
 │Esc returns to the list; candidate numbers are source IDs                     │
 │From the list, a clears a host filter to show other hosts                     │
-└──────────────────────────────────────────────────────────────────────────────┘
+└ 48–61 / 61 · ↑↓ scroll ──────────────────────────────────────────────────────┘
 ↑/↓ scroll · 1–6 tabs · g journey · Tab list · r replay · Esc back · ? · q quit 

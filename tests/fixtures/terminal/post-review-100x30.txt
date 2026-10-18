@@ -1,18 +1,19 @@
 NETSCOPE / REVIEW                                                                                   
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-  Edit  [ Review ]  Send    Result                                                                  
+  1 Edit →[ 2 Review ]  3 Send →  4 Result                                                          
+Check the destination and included fields. s sends a real request.                                  
                                                                                                     
 ┌ Request · separate from capture ──────────┐┌ Review · s sends ───────────────────────────────────┐
-│POST https://example.test/api/books        ││Source #0 · POST · HTTP/1.1 · 17 request body bytes  │
-│17 request body bytes · HTTP/1.1           ││Only Enter or s from Review sends a request          │
-│                                           ││Effective destination: https://example.test/api/books│
-│Capture unchanged                          ││Limits: 10 seconds total · 2 MiB response body       │
-│A replay result belongs to this send, not  ││Client-managed Content-Type: application/json        │
-│the imported capture.                      ││Client-managed Content-Length: 17 UTF-8 bytes        │
-│Esc returns to editing; editing requires a ││Outgoing body (visible; controls escaped):           │
-│fresh review.                              ││{"title":"café"}                                     │
-│                                           ││Explicit headers:                                    │
+│DESTINATION OF THIS REQUEST                ││Source #0 · POST · HTTP/1.1 · 17 request body bytes  │
+│POST https://example.test/api/books        ││Only Enter or s from Review sends a request          │
+│17 request body bytes · HTTP/1.1           ││Effective destination: https://example.test/api/books│
+│                                           ││Limits: 10 seconds total · 2 MiB response body       │
+│Capture unchanged                          ││Client-managed Content-Type: application/json        │
+│A replay result belongs to this send, not  ││Client-managed Content-Length: 17 UTF-8 bytes        │
+│the imported capture.                      ││Outgoing body (visible; controls escaped):           │
+│Esc returns to editing; editing requires a ││{"title":"café"}                                     │
+│fresh review.                              ││Explicit headers:                                    │
 │                                           ││  None selected                                      │
 │                                           ││Client-managed Host: example.test                    │
 │                                           ││Client-managed Accept-Encoding: identity             │
@@ -22,7 +23,6 @@ Capture unchanged · only Review → Send starts network traffic
 │                                           ││Captured headers left out:                           │
 │                                           ││  X-Example                                          │
 │                                           ││  X-Example                                          │
-│                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │
 │                                           ││                                                     │
