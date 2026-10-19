@@ -6,7 +6,7 @@ Active network operation · Esc cancels; retained data stays available.
                                                                                 
 ┌ ◐ Active · Esc cancels ──────────────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
-│Only Enter or s from Review sends a request                                   │
+│Draft changes stay local until you send from Review.                          │
 │Destination: https://example.test/api/books                                   │
 │Sending a new request · Esc cancels                                           │
 │10 seconds total · 2 MiB body limit · no redirects or retries                 │

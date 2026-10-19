@@ -102,7 +102,7 @@ def check(mode):
                 if stage == 0 and 'NETSCOPE' in visible:
                     if mode == 'saved':
                         assert not requests, 'opening sent without review'
-                        os.write(master, b'jj\rs')
+                        os.write(master, b'jjj\rs')
                     elif mode == 'post':
                         # Correct the final letter in the middle of the body before sending.
                         typed = post_body.replace('café'.encode(), b'cafx').replace(b'\n', b'\x0e')
@@ -114,7 +114,7 @@ def check(mode):
                     else:
                         os.write(master, b'/local\r\rrjjjj\rs')
                     stage = 1
-                if mode == 'stream' and stage == 1 and 'REVIEW LIVE SSE' in visible and '30 seconds total' in visible and 'Client-managed Accept: text/event-stream' in visible:
+                if mode == 'stream' and stage == 1 and 'REVIEW LIVE SSE' in visible and '30 seconds total' in visible:
                     assert not requests, 'reviewing live mode sent a request'
                     os.write(master, b's')
                     stage = 10

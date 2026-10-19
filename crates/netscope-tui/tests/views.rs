@@ -964,6 +964,7 @@ fn replay_edits_are_local_and_text_keys_do_not_quit() -> Result<(), Box<dyn std:
     assert_eq!(app.screen, Screen::Replay(RequestId(0)));
     press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Enter);
     assert!(
         app.replay
             .as_ref()
@@ -971,6 +972,7 @@ fn replay_edits_are_local_and_text_keys_do_not_quit() -> Result<(), Box<dyn std:
             .draft()
             .selected(0)
     );
+    press(&mut app, &session, KeyCode::Esc);
     press(&mut app, &session, KeyCode::Up);
     press(&mut app, &session, KeyCode::Enter);
     app.handle_key(
@@ -1009,12 +1011,15 @@ fn replay_review_is_masked_and_invalidated_by_editing() -> Result<(), Box<dyn st
     app.apply(Action::Replay, &session);
     press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Esc);
     for _ in 0..3 {
         press(&mut app, &session, KeyCode::Down);
     }
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Right);
     let review = render(&session, &mut app, 100, 30)?;
-    assert!(review.contains("Effective destination:"));
+    assert!(review.contains("CHOSEN BY YOU"));
     assert!(review.contains("[hidden; v reveals all values]"));
     assert!(review.contains("Enter / s send"));
     assert!(!app.quit);
@@ -1022,7 +1027,7 @@ fn replay_review_is_masked_and_invalidated_by_editing() -> Result<(), Box<dyn st
     press(&mut app, &session, KeyCode::Char('v'));
     assert!(render(&session, &mut app, 100, 30)?.contains("X-Example: one"));
     press(&mut app, &session, KeyCode::Esc);
-    for _ in 0..4 {
+    for _ in 0..3 {
         press(&mut app, &session, KeyCode::Up);
     }
     press(&mut app, &session, KeyCode::Enter);
@@ -1047,10 +1052,9 @@ fn replay_manual_headers_cancel_resize_and_ineligible_source()
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
     app.apply(Action::Replay, &session);
-    for _ in 0..3 {
-        press(&mut app, &session, KeyCode::Down);
-    }
+    press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('a'));
     for c in "X-New".chars() {
         press(&mut app, &session, KeyCode::Char(c));
     }
@@ -1068,6 +1072,8 @@ fn replay_manual_headers_cancel_resize_and_ineligible_source()
     press(&mut app, &session, KeyCode::Esc);
     assert!(app.replay.is_some());
     app.resize(80, 24, &session);
+    press(&mut app, &session, KeyCode::Down);
+    press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
     assert!(
         app.replay
@@ -1192,10 +1198,9 @@ fn invalid_manual_header_name_remains_editable() -> Result<(), Box<dyn std::erro
     let mut app = App::new(&session);
     app.apply(Action::Open, &session);
     app.apply(Action::Replay, &session);
-    for _ in 0..3 {
-        press(&mut app, &session, KeyCode::Down);
-    }
+    press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('a'));
     for c in "bad name".chars() {
         press(&mut app, &session, KeyCode::Char(c));
     }
@@ -1653,7 +1658,7 @@ fn invalid_json_cannot_send_and_the_result_retains_the_reviewed_method()
     }
     press(&mut app, &session, KeyCode::Enter);
     press(&mut app, &session, KeyCode::Enter);
-    assert!(render(&session, &mut app, 100, 30)?.contains("Content-Length: 17 UTF-8 bytes"));
+    assert!(render(&session, &mut app, 100, 30)?.contains("Body: 17 UTF-8 bytes"));
     press(&mut app, &session, KeyCode::Char('s'));
     let (id, review) = app
         .replay
@@ -1760,7 +1765,8 @@ fn save_preview_never_sends_and_loading_has_no_capture() -> Result<(), Box<dyn s
             .take_send()
             .is_none()
     );
-    // A reopened draft has only Edit URL, Add header, and Review rows.
+    // A reopened draft uses the same four fields as a captured request.
+    press(&mut reopened, &empty, KeyCode::Down);
     press(&mut reopened, &empty, KeyCode::Down);
     press(&mut reopened, &empty, KeyCode::Down);
     press(&mut reopened, &empty, KeyCode::Enter);
@@ -1879,10 +1885,9 @@ fn cursor_edits_url_headers_name_and_path_without_sending() -> Result<(), Box<dy
             .ends_with("/qooks")
     );
     assert!(!app.quit);
-    for _ in 0..3 {
-        press(&mut app, &session, KeyCode::Down);
-    }
+    press(&mut app, &session, KeyCode::Down);
     press(&mut app, &session, KeyCode::Enter);
+    press(&mut app, &session, KeyCode::Char('a'));
     for c in "X-Tet".chars() {
         press(&mut app, &session, KeyCode::Char(c));
     }
@@ -1897,6 +1902,7 @@ fn cursor_edits_url_headers_name_and_path_without_sending() -> Result<(), Box<dy
     press(&mut app, &session, KeyCode::Enter);
     let header = &app.replay.as_ref().ok_or("editor")?.draft().added()[0];
     assert_eq!((&*header.name, &*header.value), ("X-Test", "abc"));
+    press(&mut app, &session, KeyCode::Esc);
     press(&mut app, &session, KeyCode::Char('w'));
     for c in "bok".chars() {
         press(&mut app, &session, KeyCode::Char(c));
@@ -2604,11 +2610,43 @@ fn replay_guidance_follows_selection_without_sending() -> Result<(), Box<dyn std
         app.apply(Action::Replay, &session);
         assert!(render(&session, &mut app, width, height)?.contains("DESTINATION"));
         press(&mut app, &session, KeyCode::Down);
+        press(&mut app, &session, KeyCode::Enter);
         let header = render(&session, &mut app, width, height)?;
-        assert!(header.contains("CAPTURED HEADER"));
+        assert!(header.contains("CHOOSE WHAT LEAVES YOUR MACHINE"));
         assert!(header.contains("[hidden; v reveals all values]"));
         assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
         assert!(app.replay.as_mut().ok_or("editor")?.take_save().is_none());
+    }
+    Ok(())
+}
+
+#[test]
+fn replay_sections_preserve_the_reviewed_bytes_without_sending_on_navigation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for (width, height) in [(80, 24), (120, 34)] {
+        let mut app = post_app(&session, "{\"title\":\"café\"}", false);
+        assert!(render(&session, &mut app, width, height)?.contains("Body: 17 UTF-8 bytes"));
+        press(&mut app, &session, KeyCode::Right);
+        let headers = render(&session, &mut app, width, height)?;
+        assert!(headers.contains("CHOSEN BY YOU"));
+        assert!(headers.contains("Content-Length: 17"));
+        press(&mut app, &session, KeyCode::Right);
+        let body = render(&session, &mut app, width, height)?;
+        assert!(body.contains("OUTGOING BODY · 17 UTF-8 bytes"));
+        assert!(body.contains("café"));
+        assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+        press(&mut app, &session, KeyCode::Left);
+        assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+        press(&mut app, &session, KeyCode::Char('s'));
+        let (_, sent) = app
+            .replay
+            .as_mut()
+            .ok_or("editor")?
+            .take_send()
+            .ok_or("send")?;
+        assert_eq!(sent.body, "{\"title\":\"café\"}");
+        assert_eq!(sent.method, netscope_core::ReplayMethod::Post);
     }
     Ok(())
 }

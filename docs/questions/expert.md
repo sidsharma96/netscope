@@ -105,7 +105,7 @@ What happens when (a) a result arrives in the same loop iteration as an Esc key,
 
 (d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L444-L454)
+**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L444-L454)
 
 </details>
 
@@ -438,7 +438,7 @@ The terminal loop polls the worker before it handles a key, so most late Esc pre
 
 **Common wrong answer.** "The screen says the operation stopped." That was true of earlier versions, which chose the message from the cancel flag.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L161-L181) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
+**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
 
 </details>
 

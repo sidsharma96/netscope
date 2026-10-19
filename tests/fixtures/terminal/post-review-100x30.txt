@@ -6,25 +6,25 @@ Check the destination and included fields. s sends a real request.
                                                                                                     
 ┌ Review · s sends ──────────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes     ││READY FOR YOUR DECISION                 │
-│Only Enter or s from Review sends a request             ││                                        │
-│Effective destination: https://example.test/api/books   ││s sends this reviewed request. Esc      │
-│Limits: 10 seconds total · 2 MiB response body          ││returns to editing. A send is a new     │
-│Client-managed Content-Type: application/json           ││network operation, not a replay of      │
-│Client-managed Content-Length: 17 UTF-8 bytes           ││recorded timings.                       │
-│Outgoing body (visible; controls escaped):              ││                                        │
-│{"title":"café"}                                        │└────────────────────────────────────────┘
-│Explicit headers:                                       │                                          
-│  None selected                                         │                                          
-│Client-managed Host: example.test                       │                                          
-│Client-managed Accept-Encoding: identity                │                                          
-│No cookies, auth, compression, or User-Agent added      │                                          
-│implicitly                                              │                                          
-│Semantic preview; header spelling/order may differ      │                                          
-│Captured headers left out:                              │                                          
-│  X-Example                                             │                                          
-│  X-Example                                             │                                          
+│[ Summary ]   Headers   Body                            ││                                        │
+│POST https://example.test/api/books                     ││s sends this reviewed request. Esc      │
+│Headers: 0 chosen + 4 automatic                         ││returns to editing. A send is a new     │
+│Body: 17 UTF-8 bytes · application/json                 ││network operation, not a replay of      │
+│Captured headers left out: 2                            ││recorded timings.                       │
+│Original capture stays unchanged.                       ││                                        │
+│Limits: 10 seconds · 2 MiB response · no redirects      │└────────────────────────────────────────┘
 └────────────────────────────────────────────────────────┘                                          
                                                                                                     
                                                                                                     
                                                                                                     
-↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit                                  
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+←/→ section · ↑/↓ scroll · v reveal · Enter / s send · Esc edit                                     

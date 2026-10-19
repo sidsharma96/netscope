@@ -6,7 +6,7 @@ This is a new observation. c compares it with the captured response.
                                                                                 
 ┌ New result · scroll for details ─────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
-│Only Enter or s from Review sends a request                                   │
+│Draft changes stay local until you send from Review.                          │
 │New request: https://example.test/api/books                                   │
 │Outcome: Cancelled; server work cannot be undone                              │
 │Elapsed: 0.025s · retained 5 bytes                                            │

@@ -88,7 +88,7 @@ In the Netscope terminal, run:
 cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
 ```
 
-Enter opens the inspector; r opens a draft. On Edit URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Press c to compare the captured and replayed responses side by side. Up/Down scroll both columns, v reveals header values, and Esc returns to the result. The [comparison contract](contracts/m3-response-comparison.md) distinguishes stored-byte equality from incomplete or unavailable data. Esc from the result returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
+Enter opens the inspector; r opens a draft. On URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Press c to compare the captured and replayed responses side by side. Up/Down scroll both columns, v reveals header values, and Esc returns to the result. The [comparison contract](contracts/m3-response-comparison.md) distinguishes stored-byte equality from incomplete or unavailable data. Esc from the result returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
 
 ## Try a local POST
 
@@ -100,7 +100,7 @@ python3 scripts/echo_server.py
 
 Run Netscope with the same single-request fixture shown above. Open the inspector and press r. Edit the URL to `http://127.0.0.1:8080/books` **before entering a body**: saving a changed destination clears the body and header choices.
 
-Press m to switch from GET to POST. The initial format is plain text; press t to select JSON. Press b, type `{"title":"café"}`, then Enter to save. Select Review request and press Enter. Expect method POST, Content-Type application/json, and Content-Length 17. Check the destination and body, then press s to send. The response should report body_bytes 17 and echo the original text.
+Press m to switch from GET to POST. The initial format is plain text; press t to select JSON. Press b, type `{"title":"café"}`, then Enter to save. Select Review request and press Enter. Summary shows method POST and 17 body bytes. Press Right for Headers (Content-Type application/json and Content-Length 17), then Right for Body. Check the destination and body, then press s to send. The response should report body_bytes 17 and echo the original text.
 
 For a second example, return to the draft, press t to select plain text, then b and Ctrl+u to replace the body with `café`. Save and review: the body is five bytes. Ctrl+n inserts a newline while editing; Tab inserts a tab. Esc discards an unfinished edit. Stop the echo server with Ctrl+C when finished.
 
@@ -195,3 +195,6 @@ Run `NETSCOPE_REDUCE_MOTION=1 cargo run -p netscope-tui --locked --offline -- te
 From the repository root, run `cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap`. Enter opens the selected packet in Explain. Use Up/Down to choose Flags, Sequence, ACK or Layers. The first pane explains the selected field briefly; h opens or closes the detailed guidance, and Page Down reads more when needed. Press 2 for the full recorded report, 1 to return, or Esc for the list. From a list, s opens one-way streams; Enter opens the stream inspector. It selects the first missing or conflicting range when one exists. Up/Down (or j/k and Left/Right) selects ranges; Home/End reaches the first/last range. The map highlight, byte preview and explanation follow that selection. Every retained range is reachable, including those beyond the recorded report's 64-run display cut.
 
 Press b to switch text/hex, [ and ] to page through selected bytes, and h to open or close the detailed guidance. Page Up/Page Down scrolls guidance when needed. Press 2 for the recorded report and 1 to return with your range selection intact. Esc returns to the selected stream in the list. Stream #2 demonstrates a gap and #3 a conflict. The inspector works from 80×24 upward; smaller terminals pause navigation until resized.
+
+
+Replay navigation uses four draft fields (Method, URL, Headers, Body), followed by Review request. Enter opens the selected field; in Headers, Enter toggles captured fields or removes added fields, a adds a field, and Esc returns. Review starts on Summary; Left/Right or Tab switches Summary / Headers / Body. Enter or s sends from review. Existing m, t and b shortcuts remain available in the draft.

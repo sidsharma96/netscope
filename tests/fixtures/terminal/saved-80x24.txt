@@ -6,11 +6,12 @@ Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.
                                                                                 
 ┌ Draft · Enter chooses ───────────────────────────────────────────────────────┐
 │Saved draft · no capture · POST · HTTP/1.1 · 17 request body bytes            │
-│Only Enter or s from Review sends a request                                   │
-│m: method POST · t: application/json · b: edit body                           │
-│> Edit URL: http://127.0.0.1:8080/books                                       │
-│  Add a header                                                                │
-│  Review request                                                              │
+│                                                                              │
+│  Method   POST  · Enter switches GET / POST                                  │
+│> URL      http://127.0.0.1:8080/books                                        │
+│  Headers  0 included · Enter chooses fields                                  │
+│  Body     17 bytes · application/json                                        │
+│  [ Review request → ]                                                        │
 └──────────────────────────────────────────────────────────────────────────────┘
 ┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
 │DESTINATION Enter edits the URL. Changing destination clears body and header  │
@@ -20,5 +21,4 @@ Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.
                                                                                 
                                                                                 
                                                                                 
-                                                                                
-m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c qu
+↑/↓ choose · Enter edit/review · t format · w save · Esc back · q quit          

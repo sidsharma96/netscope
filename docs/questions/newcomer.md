@@ -603,7 +603,7 @@ Each Send gets an operation number. Why, and why is it an ordinary counter rathe
 
 The number lets the terminal accept a result only for the operation it is currently waiting on, so a late result from an older send cannot replace a newer one. Only the terminal thread hands out these numbers, so no other thread competes for them and an atomic counter is unnecessary. The application owns the counter, so closing an editor does not restart the sequence. When the numbers run out, sending is refused instead of wrapping back to an old number.
 
-**Learn more:** [Update one counter without losing an increment](../chapters/24-sharing-work.md#update-one-counter-without-losing-an-increment) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`next_send_id`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L217)
+**Learn more:** [Update one counter without losing an increment](../chapters/24-sharing-work.md#update-one-counter-without-losing-an-increment) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`next_send_id`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L221)
 
 </details>
 

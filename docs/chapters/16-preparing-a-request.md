@@ -8,7 +8,9 @@ Opening a [review](../GLOSSARY.md#review) prepares a possible action. It does no
 
 ## Understand the field before changing it
 
-Suppose you select a captured header while preparing the new request. You need to know both what the row contains and what pressing Enter will do. Netscope keeps the editable request together and puts a short explanation beside the selected row. For a captured header, Enter includes or excludes it; for an added header, Enter removes it. Selecting the URL instead explains that changing the destination clears the body and header choices.
+Suppose you want to send a title to a local book service. Four choices describe the request: Method, URL, Headers and Body. The method says what kind of operation you want; GET asks for a resource, while POST sends a body for the server to process. The URL identifies the destination. Headers are named fields accompanying the request, such as Accept, which describes a preferred response format. The body contains the text you want to send.
+
+Select a field with Up or Down. Enter switches the method, opens the URL or body editor, or opens the header choices. In the header list, Enter includes or excludes a captured field; on an added field, it removes that field. The Add a header row lets you supply a name and value. Esc returns to the four-field draft. A short explanation follows the selected field, so you can understand the consequence before acting.
 
 The sequence across the top names the stages: Edit, Review, Send and Result. Its highlighted stage shows where you are, not how much network work is complete. Opening Review shows the effective destination and outgoing fields; an explicit send action is still required. Scrolling, resizing or reading guidance does not send anything.
 
@@ -73,11 +75,25 @@ These choices describe the request we intend to prepare. They do not recreate a 
 
 ## Review the current draft, not an earlier one
 
-A review is a freshly validated view of the current draft. It names the source request, shows the effective destination and selected headers, and distinguishes fields managed by the client. It also states the timeout and response-size limit.
+A review is a freshly validated view of the current draft. Summary answers the first question: where will this request go, and how much information will it carry? It shows the parsed destination, chosen and automatic header counts, body size, and response limits. Left and Right switch to Headers and Body without sending anything.
+
+Headers separates fields you chose from fields the client supplies. For example, Host identifies the destination, and Content-Length states the number of body bytes. Captured fields left out of the new request appear separately. Header values remain masked until you press v. Body shows the outgoing text, with control characters displayed as escapes so a newline cannot disguise the structure of the screen.
+
+The size is measured in UTF-8 bytes, the units sent over the connection, rather than letters. For example, `café` contains four letters but takes five bytes because `é` uses two. The Body view and the automatically supplied Content-Length therefore describe the same bytes. Choosing JSON changes the format and requires valid JSON; it does not translate ordinary prose into JSON.
+
+Read this diagram from left to right. Each arrow changes what you inspect; only the last arrow starts a connection.
+
+```text
+Draft fields → Review: Summary ↔ Headers ↔ Body → explicit Send
+     ↑                   │
+     └──── Esc to edit ──┘
+```
+
+Review describes the intended request. Header spelling and order can differ when the client writes it to the connection; this is not a recorded packet transcript.
 
 Returning to edit leaves the review. You must review again after changing the draft; there is no old approval carried into a new destination. Only Enter or s from a valid review starts sending. Opening the review itself does no network work.
 
-Keeping a draft beside its review makes the relationship easier to see, but two visible panes do not grant two kinds of authority. The workbench's Edit → Review → Send → Result strip describes the current operation. It is not permission to jump past review. In a wide window, the active editor or review occupies one pane and the other supplies context; a narrower window shows the active pane alone. Neither drawing a pane nor resizing the window queues a request.
+Keeping a draft beside its review makes the relationship easier to see, but two visible panes do not grant two kinds of authority. The workbench's Edit → Review → Send → Result strip describes the current operation. It is not permission to jump past review. In a wide window, the active editor or review occupies one pane and the other supplies context; a narrower window puts the explanation beneath the active pane. Neither drawing a pane nor resizing the window queues a request.
 
 After sending, the result belongs to the accepted request. If you return to editing and change the draft, an older retained result must still name its own destination. Otherwise the screen could suggest that an answer came from a server which has not been contacted. This is the same ownership distinction as the two independent URL strings: equal-looking values can have different responsibilities and different lifetimes.
 
@@ -85,7 +101,7 @@ This separation matters during sending. A draft can change while someone is prep
 
 ## Try the boundary yourself
 
-Open the single-request sample from the [walkthrough](06-first-milestone.md), inspect it, and press r. The draft begins with the captured URL and no selected headers. Use Up and Down to choose a row, then Enter to edit the URL, toggle a captured header, remove an added header, add a header, or open the review.
+Open the single-request sample from the [walkthrough](06-first-milestone.md), inspect it, and press r. The draft begins with the captured URL and no selected headers. Use Up and Down to choose one of the four fields, then Enter to work on it. Open Headers to select a captured field or add your own. Return with Esc, choose Review request, and inspect Summary, Headers and Body with Left and Right.
 
 Text is inserted at the visible cursor. Left/Right move by displayed character groups; Home/End move to the beginning/end of the whole field. Backspace removes the preceding group, Delete removes the following group, and Ctrl+u clears the field. Enter saves, and Esc cancels that edit. Ordinary characters such as q, h, and j become text while editing. Outside text fields, q quits; Ctrl+c quits from anywhere. The [text-editing lesson](21-moving-through-text.md) explains why those movement units differ from bytes.
 
@@ -129,7 +145,7 @@ Network code lives only in `netscope-net`, and the only place that starts it is 
 
 Replay supports two methods. GET is accepted only when the capture reports a request body size of 0 and recorded no body. POST is accepted with `text/plain` or `application/json`, in UTF-8 (an optional `charset=utf-8` is the only parameter allowed), at most 16 KiB, and without a content encoding. WebSocket URLs are refused because WebSocket captures are inspection-only.
 
-**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L148-L150) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L189-L204)
+**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L152) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L189-L204)
 
 </details>
 

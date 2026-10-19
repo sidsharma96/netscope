@@ -13,6 +13,7 @@ use unicode_width::UnicodeWidthStr;
 #[derive(Debug)]
 enum Mode {
     Draft,
+    Headers,
     Url(String),
     Body(String),
     Name(String),
@@ -33,6 +34,8 @@ pub struct ReplayEditor {
     cursor: crate::text_edit::Cursor,
     mode: Mode,
     row: usize,
+    header_row: usize,
+    review_tab: usize,
     offset: usize,
     reveal: bool,
     message: String,
@@ -52,7 +55,9 @@ impl ReplayEditor {
             draft,
             cursor: crate::text_edit::Cursor::default(),
             mode: Mode::Draft,
-            row: 0,
+            row: 1,
+            header_row: 0,
+            review_tab: 0,
             offset: 0,
             reveal: false,
             message: String::new(),
@@ -121,15 +126,14 @@ impl ReplayEditor {
             Mode::StreamReview => {
                 "↑/↓ scroll · v headers · Enter / s start live SSE · Esc edit · q quit"
             }
+            Mode::Headers => "↑/↓ choose · Enter include/remove · a add · v reveal · Esc done",
             Mode::Review if self.draft.method() == ReplayMethod::Post => {
-                "↑/↓ scroll · v reveal headers · Enter / s send · Esc edit · q quit"
+                "←/→ section · ↑/↓ scroll · v reveal · Enter / s send · Esc edit"
             }
             Mode::Review => {
-                "↑/↓ scroll · v headers · Enter / s send · l review live SSE · Esc edit"
+                "←/→ section · ↑/↓ scroll · v reveal · Enter / s send · l live SSE · Esc edit"
             }
-            _ => {
-                "m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c quit"
-            }
+            _ => "↑/↓ choose · Enter edit/review · t format · w save · Esc back · q quit",
         }
     }
     /// Borrow the current draft for inspection and tests.
@@ -337,7 +341,10 @@ impl ReplayEditor {
                             value: value.clone(),
                         };
                         match self.draft.add(header) {
-                            Ok(()) => self.message = "Header added".into(),
+                            Ok(()) => {
+                                self.message = "Header added".into();
+                                self.mode = Mode::Headers;
+                            }
                             Err(reason) => {
                                 self.message = reason.into();
                                 self.mode = Mode::Value(name, value);
@@ -424,8 +431,46 @@ impl ReplayEditor {
             self.reveal = !self.reveal;
             return false;
         }
+        if matches!(self.mode, Mode::Headers) {
+            let count = self.draft.captured().len() + self.draft.added().len();
+            match key.code {
+                KeyCode::Esc => {
+                    self.mode = Mode::Draft;
+                    self.offset = 0;
+                    self.reveal = false;
+                }
+                KeyCode::Up | KeyCode::Char('k') => {
+                    self.header_row = self.header_row.saturating_sub(1)
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    self.header_row = (self.header_row + 1).min(count)
+                }
+                KeyCode::Char('a') => self.mode = Mode::Name(String::new()),
+                KeyCode::Enter => {
+                    self.message.clear();
+                    let captured = self.draft.captured().len();
+                    if self.header_row < captured {
+                        if let Err(e) = self.draft.toggle(self.header_row) {
+                            self.message = e.into();
+                        }
+                    } else if self.header_row < count {
+                        self.draft.remove(self.header_row - captured);
+                    } else {
+                        self.mode = Mode::Name(String::new());
+                    }
+                }
+                _ => {}
+            }
+            return false;
+        }
         if matches!(self.mode, Mode::Review | Mode::StreamReview) {
             match key.code {
+                KeyCode::Left | KeyCode::Right | KeyCode::Tab => {
+                    self.review_tab =
+                        (self.review_tab + if key.code == KeyCode::Left { 2 } else { 1 }) % 3;
+                    self.offset = 0;
+                }
+
                 KeyCode::Esc => {
                     self.mode = Mode::Draft;
                     self.offset = 0;
@@ -480,8 +525,6 @@ impl ReplayEditor {
             }
             return false;
         }
-        let captured = self.draft.captured().len();
-        let added = self.draft.added().len();
         match key.code {
             KeyCode::Char('w') => {
                 self.mode = Mode::SaveName(String::new());
@@ -516,23 +559,27 @@ impl ReplayEditor {
                 self.reveal = false;
             }
             KeyCode::Up | KeyCode::Char('k') => self.row = self.row.saturating_sub(1),
-            KeyCode::Down | KeyCode::Char('j') => {
-                self.row = (self.row + 1).min(captured + added + 2)
-            }
+            KeyCode::Down | KeyCode::Char('j') => self.row = (self.row + 1).min(4),
             KeyCode::Enter => {
                 self.message.clear();
                 self.reveal = false;
                 if self.row == 0 {
+                    self.draft.toggle_method();
+                    self.message =
+                        "Method changed; body cleared and format reset to plain text".into();
+                } else if self.row == 1 {
                     self.mode = Mode::Url(self.draft.url().into());
-                } else if self.row <= captured {
-                    if let Err(e) = self.draft.toggle(self.row - 1) {
-                        self.message = e.into();
+                } else if self.row == 2 {
+                    self.mode = Mode::Headers;
+                    self.header_row = 0;
+                } else if self.row == 3 {
+                    if self.draft.method() == ReplayMethod::Post {
+                        self.mode = Mode::Body(self.draft.body().into());
+                    } else {
+                        self.message = "Choose POST before editing a body".into();
                     }
-                } else if self.row <= captured + added {
-                    self.draft.remove(self.row - captured - 1);
-                } else if self.row == captured + added + 1 {
-                    self.mode = Mode::Name(String::new());
                 } else {
+                    self.review_tab = 0;
                     match self.draft.review().and_then(|r| {
                         netscope_net::validate(&r)?;
                         Ok(r)
@@ -557,7 +604,7 @@ impl ReplayEditor {
         }
     }
     fn rows(&self) -> Vec<String> {
-        let mut rows = vec![format!("Edit URL: {}", terminal_text(self.draft.url()))];
+        let mut rows = Vec::new();
         for (i, h) in self.draft.captured().iter().enumerate() {
             rows.push(format!(
                 "[{}] {}: {}{}",
@@ -578,7 +625,7 @@ impl ReplayEditor {
             ));
         }
         rows.push("Add a header".into());
-        rows.push("Review request".into());
+
         rows
     }
     fn stream_lines(&self) -> Vec<String> {
@@ -655,27 +702,60 @@ impl ReplayEditor {
                     format!("{bytes} request body bytes")
                 }
             ),
-            "Only Enter or s from Review sends a request".into(),
+            "Draft changes stay local until you send from Review.".into(),
         ];
+        if matches!(
+            self.mode,
+            Mode::Draft | Mode::Headers | Mode::Review | Mode::StreamReview
+        ) {
+            lines.pop();
+        }
         if !self.message.is_empty() {
             lines.push(self.message.clone());
         }
         match &self.mode {
             Mode::Draft => {
-                lines.push(format!(
-                    "m: method {} · t: {} · b: edit body",
-                    self.draft.method().as_str(),
-                    if self.draft.method() == ReplayMethod::Get {
-                        "bodyless"
-                    } else {
-                        self.draft.format().content_type()
-                    }
-                ));
                 if let Err(e) = self.draft.review() {
                     lines.push(format!("Draft: {e}"));
                 }
+                let selected = self
+                    .draft
+                    .captured()
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| self.draft.selected(*i))
+                    .count()
+                    + self.draft.added().len();
+                let fields = [
+                    format!(
+                        "Method   {}  · Enter switches GET / POST",
+                        self.draft.method().as_str()
+                    ),
+                    format!("URL      {}", terminal_text(self.draft.url())),
+                    format!("Headers  {selected} included · Enter chooses fields"),
+                    if self.draft.method() == ReplayMethod::Get {
+                        "Body     None · choose POST to send text".into()
+                    } else {
+                        format!(
+                            "Body     {} bytes · {}",
+                            self.draft.body().len(),
+                            self.draft.format().content_type()
+                        )
+                    },
+                    "[ Review request → ]".into(),
+                ];
+                lines.push(String::new());
+                for (i, field) in fields.iter().enumerate() {
+                    lines.push(format!("{} {field}", if i == self.row { ">" } else { " " }));
+                }
+            }
+            Mode::Headers => {
+                lines.push("Include captured fields · remove added fields".into());
                 for (i, row) in self.rows().iter().enumerate() {
-                    lines.push(format!("{} {row}", if i == self.row { ">" } else { " " }));
+                    lines.push(format!(
+                        "{} {row}",
+                        if i == self.header_row { ">" } else { " " }
+                    ));
                 }
             }
             Mode::SaveReview(path, saved) => {
@@ -826,84 +906,119 @@ impl ReplayEditor {
                 }
             }
             Mode::Review | Mode::StreamReview => {
+                lines.push(
+                    ["Summary", "Headers", "Body"]
+                        .iter()
+                        .enumerate()
+                        .map(|(i, name)| {
+                            if i == self.review_tab {
+                                format!("[ {name} ]")
+                            } else {
+                                (*name).into()
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join("   "),
+                );
                 if let Ok(r) = self.draft.review() {
-                    lines.push(format!(
-                        "Effective destination: {}",
-                        terminal_text(&r.destination)
-                    ));
-                    if let Some(fragment) = r.fragment {
-                        lines.push(format!(
-                            "Fragment omitted from request: {}",
-                            terminal_text(&fragment)
-                        ));
-                    }
-                    if matches!(self.mode, Mode::StreamReview) {
-                        lines
-                            .push("LIVE SSE · GET · HTTP/1.1 · verified HTTPS certificates".into());
-                        lines.push(
-                            "Limits: 30 seconds total · 64 KiB raw body · 100 complete events"
-                                .into(),
-                        );
-                        lines.push("Client-managed Accept: text/event-stream".into());
-                        lines.push(
-                            "Local boundary observation times; no redirects or reconnection".into(),
-                        );
-                        lines.push("Requires 200, text/event-stream and uncompressed UTF-8".into());
-                    } else {
-                        lines.push("Limits: 10 seconds total · 2 MiB response body".into());
-                    }
-                    if r.method == ReplayMethod::Post {
-                        lines.push(format!(
-                            "Client-managed Content-Type: {}",
-                            r.format.content_type()
-                        ));
-                        lines.push(format!(
-                            "Client-managed Content-Length: {} UTF-8 bytes",
-                            r.body.len()
-                        ));
-                        lines.push("Outgoing body (visible; controls escaped):".into());
-                        lines.push(if r.body.is_empty() {
-                            "[empty body]".into()
-                        } else {
-                            terminal_text(&r.body)
-                        });
-                    }
-                    lines.push("Explicit headers:".into());
-                    if r.headers.is_empty() {
-                        lines.push("  None selected".into());
-                    }
-                    for h in r.headers {
-                        lines.push(format!(
-                            "  {}: {}",
-                            terminal_text(&h.name),
-                            self.value(&h.value)
-                        ));
-                    }
-                    lines.push(format!(
-                        "Client-managed Host: {}",
-                        terminal_text(&r.authority)
-                    ));
-                    lines.push("Client-managed Accept-Encoding: identity".into());
-                    lines.push(
-                        if r.method == ReplayMethod::Get {
-                            "No body framing, cookies, auth, or User-Agent added implicitly"
-                        } else {
-                            "No cookies, auth, compression, or User-Agent added implicitly"
-                        }
-                        .into(),
-                    );
-                    lines.push("Semantic preview; header spelling/order may differ".into());
-                    lines.push("Captured headers left out:".into());
-                    for (i, h) in self.draft.captured().iter().enumerate() {
-                        if !self.draft.selected(i) {
+                    match self.review_tab {
+                        0 => {
                             lines.push(format!(
-                                "  {}{}",
-                                terminal_text(&h.name),
-                                self.draft
-                                    .header_error(i)
-                                    .map(|e| format!(": {e}"))
-                                    .unwrap_or_default()
+                                "{} {}",
+                                r.method.as_str(),
+                                terminal_text(&r.destination)
                             ));
+                            lines.push(format!(
+                                "Headers: {} chosen + {} automatic",
+                                r.headers.len(),
+                                if r.method == ReplayMethod::Post {
+                                    4
+                                } else if matches!(self.mode, Mode::StreamReview) {
+                                    3
+                                } else {
+                                    2
+                                }
+                            ));
+                            lines.push(format!(
+                                "Body: {} UTF-8 bytes · {}",
+                                r.body.len(),
+                                if r.method == ReplayMethod::Post {
+                                    r.format.content_type()
+                                } else {
+                                    "no body"
+                                }
+                            ));
+                            let omitted = self
+                                .draft
+                                .captured()
+                                .iter()
+                                .enumerate()
+                                .filter(|(i, _)| !self.draft.selected(*i))
+                                .count();
+                            lines.push(format!("Captured headers left out: {omitted}"));
+                            if let Some(fragment) = r.fragment {
+                                lines.push(format!(
+                                    "Fragment omitted from request: {}",
+                                    terminal_text(&fragment)
+                                ));
+                            }
+                            lines.push("Original capture stays unchanged.".into());
+                            lines.push(
+                                if matches!(self.mode, Mode::StreamReview) {
+                                    "LIVE SSE · 30 seconds total · 64 KiB · 100 events"
+                                } else {
+                                    "Limits: 10 seconds · 2 MiB response · no redirects"
+                                }
+                                .into(),
+                            );
+                        }
+                        1 => {
+                            lines.push("CHOSEN BY YOU".into());
+                            if r.headers.is_empty() {
+                                lines.push("None selected".into());
+                            }
+                            for h in r.headers {
+                                lines.push(format!(
+                                    "{}: {}",
+                                    terminal_text(&h.name),
+                                    self.value(&h.value)
+                                ));
+                            }
+                            lines.push("AUTOMATIC · required for this request".into());
+                            lines.push(format!("Host: {}", terminal_text(&r.authority)));
+                            lines.push("Accept-Encoding: identity".into());
+                            if matches!(self.mode, Mode::StreamReview) {
+                                lines.push("Accept: text/event-stream (client managed)".into());
+                            }
+                            if r.method == ReplayMethod::Post {
+                                lines.push(format!("Content-Type: {}", r.format.content_type()));
+                                lines.push(format!("Content-Length: {}", r.body.len()));
+                            }
+                            lines.push("LEFT OUT · captured fields".into());
+                            for (i, h) in self.draft.captured().iter().enumerate() {
+                                if !self.draft.selected(i) {
+                                    lines.push(format!(
+                                        "{}{}",
+                                        terminal_text(&h.name),
+                                        self.draft
+                                            .header_error(i)
+                                            .map(|e| format!(": {e}"))
+                                            .unwrap_or_default()
+                                    ));
+                                }
+                            }
+                            lines.push("Header spelling and order may differ on the wire.".into());
+                        }
+                        _ => {
+                            lines.push(format!("OUTGOING BODY · {} UTF-8 bytes", r.body.len()));
+                            lines.push(if r.method == ReplayMethod::Get {
+                                "GET sends no body.".into()
+                            } else if r.body.is_empty() {
+                                "[empty body]".into()
+                            } else {
+                                terminal_text(&r.body)
+                            });
+                            lines.push("Control characters are escaped for display.".into());
                         }
                     }
                 }
@@ -968,7 +1083,7 @@ impl ReplayEditor {
             return;
         }
         let mut context = self.context();
-        if matches!(self.mode, Mode::Draft) && self.result.is_some() {
+        if matches!(self.mode, Mode::Draft | Mode::Headers) && self.result.is_some() {
             context.push("o opens the retained result (from an earlier send).".into());
         }
         if content.width < 100 {
@@ -1039,12 +1154,16 @@ impl ReplayEditor {
     }
     fn context(&self) -> Vec<String> {
         match &self.mode {
-            Mode::Draft if self.row == 0 => vec!["DESTINATION".into(),"Enter edits the URL. Changing destination clears body and header choices; the original capture stays unchanged.".into()],
-            Mode::Draft if self.row <= self.draft.captured().len() => vec!["CAPTURED HEADER".into(),"Enter includes or excludes this field. Headers carry request metadata; values stay hidden until v reveals them.".into()],
-            Mode::Draft if self.row <= self.draft.captured().len()+self.draft.added().len() => vec!["ADDED HEADER".into(),"Enter removes this added field from the draft. The recorded request stays unchanged.".into()],
-            Mode::Draft if self.row == self.draft.captured().len()+self.draft.added().len()+1 => vec!["ADD REQUEST METADATA".into(),"Enter adds a header name and value. Review shows which fields will be included in the new request.".into()],
-            Mode::Draft => vec!["CHECK BEFORE SENDING".into(),"Enter opens Review. Nothing is sent yet; check the effective destination and included fields there.".into()],
-            Mode::Review | Mode::StreamReview => vec!["READY FOR YOUR DECISION".into(),"s sends this reviewed request. Esc returns to editing. A send is a new network operation, not a replay of recorded timings.".into()],
+            Mode::Draft if self.row == 0 => vec!["METHOD".into(), "GET asks for a resource. POST sends a body for the server to process. Enter switches; changing method clears the body.".into()],
+            Mode::Draft if self.row == 1 => vec!["DESTINATION".into(), "Enter edits the URL. Changing destination clears body and header choices; the original capture stays unchanged.".into()],
+            Mode::Draft if self.row == 2 => vec!["REQUEST HEADERS".into(), "Headers are named fields sent with the request, such as Accept. Enter chooses what to include. Values stay hidden until v.".into()],
+            Mode::Draft if self.row == 3 => vec!["REQUEST BODY".into(), "The body is the text sent to the server. Choose POST, then Enter to edit. t switches plain text / JSON; it does not rewrite your text.".into()],
+            Mode::Headers => vec!["CHOOSE WHAT LEAVES YOUR MACHINE".into(), "Enter includes or excludes a captured field, or removes an added field. Blocked fields are managed by the client. Esc returns to the draft.".into()],
+            Mode::Draft => vec!["CHECK BEFORE SENDING".into(), "Enter opens Summary. Use left/right to inspect Headers and Body. Nothing is sent until you confirm in Review.".into()],
+            Mode::Review if self.review_tab == 1 => vec!["WHAT THE SERVER WILL RECEIVE".into(), "Chosen fields are your selections. Automatic fields describe the destination and body. Left-out fields are not sent. v reveals values.".into()],
+            Mode::Review if self.review_tab == 2 => vec!["TEXT AND BYTES".into(), "UTF-8 encodes text as bytes. A letter can use more than one byte; Content-Length counts bytes, not letters. Esc returns to editing.".into()],
+            Mode::StreamReview => vec!["LIVE EVENT STREAM".into(), "The client supplies Accept: text/event-stream. Requires status 200 and uncompressed UTF-8 events. No reconnect is scheduled. s starts; Esc edits.".into()],
+            Mode::Review => vec!["READY FOR YOUR DECISION".into(),"s sends this reviewed request. Esc returns to editing. A send is a new network operation, not a replay of recorded timings.".into()],
             Mode::Running(_) => vec!["WAITING FOR THE SERVER".into(),"Esc cancels local I/O. The server may already have acted; cancellation cannot undo that work.".into()],
             Mode::Result if self.draft.has_capture() => vec!["A NEW OBSERVATION".into(),"c compares with the captured response. A partial result contains only bytes received before the stop.".into()],
             Mode::Result => vec!["A NEW OBSERVATION".into(),"Esc returns to the saved draft. A partial result contains only bytes received before the stop.".into()],
@@ -1140,7 +1259,7 @@ impl ReplayEditor {
             if row >= self.offset + height {
                 self.offset = row + 1 - height;
             }
-        } else if matches!(self.mode, Mode::Draft) {
+        } else if matches!(self.mode, Mode::Draft | Mode::Headers) {
             let selected = lines.iter().position(|s| s.starts_with("> ")).unwrap_or(0);
             if selected < self.offset {
                 self.offset = selected;
@@ -1256,7 +1375,13 @@ mod stream_tests {
         assert_eq!(counter, Some(7));
         let review = editor.content().join("\n");
         assert!(review.contains("30 seconds total"));
-        assert!(review.contains("Client-managed Accept: text/event-stream"));
+        editor.key(KeyEvent::from(KeyCode::Right), &mut counter);
+        assert!(
+            editor
+                .content()
+                .join("\n")
+                .contains("Accept: text/event-stream")
+        );
         editor.key(KeyEvent::from(KeyCode::Enter), &mut counter);
         assert!(editor.streaming_requested());
         assert_eq!(editor.take_send().ok_or("No send")?.0, 7);

@@ -6,7 +6,7 @@ Check the file contents and path. Enter confirms the save; Esc cancels.
                                                                                 
 ┌ Save preview · Enter writes file · Esc cancels ──────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
-│Only Enter or s from Review sends a request                                   │
+│Draft changes stay local until you send from Review.                          │
 │SAVE TO: book.json                                                            │
 │Enter replaces this file; Esc cancels. No request will be sent.               │
 │Plain-text file: URL, body and other headers may contain secrets.             │

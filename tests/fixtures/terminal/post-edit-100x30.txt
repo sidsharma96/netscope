@@ -6,7 +6,7 @@ Editing a field · Enter saves this edit · Esc discards it.
                                                                                                     
 ┌ Editing · Enter saves ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes     ││EDITING LOCAL TEXT                      │
-│Only Enter or s from Review sends a request             ││                                        │
+│Draft changes stay local until you send from Review.    ││                                        │
 │EDIT BODY · Ctrl+n newline · Tab inserts tab            ││Enter keeps this edit; Esc discards it. │
 │←/→ move · Home/End start/end · Backspace/Delete remove ││Editing never sends a request.          │
 │· Ctrl+u clear                                          ││                                        │
