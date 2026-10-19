@@ -1,24 +1,24 @@
 NETSCOPE / REPLAY DRAFT                                                         
 synthetic.har · 1 requests                                                      
-Capture unchanged · only Review → Send starts network traffic                   
+Capture unchanged                                                               
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                    
-Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.         
                                                                                 
-┌ Draft · Enter chooses ───────────────────────────────────────────────────────┐
+┌ Request ─────────────────────────────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                          │
 │URL changed; all header choices cleared; body cleared                         │
 │Draft: Use an absolute HTTP(S) URL without whitespace, controls, or           │
 │backslashes                                                                   │
 │                                                                              │
-│  Method   GET  · Enter switches GET / POST                                   │
+│  Method   GET                                                                │
 │> URL                                                                         │
-│  Headers  0 included · Enter chooses fields                                  │
-│  Body     None · choose POST to send text                                    │
+│  Headers  0 included                                                         │
+│  Body     None (GET)                                                         │
 │  [ Review request → ]                                                        │
 └──────────────────────────────────────────────────────────────────────────────┘
-┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
-│DESTINATION Enter edits the URL. Changing destination clears body and header  │
-│choices; the original capture stays unchanged.                                │
-└──────────────────────────────────────────────────────────────────────────────┘
+                                                                                
+ DESTINATION Changing the URL clears body and header choices. The capture stays 
+ unchanged.                                                                     
+                                                                                
+                                                                                
                                                                                 
 ↑/↓ choose · Enter edit/review · t format · w save · Esc back · q quit          

@@ -1,12 +1,11 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
-Check the file contents and path. Enter confirms the save; Esc cancels.                             
                                                                                                     
 ┌ Save preview · Enter writes file · Esc cancels ──────────────────────────────────────────────────┐
 │Source #0 · GET · HTTP/1.1 · no body                                                              │
-│Draft changes stay local until you send from Review.                                              │
+│                                                                                                  │
 │SAVE TO: book.json                                                                                │
 │Enter replaces this file; Esc cancels. No request will be sent.                                   │
 │Plain-text file: URL, body and other headers may contain secrets.                                 │
@@ -22,6 +21,7 @@ Check the file contents and path. Enter confirms the save; Esc cancels.
 │  "headers": []                                                                                   │
 │}                                                                                                 │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

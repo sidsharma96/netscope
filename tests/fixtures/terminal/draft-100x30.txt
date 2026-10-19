@@ -1,18 +1,18 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
-Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.                             
                                                                                                     
-┌ Draft · Enter chooses ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body                    ││DESTINATION                             │
-│                                                        ││                                        │
-│  Method   GET  · Enter switches GET / POST             ││Enter edits the URL. Changing           │
-│> URL      https://example.test/api/books               ││destination clears body and header      │
-│  Headers  0 included · Enter chooses fields            ││choices; the original capture stays     │
-│  Body     None · choose POST to send text              ││unchanged.                              │
-│  [ Review request → ]                                  ││                                        │
-└────────────────────────────────────────────────────────┘└────────────────────────────────────────┘
+┌ Request ───────────────────────────────────────────────┐                                          
+│Source #0 · GET · HTTP/1.1 · no body                    │ DESTINATION                              
+│                                                        │                                          
+│  Method   GET                                          │ Changing the URL clears body and header  
+│> URL      https://example.test/api/books               │ choices. The capture stays unchanged.    
+│  Headers  0 included                                   │                                          
+│  Body     None (GET)                                   │                                          
+│  [ Review request → ]                                  │                                          
+└────────────────────────────────────────────────────────┘                                          
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

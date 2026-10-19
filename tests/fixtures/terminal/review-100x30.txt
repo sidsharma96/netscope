@@ -1,19 +1,19 @@
 NETSCOPE / REVIEW                                                                                   
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
  1 Edit → [ 2 Review ] →  3 Send →  4 Result                                                        
-Check the destination and included fields. s sends a real request.                                  
                                                                                                     
-┌ Review · s sends ──────────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body                    ││READY FOR YOUR DECISION                 │
-│[ Summary ]   Headers   Body                            ││                                        │
-│GET https://example.test/api/books                      ││s sends this reviewed request. Esc      │
-│Headers: 0 chosen + 2 automatic                         ││returns to editing. A send is a new     │
-│Body: 0 UTF-8 bytes · no body                           ││network operation, not a replay of      │
-│Captured headers left out: 2                            ││recorded timings.                       │
-│Original capture stays unchanged.                       ││                                        │
-│Limits: 10 seconds · 2 MiB response · no redirects      │└────────────────────────────────────────┘
+┌ Request ───────────────────────────────────────────────┐                                          
+│Source #0 · GET · HTTP/1.1 · no body                    │ READY FOR YOUR DECISION                  
+│[ Summary ]   Headers   Body                            │                                          
+│GET https://example.test/api/books                      │ Sending makes a real request. The        
+│Headers: 0 chosen + 2 automatic                         │ server may change data in response.      
+│Body: 0 UTF-8 bytes · no body                           │                                          
+│Captured headers left out: 2                            │                                          
+│Original capture stays unchanged.                       │                                          
+│Limits: 10 seconds · 2 MiB response · no redirects      │                                          
 └────────────────────────────────────────────────────────┘                                          
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

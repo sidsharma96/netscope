@@ -984,10 +984,9 @@ pub fn draw(frame: &mut Frame, session: &Session, app: &mut App, filename: &str)
                         .as_ref()
                         .is_some_and(|e| !e.draft().has_capture())
                     {
-                        "Saved request · no capture · only Review → Send starts network traffic"
-                            .into()
+                        "Saved request · no capture".into()
                     } else {
-                        "Capture unchanged · only Review → Send starts network traffic".into()
+                        "Capture unchanged".into()
                     },
                 Screen::Hosts =>
                     "Which server? Choose a host, then Enter to see only its requests.".into(),

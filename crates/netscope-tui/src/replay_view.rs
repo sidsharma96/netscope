@@ -702,7 +702,7 @@ impl ReplayEditor {
                     format!("{bytes} request body bytes")
                 }
             ),
-            "Draft changes stay local until you send from Review.".into(),
+            String::new(),
         ];
         if matches!(
             self.mode,
@@ -727,14 +727,11 @@ impl ReplayEditor {
                     .count()
                     + self.draft.added().len();
                 let fields = [
-                    format!(
-                        "Method   {}  · Enter switches GET / POST",
-                        self.draft.method().as_str()
-                    ),
+                    format!("Method   {}", self.draft.method().as_str()),
                     format!("URL      {}", terminal_text(self.draft.url())),
-                    format!("Headers  {selected} included · Enter chooses fields"),
+                    format!("Headers  {selected} included"),
                     if self.draft.method() == ReplayMethod::Get {
-                        "Body     None · choose POST to send text".into()
+                        "Body     None (GET)".into()
                     } else {
                         format!(
                             "Body     {} bytes · {}",
@@ -787,7 +784,7 @@ impl ReplayEditor {
                             "SAVE PATH · existing file replaced only after confirmation"
                         }
                         Mode::Url(_) => "EDIT URL",
-                        Mode::Body(_) => "EDIT BODY · Ctrl+n newline · Tab inserts tab",
+                        Mode::Body(_) => "EDIT BODY",
                         Mode::Name(_) => "NEW HEADER NAME",
                         _ => "NEW HEADER VALUE",
                     }
@@ -797,7 +794,7 @@ impl ReplayEditor {
                     "←/→ move · Home/End start/end · Backspace/Delete remove · Ctrl+u clear".into(),
                 );
                 lines.push(terminal_text(s));
-                lines.push("[type at cursor · Enter saves · Esc cancels]".into());
+                lines.push("".into());
             }
             Mode::Running(_) => {
                 if let Ok(review) = self.draft.review() {
@@ -1028,7 +1025,7 @@ impl ReplayEditor {
     }
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
         let [steps, content] =
-            Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(area);
+            Layout::vertical([Constraint::Length(2), Constraint::Min(1)]).areas(area);
         let active = match self.mode {
             Mode::Review | Mode::StreamReview => 1,
             Mode::Running(_) => 2,
@@ -1053,31 +1050,7 @@ impl ReplayEditor {
                 )
             })
             .collect::<Vec<_>>();
-        let guidance = match self.mode {
-            Mode::Review | Mode::StreamReview => {
-                "Check the destination and included fields. s sends a real request."
-            }
-            Mode::Running(_) => {
-                "Active network operation · Esc cancels; retained data stays available."
-            }
-            Mode::Compare => "Aligned rows compare observations. ↑↓ scrolls both columns.",
-            Mode::Result if self.draft.has_capture() => {
-                "This is a new observation. c compares it with the captured response."
-            }
-            Mode::Result => "This is a new observation. Esc returns to the saved request draft.",
-            Mode::SaveReview(_, _) => {
-                "Check the file contents and path. Enter confirms the save; Esc cancels."
-            }
-            _ if self.editing() => "Editing a field · Enter saves this edit · Esc discards it.",
-            _ => "Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.",
-        };
-        frame.render_widget(
-            Paragraph::new(vec![
-                Line::from(spans),
-                Line::styled(guidance, Style::default().fg(crate::presentation::MUTED)),
-            ]),
-            steps,
-        );
+        frame.render_widget(Paragraph::new(Line::from(spans)), steps);
         if matches!(self.mode, Mode::Compare | Mode::SaveReview(_, _)) {
             self.draw_panel(frame, content, session);
             return;
@@ -1115,9 +1088,9 @@ impl ReplayEditor {
             };
             let note = Rect::new(content.x, main.bottom(), content.width, note_height);
             self.draw_panel(frame, main, session);
-            let b = crate::workspace_view::block(" NEXT / WHY ".into(), false);
+            let b = crate::workspace_view::block(String::new(), false);
             let inner = b.inner(note);
-            frame.render_widget(b, note);
+
             frame.render_widget(
                 Paragraph::new(context.join(" ")).wrap(ratatui::widgets::Wrap { trim: false }),
                 inner,
@@ -1139,9 +1112,9 @@ impl ReplayEditor {
             height: right.height.min((lines.len() + 2) as u16),
             ..right
         };
-        let b = crate::workspace_view::block(" NEXT / WHY ".into(), false);
+        let b = crate::workspace_view::block(String::new(), false);
         let inner = b.inner(right);
-        frame.render_widget(b, right);
+
         frame.render_widget(
             Paragraph::new(
                 lines
@@ -1154,20 +1127,20 @@ impl ReplayEditor {
     }
     fn context(&self) -> Vec<String> {
         match &self.mode {
-            Mode::Draft if self.row == 0 => vec!["METHOD".into(), "GET asks for a resource. POST sends a body for the server to process. Enter switches; changing method clears the body.".into()],
-            Mode::Draft if self.row == 1 => vec!["DESTINATION".into(), "Enter edits the URL. Changing destination clears body and header choices; the original capture stays unchanged.".into()],
-            Mode::Draft if self.row == 2 => vec!["REQUEST HEADERS".into(), "Headers are named fields sent with the request, such as Accept. Enter chooses what to include. Values stay hidden until v.".into()],
-            Mode::Draft if self.row == 3 => vec!["REQUEST BODY".into(), "The body is the text sent to the server. Choose POST, then Enter to edit. t switches plain text / JSON; it does not rewrite your text.".into()],
-            Mode::Headers => vec!["CHOOSE WHAT LEAVES YOUR MACHINE".into(), "Enter includes or excludes a captured field, or removes an added field. Blocked fields are managed by the client. Esc returns to the draft.".into()],
-            Mode::Draft => vec!["CHECK BEFORE SENDING".into(), "Enter opens Summary. Use left/right to inspect Headers and Body. Nothing is sent until you confirm in Review.".into()],
-            Mode::Review if self.review_tab == 1 => vec!["WHAT THE SERVER WILL RECEIVE".into(), "Chosen fields are your selections. Automatic fields describe the destination and body. Left-out fields are not sent. v reveals values.".into()],
-            Mode::Review if self.review_tab == 2 => vec!["TEXT AND BYTES".into(), "UTF-8 encodes text as bytes. A letter can use more than one byte; Content-Length counts bytes, not letters. Esc returns to editing.".into()],
+            Mode::Draft if self.row == 0 => vec!["METHOD".into(), "GET asks for a resource. POST sends a body. Enter switches method and clears the body.".into()],
+            Mode::Draft if self.row == 1 => vec!["DESTINATION".into(), "Changing the URL clears body and header choices. The capture stays unchanged.".into()],
+            Mode::Draft if self.row == 2 => vec!["REQUEST HEADERS".into(), "Headers carry information such as the preferred response format. Values stay hidden until v.".into()],
+            Mode::Draft if self.row == 3 => vec!["REQUEST BODY".into(), "The body is text sent to the server. POST allows a body; t switches plain text / JSON.".into()],
+            Mode::Headers => vec!["CHOOSE WHAT LEAVES YOUR MACHINE".into(), "Choose which fields to send. Blocked entries explain why they cannot be copied.".into()],
+            Mode::Draft => vec!["CHECK BEFORE SENDING".into(), "Review the destination, headers and body before sending.".into()],
+            Mode::Review if self.review_tab == 1 => vec!["WHAT THE SERVER WILL RECEIVE".into(), "Automatic fields describe the destination and body. Left-out fields are not sent.".into()],
+            Mode::Review if self.review_tab == 2 => vec!["TEXT AND BYTES".into(), "UTF-8 encodes text as bytes. Content-Length counts bytes, not letters.".into()],
             Mode::StreamReview => vec!["LIVE EVENT STREAM".into(), "The client supplies Accept: text/event-stream. Requires status 200 and uncompressed UTF-8 events. No reconnect is scheduled. s starts; Esc edits.".into()],
-            Mode::Review => vec!["READY FOR YOUR DECISION".into(),"s sends this reviewed request. Esc returns to editing. A send is a new network operation, not a replay of recorded timings.".into()],
+            Mode::Review => vec!["READY FOR YOUR DECISION".into(),"Sending makes a real request. The server may change data in response.".into()],
             Mode::Running(_) => vec!["WAITING FOR THE SERVER".into(),"Esc cancels local I/O. The server may already have acted; cancellation cannot undo that work.".into()],
             Mode::Result if self.draft.has_capture() => vec!["A NEW OBSERVATION".into(),"c compares with the captured response. A partial result contains only bytes received before the stop.".into()],
             Mode::Result => vec!["A NEW OBSERVATION".into(),"Esc returns to the saved draft. A partial result contains only bytes received before the stop.".into()],
-            _ => vec!["EDITING LOCAL TEXT".into(),"Enter keeps this edit; Esc discards it. Editing never sends a request.".into()],
+            _ => vec!["EDITING LOCAL TEXT".into(),"Changes stay in this draft. Nothing is sent while editing.".into()],
         }
     }
     fn draw_panel(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
@@ -1189,15 +1162,15 @@ impl ReplayEditor {
         let title = if matches!(self.mode, Mode::SaveReview(_, _)) {
             " Save preview · Enter writes file · Esc cancels "
         } else if matches!(self.mode, Mode::Review | Mode::StreamReview) {
-            " Review · s sends "
+            " Request "
         } else if matches!(self.mode, Mode::Running(_)) {
             " Sending · Esc cancels "
         } else if matches!(self.mode, Mode::Result) {
             " New result · scroll for details "
         } else if self.editing() {
-            " Editing · Enter saves "
+            " Edit "
         } else {
-            " Draft · Enter chooses "
+            " Request "
         };
         let title = if self.waiting() {
             format!(

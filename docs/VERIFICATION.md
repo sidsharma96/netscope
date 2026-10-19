@@ -412,3 +412,7 @@ TUI tests and its Rust example passed, including packet-help round trips, replay
 The actual replay editor now uses Method, URL, Headers and Body fields, followed by Review request. Summary / Headers / Body review sections preserve explicit send confirmation. The TUI suite passes with fixed-buffer snapshots and a navigation test at 80×24 and 120×34 checking outgoing UTF-8 byte counts and absence of sends while switching sections. Existing header masking, invalid edits, saved drafts, retained results and cancellation checks remain covered.
 
 The real PTY loopback check passed for GET, POST, saved POST, cancellation, quit, Ctrl+c, live SSE, save/reopen and retained SSE inspection. Screens were captured from the running binary using `single-request.har`, at 80×24 and 120×34, for draft selection, header selection, body editing and each review section. These are synthetic fixture requests, with terminal cells rendered to PNG; no request was sent to the fixture destination for screenshots. Clippy, documentation link checks and the mdBook build were also run.
+
+### Replay decluttering — 2026-10-19
+
+Removed repeated stage instructions, per-row key hints and duplicate panel-title controls. Field explanations remain visible without a second bordered panel. The TUI suite, workspace Clippy, documentation checks and mdBook build pass; fixed terminal buffers were refreshed. Draft and review were also captured from the running binary at 80×24 and 120×34 for visual inspection. This pass changes presentation only.

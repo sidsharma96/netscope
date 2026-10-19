@@ -1,21 +1,21 @@
 NETSCOPE / NEW RESULT                                                                               
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
  1 Edit →  2 Review →  3 Send → [ 4 Result ]                                                        
-This is a new observation. c compares it with the captured response.                                
                                                                                                     
-┌ New result · scroll for details ───────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Source #0 · POST · HTTP/1.1 · 17 request body bytes     ││A NEW OBSERVATION                       │
-│Draft changes stay local until you send from Review.    ││                                        │
-│New request: https://example.test/api/books             ││c compares with the captured response.  │
-│Outcome: Complete                                       ││A partial result contains only bytes    │
-│Elapsed: 0.025s · retained 5 bytes                      ││received before the stop.               │
-│Response: HTTP/1.1 · 200                                ││                                        │
-│Response headers (v reveals values):                    │└────────────────────────────────────────┘
+┌ New result · scroll for details ───────────────────────┐                                          
+│Source #0 · POST · HTTP/1.1 · 17 request body bytes     │ A NEW OBSERVATION                        
+│                                                        │                                          
+│New request: https://example.test/api/books             │ c compares with the captured response.   
+│Outcome: Complete                                       │ A partial result contains only bytes     
+│Elapsed: 0.025s · retained 5 bytes                      │ received before the stop.                
+│Response: HTTP/1.1 · 200                                │                                          
+│Response headers (v reveals values):                    │                                          
 │  content-type: [hidden; v reveals all values]          │                                          
 │Body preview (content encoding is not decoded):         │                                          
 │hello                                                   │                                          
 └────────────────────────────────────────────────────────┘                                          
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

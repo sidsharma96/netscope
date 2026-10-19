@@ -1,21 +1,21 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
-Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.                             
                                                                                                     
-┌ Draft · Enter chooses ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Source #0 · GET · HTTP/1.1 · no body                    ││DESTINATION                             │
-│URL changed; all header choices cleared; body cleared   ││                                        │
-│Draft: Use an absolute HTTP(S) URL without whitespace,  ││Enter edits the URL. Changing           │
-│controls, or backslashes                                ││destination clears body and header      │
-│                                                        ││choices; the original capture stays     │
-│  Method   GET  · Enter switches GET / POST             ││unchanged.                              │
-│> URL                                                   ││                                        │
-│  Headers  0 included · Enter chooses fields            │└────────────────────────────────────────┘
-│  Body     None · choose POST to send text              │                                          
+┌ Request ───────────────────────────────────────────────┐                                          
+│Source #0 · GET · HTTP/1.1 · no body                    │ DESTINATION                              
+│URL changed; all header choices cleared; body cleared   │                                          
+│Draft: Use an absolute HTTP(S) URL without whitespace,  │ Changing the URL clears body and header  
+│controls, or backslashes                                │ choices. The capture stays unchanged.    
+│                                                        │                                          
+│  Method   GET                                          │                                          
+│> URL                                                   │                                          
+│  Headers  0 included                                   │                                          
+│  Body     None (GET)                                   │                                          
 │  [ Review request → ]                                  │                                          
 └────────────────────────────────────────────────────────┘                                          
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

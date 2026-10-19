@@ -1,17 +1,17 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
-Capture unchanged · only Review → Send starts network traffic                                       
+Capture unchanged                                                                                   
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
-Editing a field · Enter saves this edit · Esc discards it.                                          
                                                                                                     
-┌ Editing · Enter saves ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Source #0 · POST · HTTP/1.1 · 17 request body bytes     ││EDITING LOCAL TEXT                      │
-│Draft changes stay local until you send from Review.    ││                                        │
-│EDIT BODY · Ctrl+n newline · Tab inserts tab            ││Enter keeps this edit; Esc discards it. │
-│←/→ move · Home/End start/end · Backspace/Delete remove ││Editing never sends a request.          │
-│· Ctrl+u clear                                          ││                                        │
-│{"title":"café"}                                        │└────────────────────────────────────────┘
-│[type at cursor · Enter saves · Esc cancels]            │                                          
+┌ Edit ──────────────────────────────────────────────────┐                                          
+│Source #0 · POST · HTTP/1.1 · 17 request body bytes     │ EDITING LOCAL TEXT                       
+│                                                        │                                          
+│EDIT BODY                                               │ Changes stay in this draft. Nothing is   
+│←/→ move · Home/End start/end · Backspace/Delete remove │ sent while editing.                      
+│· Ctrl+u clear                                          │                                          
+│{"title":"café"}                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
 │                                                        │                                          
 │                                                        │                                          
 │                                                        │                                          

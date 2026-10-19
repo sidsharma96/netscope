@@ -228,7 +228,7 @@ fn workbench_render_and_resize_never_queue_send_or_save() -> Result<(), Box<dyn 
         let text = render(&session, &mut app, width, height)?;
         assert!(text.contains("[ 2 Review ]"));
         assert!(text.contains("Enter / s send"));
-        assert!(text.contains("NEXT / WHY"));
+        assert!(!text.contains("NEXT / WHY"));
         assert!(text.contains("READY FOR YOUR DECISION"));
         let editor = app.replay.as_mut().ok_or("editor")?;
         assert!(editor.take_send().is_none());

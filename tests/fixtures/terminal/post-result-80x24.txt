@@ -1,12 +1,11 @@
 NETSCOPE / NEW RESULT                                                           
 synthetic.har · 1 requests                                                      
-Capture unchanged · only Review → Send starts network traffic                   
+Capture unchanged                                                               
  1 Edit →  2 Review →  3 Send → [ 4 Result ]                                    
-This is a new observation. c compares it with the captured response.            
                                                                                 
 ┌ New result · scroll for details ─────────────────────────────────────────────┐
 │Source #0 · POST · HTTP/1.1 · 17 request body bytes                           │
-│Draft changes stay local until you send from Review.                          │
+│                                                                              │
 │New request: https://example.test/api/books                                   │
 │Outcome: Complete                                                             │
 │Elapsed: 0.025s · retained 5 bytes                                            │
@@ -16,9 +15,10 @@ This is a new observation. c compares it with the captured response.
 │Body preview (content encoding is not decoded):                               │
 │hello                                                                         │
 └──────────────────────────────────────────────────────────────────────────────┘
-┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
-│A NEW OBSERVATION c compares with the captured response. A partial result     │
-│contains only bytes received before the stop.                                 │
-└──────────────────────────────────────────────────────────────────────────────┘
+                                                                                
+ A NEW OBSERVATION c compares with the captured response. A partial result      
+ contains only bytes received before the stop.                                  
+                                                                                
+                                                                                
                                                                                 
 ↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit             

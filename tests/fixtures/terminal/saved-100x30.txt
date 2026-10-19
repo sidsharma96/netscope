@@ -1,19 +1,19 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 0 requests                                                                          
-Saved request · no capture · only Review → Send starts network traffic                              
+Saved request · no capture                                                                          
 [ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
-Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.                             
                                                                                                     
-┌ Draft · Enter chooses ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
-│Saved draft · no capture · POST · HTTP/1.1 · 17 request ││DESTINATION                             │
-│body bytes                                              ││                                        │
-│                                                        ││Enter edits the URL. Changing           │
-│  Method   POST  · Enter switches GET / POST            ││destination clears body and header      │
-│> URL      http://127.0.0.1:8080/books                  ││choices; the original capture stays     │
-│  Headers  0 included · Enter chooses fields            ││unchanged.                              │
-│  Body     17 bytes · application/json                  ││                                        │
-│  [ Review request → ]                                  │└────────────────────────────────────────┘
+┌ Request ───────────────────────────────────────────────┐                                          
+│Saved draft · no capture · POST · HTTP/1.1 · 17 request │ DESTINATION                              
+│body bytes                                              │                                          
+│                                                        │ Changing the URL clears body and header  
+│  Method   POST                                         │ choices. The capture stays unchanged.    
+│> URL      http://127.0.0.1:8080/books                  │                                          
+│  Headers  0 included                                   │                                          
+│  Body     17 bytes · application/json                  │                                          
+│  [ Review request → ]                                  │                                          
 └────────────────────────────────────────────────────────┘                                          
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     
