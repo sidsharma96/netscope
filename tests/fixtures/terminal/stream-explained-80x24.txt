@@ -5,20 +5,20 @@ synthetic.pcap
 Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                    
 343 captured · 0 missing · 0 conflicting · readable start 343 bytes             
 ┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────┐
-│0                                                                          343│
-│==============================================================================│
-│= captured  ? missing  ! conflict · highlighted cells touch selected range    │
+│0                                                                          342│
+│██████████████████████████████████████████████████████████████████████████████│
+│└────────────────────────────────────────────────────────────────────────────┘│
+│█ captured  ░ missing  ▓ conflict · marks group bytes                         │
 └──────────────────────────────────────────────────────────────────────────────┘
-┌ RANGES · 1 / 1 · ↑↓ ─────────────────┐┌ UNDERSTAND THIS RANGE ───────────────┐
+┌ RANGES · 1 / 1 · ↑↓ ─────────────────┐┌ SELECTED RANGE · h explains more ────┐
 │  Offsets         Bytes  Evidence     ││THE BEGINNING IS READABLE             │
-│> 0–342             343  = Captured   ││Captured copies agree. These bytes    │
-│                                      ││can be read in order from this        │
-│                                      ││grouping's start.                     │
+│> 0–342             343  = Captured   ││343 bytes · positions 0–342           │
 └──────────────────────────────────────┘│                                      │
-┌ BYTES · text · b toggles · [ ] page ─┐│WHAT THIS CHANGES                     │
-│     0  HTTP/1.1 200 OK\r\nContent-Typ││This is the prefix available to HTTP  │
-│    28  e: application/sdp\r\nTransfer││inspection. It can still be           │
-│    56  -Encoding: chunked\r\n\r\n2f;p││incomplete, encrypted, or another     │
-│    82  iece=one\r\nv=0\r\no=- 1 1 IN ││protocol.                             │
-└──────────────────────────────────────┘└ 1–10 / 48 · PgUp/PgDn ───────────────┘
-↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit 
+┌ BYTES · text · b toggles · [ ] page ─┐│Captured copies agree. These bytes    │
+│     0  HTTP/1.1 200 OK\r\nContent-Typ││are readable in order, but may not    │
+│    28  e: application/sdp\r\nTransfer││form a complete HTTP message.         │
+│    56  -Encoding: chunked\r\n\r\n2f;p││Readable from start: 343 bytes.       │
+│    82  iece=one\r\nv=0\r\no=- 1 1 IN ││Press 2 for HTTP findings.            │
+│   108  IP4 192.0.2.1\r\ns=Illustratio│└──────────────────────────────────────┘
+└──────────────────────────────────────┘                                        
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit       

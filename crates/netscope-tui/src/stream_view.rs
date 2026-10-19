@@ -20,6 +20,7 @@ pub(crate) struct StreamInspector {
     ranges: Vec<Range<usize>>,
     selected: usize,
     hex: bool,
+    help: bool,
     text_offset: usize,
     byte_offset: usize,
     text_page: usize,
@@ -59,6 +60,10 @@ impl StreamInspector {
             }
             KeyCode::Home => self.selected = 0,
             KeyCode::End => self.selected = self.ranges.len().saturating_sub(1),
+            KeyCode::Char('h') => {
+                self.help = !self.help;
+                self.text_offset = 0;
+            }
             KeyCode::Char('b') => {
                 self.hex = !self.hex;
                 self.byte_offset = 0;
@@ -86,7 +91,7 @@ impl StreamInspector {
         let [tabs, identity, map, body] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(2),
-            Constraint::Length(5),
+            Constraint::Length(6),
             Constraint::Min(1),
         ])
         .areas(area);
@@ -106,26 +111,69 @@ impl StreamInspector {
             .iter()
             .filter(|s| **s == ByteState::Conflict)
             .count();
-        frame.render_widget(Paragraph::new(vec![Line::from(format!("Stream #{id} · {} → {} · one direction", flow.source, flow.destination)), Line::styled(format!("{} captured · {missing} missing · {conflicts} conflicting · readable start {} bytes", flow.states.len()-missing-conflicts, flow.contiguous_prefix().len()), Style::default().fg(MUTED))]), identity);
+        frame.render_widget(Paragraph::new(vec![Line::from(format!("Stream #{id} · {} → {} · one direction", flow.source, flow.destination)), Line::styled(format!("{} captured · {missing} missing · {conflicts} conflicting · readable start {}", flow.states.len()-missing-conflicts, byte_count(flow.contiguous_prefix().len())), Style::default().fg(MUTED))]), identity);
         let b = block(" BYTE COVERAGE · position, not time ".into(), false);
         let inner = b.inner(map);
         frame.render_widget(b, map);
         let selected = self.ranges.get(self.selected).cloned().unwrap_or(0..0);
-        let cells = coverage(&flow.states, usize::from(inner.width), &selected);
         let width = usize::from(inner.width);
-        let end = format!("{}", flow.states.len());
-        let axis = format!(
-            "0{}{}",
-            " ".repeat(width.saturating_sub(end.len() + 1)),
-            end
-        );
+        let cells = coverage(&flow.states, width, &selected);
+        let scale = map_scale(flow.states.len(), width);
+        let count = flow.states.len().min(width);
+        let mut axis = vec![' '; width];
+        let mut marker = vec![' '; width];
+        if count > 0 {
+            let mut occupied = vec![false; width];
+            for offset in [
+                0,
+                flow.states.len() - 1,
+                selected.start,
+                selected.end.saturating_sub(1),
+            ] {
+                let x = (offset * count / flow.states.len()) * scale;
+                let label = offset.to_string();
+                let x = x.min(width.saturating_sub(label.len()));
+                if !occupied[x.saturating_sub(1)..(x + label.len() + 1).min(width)]
+                    .iter()
+                    .any(|v| *v)
+                {
+                    for (j, c) in label.chars().enumerate() {
+                        axis[x + j] = c;
+                        occupied[x + j] = true;
+                    }
+                }
+            }
+            for i in 0..count {
+                let start = i * flow.states.len() / count;
+                let end = (i + 1) * flow.states.len() / count;
+                if start < selected.end && end > selected.start {
+                    marker[i * scale..(i + 1) * scale].fill('─');
+                }
+            }
+        }
+        if let Some(first) = marker.iter().position(|c| *c == '─') {
+            let last = marker.iter().rposition(|c| *c == '─').unwrap_or(first);
+            marker[first] = if first == last { '▲' } else { '└' };
+            if first != last {
+                marker[last] = '┘';
+            }
+        }
         frame.render_widget(
             Paragraph::new(vec![
-                Line::styled(axis, Style::default().fg(MUTED)),
-                Line::from(cells),
-                Line::from(
-                    "= captured  ? missing  ! conflict · highlighted cells touch selected range",
+                Line::styled(
+                    axis.into_iter().collect::<String>(),
+                    Style::default().fg(MUTED),
                 ),
+                Line::from(cells),
+                Line::styled(
+                    marker.into_iter().collect::<String>(),
+                    Style::default().fg(AMBER),
+                ),
+                Line::from(if flow.states.len() <= width {
+                    "█ captured  ░ missing  ▓ conflict · one mark = one byte"
+                } else {
+                    "█ captured  ░ missing  ▓ conflict · marks group bytes"
+                }),
             ]),
             inner,
         );
@@ -133,7 +181,9 @@ impl StreamInspector {
             Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .areas(body);
         let [table, bytes] = Layout::vertical([
-            Constraint::Length((left.height / 2).max(5)),
+            Constraint::Length(
+                ((self.ranges.len() + 3).min(usize::from((left.height / 2).max(6)))) as u16,
+            ),
             Constraint::Min(1),
         ])
         .areas(left);
@@ -167,7 +217,11 @@ impl StreamInspector {
                 format!(
                     "{} {:<14} {:>6}  {}",
                     if i == self.selected { ">" } else { " " },
-                    format!("{}–{}", r.start, r.end - 1),
+                    if r.len() == 1 {
+                        r.start.to_string()
+                    } else {
+                        format!("{}–{}", r.start, r.end - 1)
+                    },
                     r.len(),
                     label(flow.states[r.start])
                 ),
@@ -197,14 +251,23 @@ impl StreamInspector {
             ),
             false,
         );
-        let inner = b.inner(area);
-        frame.render_widget(b, area);
+        let available = b.inner(area);
         let rows = byte_rows(
             flow,
             range,
-            usize::from(inner.width).saturating_sub(8).max(4),
+            usize::from(available.width).saturating_sub(8).max(4),
             self.hex,
         );
+        let area = Rect {
+            height: area.height.min(
+                (rows.len().saturating_add(2))
+                    .max(3)
+                    .min(usize::from(u16::MAX)) as u16,
+            ),
+            ..area
+        };
+        let inner = b.inner(area);
+        frame.render_widget(b, area);
         self.byte_page = usize::from(inner.height).max(1);
         self.byte_offset = self
             .byte_offset
@@ -231,21 +294,44 @@ impl StreamInspector {
         flow: &Reassembled,
         range: &Range<usize>,
     ) {
-        let b = block(" UNDERSTAND THIS RANGE ".into(), false);
+        let b = block(
+            if self.help {
+                " RANGE HELP · h closes "
+            } else {
+                " SELECTED RANGE · h explains more "
+            }
+            .into(),
+            false,
+        );
         let inner = b.inner(area);
-        frame.render_widget(b, area);
-        let paragraphs = explanation(flow, range);
+        let paragraphs = if self.help {
+            explanation(flow, range)
+        } else {
+            concise(flow, range)
+        };
         let lines = paragraphs
             .iter()
-            .flat_map(|s| {
+            .enumerate()
+            .flat_map(|(index, s)| {
                 view::wrap_words(s, usize::from(inner.width).max(1))
                     .into_iter()
                     .chain(
-                        (!s.chars().all(|c| !c.is_alphabetic() || c.is_uppercase()))
+                        ((self.help && !s.chars().all(|c| !c.is_alphabetic() || c.is_uppercase()))
+                            || (!self.help && index == 1))
                             .then(String::new),
                     )
             })
             .collect::<Vec<_>>();
+        let area = if self.help {
+            area
+        } else {
+            Rect {
+                height: area.height.min((lines.len() + 2) as u16),
+                ..area
+            }
+        };
+        let inner = b.inner(area);
+        frame.render_widget(b, area);
         self.text_page = usize::from(inner.height).max(1);
         self.text_offset = self
             .text_offset
@@ -329,25 +415,89 @@ fn byte_text(state: ByteState, byte: u8, hex: bool) -> String {
         },
     }
 }
+fn byte_count(count: usize) -> String {
+    format!("{count} {}", if count == 1 { "byte" } else { "bytes" })
+}
+fn map_scale(len: usize, width: usize) -> usize {
+    if len == 0 {
+        1
+    } else {
+        (width / len).clamp(1, 3)
+    }
+}
+fn concise(flow: &Reassembled, range: &Range<usize>) -> Vec<String> {
+    let Some(state) = flow.states.get(range.start) else {
+        return vec!["NO PAYLOAD BYTES".into(),"Control packets can exist without application data. Press 2 to inspect the recorded report.".into()];
+    };
+    let (title, reason, next) = match state {
+        ByteState::Missing => (
+            "MISSING FROM THE CAPTURE",
+            "No captured data fills this range. This alone does not prove network loss.",
+            "Use ↑↓ to inspect adjacent ranges.",
+        ),
+        ByteState::Conflict => (
+            "RECORDED COPIES DISAGREE",
+            "Captured values disagree here. We cannot tell which value the receiver accepted.",
+            "Use ↑ to inspect earlier bytes.",
+        ),
+        ByteState::Observed if range.start == 0 => (
+            "THE BEGINNING IS READABLE",
+            "Captured copies agree. These bytes are readable in order, but may not form a complete HTTP message.",
+            "Press 2 for HTTP findings.",
+        ),
+        ByteState::Observed => (
+            "LATER BYTES ARE AVAILABLE",
+            "These bytes agree. An earlier gap or conflict prevents joining them to the beginning.",
+            "Press b to inspect their hex values.",
+        ),
+    };
+    let consequence = match state {
+        ByteState::Missing | ByteState::Conflict => format!(
+            "HTTP reading stops at byte {}. Uncertain bytes are never guessed.",
+            flow.contiguous_prefix().len()
+        ),
+        _ => format!(
+            "Readable from start: {} bytes.",
+            flow.contiguous_prefix().len()
+        ),
+    };
+    vec![
+        title.into(),
+        if range.len() == 1 {
+            format!("1 byte · position {}", range.start)
+        } else {
+            format!(
+                "{} bytes · positions {}–{}",
+                range.len(),
+                range.start,
+                range.end - 1
+            )
+        },
+        reason.into(),
+        consequence,
+        next.into(),
+    ]
+}
 fn coverage(states: &[ByteState], width: usize, selected: &Range<usize>) -> Vec<Span<'static>> {
-    let cells = if states.is_empty() { 0 } else { width };
+    let cells = states.len().min(width);
+    let scale = map_scale(states.len(), width);
     (0..cells)
         .map(|i| {
             let start = i * states.len() / cells;
             let end = ((i + 1) * states.len() / cells).max(start + 1);
             let slice = &states[start..end];
             let (symbol, color) = if slice.contains(&ByteState::Conflict) {
-                ("!", AMBER)
+                ("▓", AMBER)
             } else if slice.contains(&ByteState::Missing) {
-                ("?", AMBER)
+                ("░", AMBER)
             } else {
-                ("=", MINT)
+                ("█", MINT)
             };
             let mut style = Style::default().fg(color);
             if start < selected.end && end > selected.start {
                 style = style.bg(SELECTED);
             }
-            Span::styled(symbol, style)
+            Span::styled(format!("{symbol}{}", " ".repeat(scale - 1)), style)
         })
         .collect()
 }
@@ -377,7 +527,7 @@ fn explanation(flow: &Reassembled, range: &Range<usize>) -> Vec<String> {
             "Inspect these bytes separately. They cannot be joined directly to the beginning while ignoring the uncertain positions.",
         ),
     };
-    vec![title.into(),meaning.into(),"WHAT THIS CHANGES".into(),consequence.into(),format!("Offsets {}–{} include both ends: {} bytes.",range.start,range.end-1,range.len()),format!("Readable start: {} bytes. Press 2 for HTTP findings and the full recorded report.",flow.contiguous_prefix().len()),"READING THE PREVIEW".into(),"? means missing; ! means conflict. In hex mode these become ?? and !!. Text shows ASCII bytes; \\r and \\n are line endings. Other bytes use \\xNN escapes, including literal ? and !. Each escape represents one byte.".into(),"WHAT IS AN OFFSET?".into(),format!("An offset counts positions from zero, not time or packets. Here zero corresponds to TCP sequence {}. Sequence numbers wrap after 4294967295.",flow.first_sequence),if flow.syn_observed{"A SYN start signal was observed. That does not prove the handshake succeeded.".into()}else{"No SYN start signal was observed. Offset zero may be partway through the connection.".into()},format!("{} segments excluded by analysis limits. Coverage describes the retained span, not a verified complete connection.",flow.skipped_segments),"Each map cell groups neighbouring positions. Conflict takes priority over missing, then captured. Highlighted cells touch this range; the table gives its exact boundaries.".into()]
+    vec![title.into(),meaning.into(),"WHAT THIS CHANGES".into(),consequence.into(),format!("Offsets {}–{} include both ends: {} bytes.",range.start,range.end-1,range.len()),format!("Readable start: {} bytes. Press 2 for HTTP findings and the full recorded report.",flow.contiguous_prefix().len()),"READING THE PREVIEW".into(),"? means missing; ! means conflict. In hex mode these become ?? and !!. Text shows ASCII bytes; \\r and \\n are line endings. Other bytes use \\xNN escapes, including literal ? and !. Each escape represents one byte.".into(),"WHAT IS AN OFFSET?".into(),format!("An offset counts positions from zero, not time or packets. Here zero corresponds to TCP sequence {}. Sequence numbers wrap after 4294967295.",flow.first_sequence),if flow.syn_observed{"A SYN start signal was observed. That does not prove the handshake succeeded.".into()}else{"No SYN start signal was observed. Offset zero may be partway through the connection.".into()},format!("{} segments excluded by analysis limits. Coverage describes the retained span, not a verified complete connection.",flow.skipped_segments),"Short spans show one mark per byte. Larger spans group positions per mark: conflict takes priority over missing, then captured. The bracket marks the selected range; the table gives exact boundaries.".into()]
 }
 
 #[cfg(test)]
@@ -408,11 +558,11 @@ mod tests {
         let map = coverage(&states, 4, &(1..2));
         assert_eq!(
             map.iter().map(|s| s.content.as_ref()).collect::<String>(),
-            "?==!"
+            "░██▓"
         );
         assert_eq!(map[0].style.bg, Some(SELECTED));
         assert_eq!(map[1].style.bg, None);
-        assert_eq!(coverage(&[ByteState::Missing], 80, &(0..1)).len(), 80);
+        assert_eq!(coverage(&[ByteState::Missing], 80, &(0..1)).len(), 1);
         assert!(coverage(&[], 80, &(0..0)).is_empty());
         assert!(coverage(&states, 0, &(0..1)).is_empty());
     }

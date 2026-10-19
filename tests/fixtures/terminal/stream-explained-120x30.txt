@@ -5,26 +5,26 @@ synthetic.pcap
 Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                                                            
 343 captured · 0 missing · 0 conflicting · readable start 343 bytes                                                     
 ┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────────────────────────┐
-│0                                                                                                                  343│
-│======================================================================================================================│
-│= captured  ? missing  ! conflict · highlighted cells touch selected range                                            │
+│0                                                                                                                  342│
+│██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████│
+│└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘│
+│█ captured  ░ missing  ▓ conflict · marks group bytes                                                                 │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ RANGES · 1 / 1 · ↑↓ ─────────────────────────────────────┐┌ UNDERSTAND THIS RANGE ───────────────────────────────────┐
+┌ RANGES · 1 / 1 · ↑↓ ─────────────────────────────────────┐┌ SELECTED RANGE · h explains more ────────────────────────┐
 │  Offsets         Bytes  Evidence                         ││THE BEGINNING IS READABLE                                 │
-│> 0–342             343  = Captured                       ││Captured copies agree. These bytes can be read in order   │
-│                                                          ││from this grouping's start.                               │
-│                                                          ││                                                          │
-│                                                          ││WHAT THIS CHANGES                                         │
-│                                                          ││This is the prefix available to HTTP inspection. It can   │
-│                                                          ││still be incomplete, encrypted, or another protocol.      │
+│> 0–342             343  = Captured                       ││343 bytes · positions 0–342                               │
 └──────────────────────────────────────────────────────────┘│                                                          │
-┌ BYTES · text · b toggles · [ ] page ─────────────────────┐│Offsets 0–342 include both ends: 343 bytes.               │
-│     0  HTTP/1.1 200 OK\r\nContent-Type: application/sdp\r││                                                          │
-│    47  \nTransfer-Encoding: chunked\r\n\r\n2f;piece=one\r││Readable start: 343 bytes. Press 2 for HTTP findings and  │
-│    91  \nv=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=Illustratio││the full recorded report.                                 │
-│   136  n\r\n\r\nb3\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVP││                                                          │
-│   178  F 111\r\na=ice-ufrag:sample\r\na=fingerprint:sha-2││READING THE PREVIEW                                       │
-│   224  56 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00││? means missing; ! means conflict. In hex mode these      │
-│   274  :00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r││become ?? and !!. Text shows ASCII bytes; \r and \n are   │
-└──────────────────────────────────────────────────────────┘└ 1–16 / 36 · PgUp/PgDn ───────────────────────────────────┘
-↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit                                         
+┌ BYTES · text · b toggles · [ ] page ─────────────────────┐│Captured copies agree. These bytes are readable in order, │
+│     0  HTTP/1.1 200 OK\r\nContent-Type: application/sdp\r││but may not form a complete HTTP message.                 │
+│    47  \nTransfer-Encoding: chunked\r\n\r\n2f;piece=one\r││Readable from start: 343 bytes.                           │
+│    91  \nv=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=Illustratio││Press 2 for HTTP findings.                                │
+│   136  n\r\n\r\nb3\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVP│└──────────────────────────────────────────────────────────┘
+│   178  F 111\r\na=ice-ufrag:sample\r\na=fingerprint:sha-2│                                                            
+│   224  56 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00│                                                            
+│   274  :00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r│                                                            
+│   323  \n\r\n0\r\nX-End: yes\r\n\r\n                     │                                                            
+└──────────────────────────────────────────────────────────┘                                                            
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit                                               

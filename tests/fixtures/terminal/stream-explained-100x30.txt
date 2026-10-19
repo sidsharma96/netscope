@@ -5,26 +5,26 @@ synthetic.pcap
 Stream #1 · 198.51.100.2:80 → 192.0.2.1:9000 · one direction                                        
 343 captured · 0 missing · 0 conflicting · readable start 343 bytes                                 
 ┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────┐
-│0                                                                                              343│
-│==================================================================================================│
-│= captured  ? missing  ! conflict · highlighted cells touch selected range                        │
+│0                                                                                              342│
+│██████████████████████████████████████████████████████████████████████████████████████████████████│
+│└────────────────────────────────────────────────────────────────────────────────────────────────┘│
+│█ captured  ░ missing  ▓ conflict · marks group bytes                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ RANGES · 1 / 1 · ↑↓ ───────────────────────────┐┌ UNDERSTAND THIS RANGE ─────────────────────────┐
+┌ RANGES · 1 / 1 · ↑↓ ───────────────────────────┐┌ SELECTED RANGE · h explains more ──────────────┐
 │  Offsets         Bytes  Evidence               ││THE BEGINNING IS READABLE                       │
-│> 0–342             343  = Captured             ││Captured copies agree. These bytes can be read  │
-│                                                ││in order from this grouping's start.            │
-│                                                ││                                                │
-│                                                ││WHAT THIS CHANGES                               │
-│                                                ││This is the prefix available to HTTP            │
-│                                                ││inspection. It can still be incomplete,         │
-└────────────────────────────────────────────────┘│encrypted, or another protocol.                 │
-┌ BYTES · text · b toggles · [ ] page ───────────┐│                                                │
-│     0  HTTP/1.1 200 OK\r\nContent-Type: applica││Offsets 0–342 include both ends: 343 bytes.     │
-│    38  tion/sdp\r\nTransfer-Encoding: chunked\r││                                                │
-│    75  \n\r\n2f;piece=one\r\nv=0\r\no=- 1 1 IN ││Readable start: 343 bytes. Press 2 for HTTP     │
-│   108  IP4 192.0.2.1\r\ns=Illustration\r\n\r\nb││findings and the full recorded report.          │
-│   142  3\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVP││                                                │
-│   178  F 111\r\na=ice-ufrag:sample\r\na=fingerp││READING THE PREVIEW                             │
-│   214  rint:sha-256 00:00:00:00:00:00:00:00:00:││? means missing; ! means conflict. In hex mode  │
-└────────────────────────────────────────────────┘└ 1–16 / 39 · PgUp/PgDn ─────────────────────────┘
-↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit                     
+│> 0–342             343  = Captured             ││343 bytes · positions 0–342                     │
+└────────────────────────────────────────────────┘│                                                │
+┌ BYTES · text · b toggles · [ ] page ───────────┐│Captured copies agree. These bytes are readable │
+│     0  HTTP/1.1 200 OK\r\nContent-Type: applica││in order, but may not form a complete HTTP      │
+│    38  tion/sdp\r\nTransfer-Encoding: chunked\r││message.                                        │
+│    75  \n\r\n2f;piece=one\r\nv=0\r\no=- 1 1 IN ││Readable from start: 343 bytes.                 │
+│   108  IP4 192.0.2.1\r\ns=Illustration\r\n\r\nb││Press 2 for HTTP findings.                      │
+│   142  3\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVP│└────────────────────────────────────────────────┘
+│   178  F 111\r\na=ice-ufrag:sample\r\na=fingerp│                                                  
+│   214  rint:sha-256 00:00:00:00:00:00:00:00:00:│                                                  
+│   254  00:00:00:00:00:00:00:00:00:00:00:00:00:0│                                                  
+│   294  0:00:00:00:00:00:00:00:00:00\r\n\r\n0\r │                                                  
+│   328  \nX-End: yes\r\n\r\n                    │                                                  
+└────────────────────────────────────────────────┘                                                  
+                                                                                                    
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit                           

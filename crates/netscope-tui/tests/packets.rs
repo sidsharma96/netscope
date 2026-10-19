@@ -212,7 +212,7 @@ fn stream_workbench_links_ranges_bytes_and_explanations() -> Result<(), Box<dyn 
         "../../../tests/fixtures/pcap/streams.pcap"
     ))?;
     let original = netscope_tui::packet_view::packet_summary(&capture);
-    for (width, height) in [(80, 24), (100, 30), (160, 50)] {
+    for (width, height) in [(80, 24), (100, 30), (120, 34), (160, 50)] {
         let mut app = PacketApp::new(&capture);
         for code in [
             KeyCode::Char('s'),
@@ -224,7 +224,7 @@ fn stream_workbench_links_ranges_bytes_and_explanations() -> Result<(), Box<dyn 
         }
         let gap = render(&capture, &mut app, width, height)?;
         assert!(gap.contains("MISSING FROM THE CAPTURE"));
-        assert!(gap.contains("reading stops before this gap"), "{gap}");
+        assert!(gap.contains("reading stops at byte 19"), "{gap}");
         let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!(
             "../../tests/fixtures/terminal/stream-gap-{width}x{height}.txt"
         ));
@@ -232,6 +232,12 @@ fn stream_workbench_links_ranges_bytes_and_explanations() -> Result<(), Box<dyn 
             std::fs::write(&path, &gap)?;
         }
         assert_eq!(gap, std::fs::read_to_string(path)?);
+        assert!(gap.contains("Use ↑↓ to inspect adjacent ranges."));
+        app.key(KeyEvent::from(KeyCode::Char('h')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("RANGE HELP"));
+        app.key(KeyEvent::from(KeyCode::PageDown), &capture);
+        app.key(KeyEvent::from(KeyCode::Char('h')), &capture);
+        assert_eq!(render(&capture, &mut app, width, height)?, gap);
         app.key(KeyEvent::from(KeyCode::Char('b')), &capture);
         assert!(render(&capture, &mut app, width, height)?.contains("?? ??"));
         app.key(KeyEvent::from(KeyCode::End), &capture);
@@ -250,7 +256,16 @@ fn stream_workbench_links_ranges_bytes_and_explanations() -> Result<(), Box<dyn 
         app.key(KeyEvent::from(KeyCode::Enter), &capture);
         assert!(render(&capture, &mut app, width, height)?.contains("RECORDED COPIES DISAGREE"));
         app.key(KeyEvent::from(KeyCode::Char('b')), &capture);
-        assert!(render(&capture, &mut app, width, height)?.contains("!!"));
+        let conflict = render(&capture, &mut app, width, height)?;
+        assert!(conflict.contains("!!"));
+        assert!(conflict.contains("Use ↑ to inspect earlier bytes."));
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../tests/fixtures/terminal/stream-conflict-{width}x{height}.txt"
+        ));
+        if std::env::var_os("NETSCOPE_UPDATE_PACKET_VIEWS").is_some() {
+            std::fs::write(&path, &conflict)?;
+        }
+        assert_eq!(conflict, std::fs::read_to_string(path)?);
     }
     assert_eq!(
         netscope_tui::packet_view::packet_summary(&capture),

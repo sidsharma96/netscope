@@ -47,7 +47,7 @@ Read this illustration from left to right by byte position. It is not a timeline
 ```text
 Illustrative positions:  0 1 2 3 4 5 6 7 8
 Recorded evidence:      a b c ? ? ? g h i
-Coverage:               = = = ? ? ? = = =
+Coverage:               █ █ █ ░ ░ ░ █ █ █
 Exact ranges:           [0..3) observed
                         [3..6) missing
                         [6..9) observed
@@ -55,9 +55,9 @@ Exact ranges:           [0..3) observed
 
 `[3..6)` includes position 3 and excludes position 6, so it contains exactly three positions: 3, 4 and 5. These are offsets relative to the stream's retained starting sequence. They are different from offsets inside a packet's stored byte vector. Adding a stream offset to its starting sequence, with the wrap-around described below, gives the corresponding TCP sequence number.
 
-A terminal cannot give every byte its own cell in a large stream. Netscope groups neighbouring positions into map cells. A cell shows `!` if any position conflicts, otherwise `?` if any position is missing, otherwise `=` for observed positions. Conflict takes priority, so one cell can contain both a conflict and a gap while displaying `!`. Exact counts and the range list preserve that distinction. An `=` cell never conceals a missing position.
+A terminal cannot give every byte its own cell in a large stream. Netscope groups neighbouring positions into map cells. A mark shows `▓` if any position conflicts, otherwise `░` if any position is missing, otherwise `█` for observed positions. Conflict takes priority, so one mark can contain both a conflict and a gap while displaying `▓`. Exact counts and the range list preserve that distinction. A solid `█` mark never conceals a missing position. Short spans use one mark per byte rather than stretching a single byte across half the terminal. The legend states whether marks represent individual bytes or groups; the ruler labels byte offsets, not elapsed time.
 
-The stream inspector keeps a range table beside an explanation of the selected evidence. Its range labels include both ends: `3–5` is another way to describe `[3..6)`. Both mean three bytes. The recorded report retains the end-exclusive notation above. Selecting a row highlights the map cells that touch that range; a highlighted cell can also contain neighbouring positions when the map is compressed. The table gives the exact boundaries.
+The stream inspector keeps a range table beside an explanation of the selected evidence. Its range labels include both ends: `3–5` is another way to describe `[3..6)`. Both mean three bytes. The recorded report retains the end-exclusive notation above. Selecting a row highlights the corresponding map marks and places a bracket beneath them; a selected mark can also contain neighbouring positions when the map is compressed. The table gives the exact boundaries.
 
 The map covers the retained span only. It does not claim that the capture contains the entire connection, especially when the beginning was not observed or analysis limits excluded segments.
 
@@ -68,7 +68,7 @@ Return to `abc???ghi`. You want to know why the later letters are visible but ca
 The illustration below shows these linked views with the missing range selected. The arrows connect the selection to its explanation; they do not represent network traffic.
 
 ```text
-Illustrative byte map:    ===???===
+Illustrative byte map:    ███░░░███
                             ^^^
 Selected range:           3–5 · 3 bytes · Missing
                              |
@@ -78,7 +78,7 @@ Selected range:           3–5 · 3 bytes · Missing
                                   Later bytes remain inspectable.
 ```
 
-This arrangement lets you investigate a particular piece of evidence before reading the longer lesson. A stream opens at its first missing or conflicting range, if one exists. Moving to another range changes the map highlight, byte preview and explanation together. All retained ranges remain reachable by scrolling the table. Scrolling the explanation or paging through a long byte preview leaves the selected range unchanged.
+This arrangement lets you investigate a particular piece of evidence before reading the longer lesson. A stream opens at its first missing or conflicting range, if one exists. Moving to another range changes the map highlight, byte preview and explanation together. All retained ranges remain reachable by scrolling the table. The default explanation gives the immediate consequence and a next action. Optional help explains offsets, escape notation and capture limits alongside the same selection. Opening or scrolling that help, or paging through a long byte preview, leaves the selected range unchanged. Range and preview panes use only the space their contents need, up to the available height.
 
 The preview has text and hexadecimal representations. Hexadecimal writes each byte as two base-sixteen digits: a recorded zero becomes `00`. Unknown bytes appear as `??`, and conflicting positions as `!!`; neither is replaced with a guessed value. Text mode displays printable ASCII bytes directly, uses `\r` and `\n` for line endings, and escapes other bytes. For example, `\x1b` represents one byte whose hexadecimal value is `1b`; it cannot act as a terminal control command. Literal question marks and exclamation marks are also escaped so they cannot be mistaken for missing or conflicting evidence. This is a byte representation, not a decoder for every text encoding.
 

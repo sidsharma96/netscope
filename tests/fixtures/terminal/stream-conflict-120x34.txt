@@ -1,0 +1,34 @@
+NETSCOPE / STREAM EVIDENCE                                                                                              
+synthetic.pcap                                                                                                          
+24 packets · link 1 · offline; capture unchanged                                                                        
+[1 Inspect]  2 Recorded report · offline capture                                                                        
+Stream #3 · 192.0.2.1:9002 → 198.51.100.2:80 · one direction                                                            
+1 captured · 0 missing · 1 conflicting · readable start 1 byte                                                          
+┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────────────────────────┐
+│0  1                                                                                                                  │
+│█  ▓                                                                                                                  │
+│   └─┘                                                                                                                │
+│█ captured  ░ missing  ▓ conflict · one mark = one byte                                                               │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ RANGES · 2 / 2 · ↑↓ ─────────────────────────────────────┐┌ SELECTED RANGE · h explains more ────────────────────────┐
+│  Offsets         Bytes  Evidence                         ││RECORDED COPIES DISAGREE                                  │
+│  0                   1  = Captured                       ││1 byte · position 1                                       │
+│> 1                   1  ! Conflict                       ││                                                          │
+└──────────────────────────────────────────────────────────┘│Captured values disagree here. We cannot tell which value │
+┌ BYTES · hex · b toggles · [ ] page ──────────────────────┐│the receiver accepted.                                    │
+│     1  !!                                                ││HTTP reading stops at byte 1. Uncertain bytes are never   │
+└──────────────────────────────────────────────────────────┘│guessed.                                                  │
+                                                            │Use ↑ to inspect earlier bytes.                           │
+                                                            └──────────────────────────────────────────────────────────┘
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit                                               

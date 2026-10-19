@@ -5,20 +5,20 @@ synthetic.pcap
 Stream #2 · 192.0.2.1:9001 → 198.51.100.2:80 · one direction                    
 21 captured · 20 missing · 0 conflicting · readable start 19 bytes              
 ┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────┐
-│0                                                                           41│
-│=====================================??????????????????????????????????????===│
-│= captured  ? missing  ! conflict · highlighted cells touch selected range    │
+│0                  19                   40                                    │
+│███████████████████░░░░░░░░░░░░░░░░░░░░██                                     │
+│                   └──────────────────┘                                       │
+│█ captured  ░ missing  ▓ conflict · one mark = one byte                       │
 └──────────────────────────────────────────────────────────────────────────────┘
-┌ RANGES · 2 / 3 · ↑↓ ─────────────────┐┌ UNDERSTAND THIS RANGE ───────────────┐
+┌ RANGES · 2 / 3 · ↑↓ ─────────────────┐┌ SELECTED RANGE · h explains more ────┐
 │  Offsets         Bytes  Evidence     ││MISSING FROM THE CAPTURE              │
-│  0–18               19  = Captured   ││No captured data supplies these       │
-│> 19–38              20  ? Missing    ││positions. This alone does not prove  │
-│  39–40               2  = Captured   ││network loss.                         │
-└──────────────────────────────────────┘│                                      │
-┌ BYTES · text · b toggles · [ ] page ─┐│WHAT THIS CHANGES                     │
-│    19  ????????????????????          ││HTTP reading stops before this gap.   │
-│                                      ││Joining the two sides would invent    │
-│                                      ││adjacent bytes.                       │
-│                                      ││                                      │
-└──────────────────────────────────────┘└ 1–10 / 47 · PgUp/PgDn ───────────────┘
-↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit 
+│  0–18               19  = Captured   ││20 bytes · positions 19–38            │
+│> 19–38              20  ? Missing    ││                                      │
+│  39–40               2  = Captured   ││No captured data fills this range.    │
+└──────────────────────────────────────┘│This alone does not prove network     │
+┌ BYTES · text · b toggles · [ ] page ─┐│loss.                                 │
+│    19  ????????????????????          ││HTTP reading stops at byte 19.        │
+└──────────────────────────────────────┘│Uncertain bytes are never guessed.    │
+                                        │Use ↑↓ to inspect adjacent ranges.    │
+                                        └──────────────────────────────────────┘
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit       

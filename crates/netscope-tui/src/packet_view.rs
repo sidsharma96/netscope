@@ -513,7 +513,7 @@ pub fn draw_packets(
         }
         frame.render_widget(
             Paragraph::new(if matches!(app.screen, Screen::Stream(_)) {
-                "↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit"
+                "↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit"
             } else {
                 "↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit"
             }),
@@ -540,7 +540,7 @@ pub fn draw_packets(
             "p packets · s directed TCP epochs · ? help · q / Ctrl+c quit".into(),
             "Inspectors: 1 Inspect/Explain · 2 Recorded report · Esc returns".into(),
             "Packet: ↑↓ topics. Stream: ↑↓ ranges, Home/End first/last".into(),
-            "Stream: b text/hex, [ ] byte pages. PgUp/PgDn explanation pages".into(),
+            "Stream: b text/hex, [ ] bytes, h guidance; PgUp/PgDn pages".into(),
             "PCAP clocks are recorded metadata, not guaranteed event-delivery times".into(),
             "Gaps/conflicts stop HTTP prefix inspection; encryption stays unavailable".into(),
         ]

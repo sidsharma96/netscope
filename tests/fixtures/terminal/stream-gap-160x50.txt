@@ -5,46 +5,46 @@ synthetic.pcap
 Stream #2 · 192.0.2.1:9001 → 198.51.100.2:80 · one direction                                                                                                    
 21 captured · 20 missing · 0 conflicting · readable start 19 bytes                                                                                              
 ┌ BYTE COVERAGE · position, not time ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│0                                                                                                                                                           41│
-│==========================================================================?????????????????????????????????????????????????????????????????????????????=======│
-│= captured  ? missing  ! conflict · highlighted cells touch selected range                                                                                    │
+│0                                                        19                                                       38    40                                    │
+│█  █  █  █  █  █  █  █  █  █  █  █  █  █  █  █  █  █  █  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  ░  █  █                                     │
+│                                                         └──────────────────────────────────────────────────────────┘                                         │
+│█ captured  ░ missing  ▓ conflict · one mark = one byte                                                                                                       │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ RANGES · 2 / 3 · ↑↓ ─────────────────────────────────────────────────────────┐┌ UNDERSTAND THIS RANGE ───────────────────────────────────────────────────────┐
+┌ RANGES · 2 / 3 · ↑↓ ─────────────────────────────────────────────────────────┐┌ SELECTED RANGE · h explains more ────────────────────────────────────────────┐
 │  Offsets         Bytes  Evidence                                             ││MISSING FROM THE CAPTURE                                                      │
-│  0–18               19  = Captured                                           ││No captured data supplies these positions. This alone does not prove network  │
-│> 19–38              20  ? Missing                                            ││loss.                                                                         │
-│  39–40               2  = Captured                                           ││                                                                              │
-│                                                                              ││WHAT THIS CHANGES                                                             │
-│                                                                              ││HTTP reading stops before this gap. Joining the two sides would invent        │
-│                                                                              ││adjacent bytes.                                                               │
-│                                                                              ││                                                                              │
-│                                                                              ││Offsets 19–38 include both ends: 20 bytes.                                    │
-│                                                                              ││                                                                              │
-│                                                                              ││Readable start: 19 bytes. Press 2 for HTTP findings and the full recorded     │
-│                                                                              ││report.                                                                       │
-│                                                                              ││                                                                              │
-│                                                                              ││READING THE PREVIEW                                                           │
-│                                                                              ││? means missing; ! means conflict. In hex mode these become ?? and !!. Text   │
-│                                                                              ││shows ASCII bytes; \r and \n are line endings. Other bytes use \xNN escapes,  │
-│                                                                              ││including literal ? and !. Each escape represents one byte.                   │
-└──────────────────────────────────────────────────────────────────────────────┘│                                                                              │
-┌ BYTES · text · b toggles · [ ] page ─────────────────────────────────────────┐│WHAT IS AN OFFSET?                                                            │
-│    19  ????????????????????                                                  ││An offset counts positions from zero, not time or packets. Here zero          │
-│                                                                              ││corresponds to TCP sequence 201. Sequence numbers wrap after 4294967295.      │
-│                                                                              ││                                                                              │
-│                                                                              ││A SYN start signal was observed. That does not prove the handshake succeeded. │
-│                                                                              ││                                                                              │
-│                                                                              ││0 segments excluded by analysis limits. Coverage describes the retained span, │
-│                                                                              ││not a verified complete connection.                                           │
-│                                                                              ││                                                                              │
-│                                                                              ││Each map cell groups neighbouring positions. Conflict takes priority over     │
-│                                                                              ││missing, then captured. Highlighted cells touch this range; the table gives   │
-│                                                                              ││its exact boundaries.                                                         │
-│                                                                              ││                                                                              │
-│                                                                              ││                                                                              │
-│                                                                              ││                                                                              │
-│                                                                              ││                                                                              │
-│                                                                              ││                                                                              │
-│                                                                              ││                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────┘
-↑↓ range · b text/hex · [ ] bytes · PgUp/Dn help · 2 report · Esc list · q quit                                                                                 
+│  0–18               19  = Captured                                           ││20 bytes · positions 19–38                                                    │
+│> 19–38              20  ? Missing                                            ││                                                                              │
+│  39–40               2  = Captured                                           ││No captured data fills this range. This alone does not prove network loss.    │
+└──────────────────────────────────────────────────────────────────────────────┘│HTTP reading stops at byte 19. Uncertain bytes are never guessed.             │
+┌ BYTES · text · b toggles · [ ] page ─────────────────────────────────────────┐│Use ↑↓ to inspect adjacent ranges.                                            │
+│    19  ????????????????????                                                  │└──────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────┘                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit                                                                                       
