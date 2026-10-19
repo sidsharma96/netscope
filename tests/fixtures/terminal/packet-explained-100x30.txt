@@ -1,30 +1,30 @@
 NETSCOPE / PACKET LAYERS                                                                            
 synthetic.pcap                                                                                      
 24 packets · link 1 · offline; capture unchanged                                                    
-[1 Explain]  2 Recorded report · ↑↓ topic · PgUp/PgDn explanation                                   
+[1 Explain]  2 Recorded report · ↑↓ field · h detailed help                                         
 ┌ Recorded values · diagrams are not a delivery trace ─────────────────────────────────────────────┐
 │Packet #0 · 192.0.2.1:9000 ── TCP → 198.51.100.2:80                                               │
 │Sequence 100 · 0 retained / 0 declared data bytes                                                 │
 │Flags: SYN · raw 0x02                                                                             │
 │ACK field 0 · inactive (ACK flag off)                                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ Choose a topic ───────────┐┌ What this means ────────────────────────────────────────────────────┐
-│> Flags · control bits     ││WHAT IS THIS SEGMENT SAYING?                                         │
-│  Sequence · this direction││                                                                     │
-│  ACK · other direction    ││Flags are independent on/off bits in the TCP header. Several can be  │
-│  Layers and stored bytes  ││set together. Hexadecimal (0x) is a compact way to write those bits. │
-│                           ││                                                                     │
-│                           ││SYN [on] · when set: Start sequence numbering; consumes one sequence │
-│                           ││position.                                                            │
-│                           ││                                                                     │
-│                           ││ACK [off] · when set: The acknowledgement field is active; it        │
-│                           ││describes the other direction.                                       │
-│                           ││                                                                     │
-│                           ││PSH [off] · when set: Push data onward to the receiving application; │
-│                           ││not an HTTP message boundary.                                        │
-│                           ││                                                                     │
-│                           ││FIN [off] · when set: No more data from this sender; consumes one    │
-│                           ││sequence position.                                                   │
-│                           ││                                                                     │
-└───────────────────────────┘└ 1–17 / 31 · PgDn for more ──────────────────────────────────────────┘
-↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit                          
+┌ FIELDS · ↑↓ selects ──────┐┌ SELECTED FIELD · h explains more ───────────────────────────────────┐
+│> Flags · control bits     ││CONTROL FLAGS                                                        │
+│  Sequence · this direction││SYN · Start sequence numbering; consumes one sequence position.      │
+│  ACK · other direction    ││                                                                     │
+│  Layers and stored bytes  ││Flags are on/off instructions. They do not prove the peer accepted   │
+└───────────────────────────┘│this packet. Press h for all definitions.                            │
+                             └─────────────────────────────────────────────────────────────────────┘
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+↑↓ field · h guidance · PgUp/Dn text · 2 report · Esc list · ? keys · q quit                        

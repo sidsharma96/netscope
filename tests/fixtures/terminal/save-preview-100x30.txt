@@ -1,7 +1,7 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-[ 1 Edit ]  2 Review →  3 Send →  4 Result                                                          
+[ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
 Check the file contents and path. Enter confirms the save; Esc cancels.                             
                                                                                                     
 ┌ Save preview · Enter writes file · Esc cancels ──────────────────────────────────────────────────┐
@@ -21,10 +21,10 @@ Check the file contents and path. Enter confirms the save; Esc cancels.
 │  "body": "",                                                                                     │
 │  "headers": []                                                                                   │
 │}                                                                                                 │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
 ↑/↓ scroll · Enter writes file · Esc cancel · q quit                                                

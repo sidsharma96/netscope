@@ -515,7 +515,7 @@ pub fn draw_packets(
             Paragraph::new(if matches!(app.screen, Screen::Stream(_)) {
                 "↑↓ range · b text/hex · h help · [ ] bytes · 2 report · Esc list · q quit"
             } else {
-                "↑↓ topic · PgUp/PgDn text · 2 recorded report · Esc list · ? help · q quit"
+                "↑↓ field · h guidance · PgUp/Dn text · 2 report · Esc list · ? keys · q quit"
             }),
             footer,
         );

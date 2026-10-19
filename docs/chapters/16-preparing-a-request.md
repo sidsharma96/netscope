@@ -6,6 +6,14 @@ We need two things to exist at once: the original request and a separate [draft]
 
 Opening a [review](../GLOSSARY.md#review) prepares a possible action. It does not perform that action. Only an explicit Send starts the new request. This chapter follows the data up to that boundary; the next chapter explains what happens while we wait for an answer.
 
+## Understand the field before changing it
+
+Suppose you select a captured header while preparing the new request. You need to know both what the row contains and what pressing Enter will do. Netscope keeps the editable request together and puts a short explanation beside the selected row. For a captured header, Enter includes or excludes it; for an added header, Enter removes it. Selecting the URL instead explains that changing the destination clears the body and header choices.
+
+The sequence across the top names the stages: Edit, Review, Send and Result. Its highlighted stage shows where you are, not how much network work is complete. Opening Review shows the effective destination and outgoing fields; an explicit send action is still required. Scrolling, resizing or reading guidance does not send anything.
+
+On a narrow terminal, the guidance sits directly below the request instead of squeezing the fields into a narrow column. Long reviews remain scrollable, with an indicator when more details are available. A previous result remains a separate observation and can be reopened from the draft; it must not silently describe edits made after that send.
+
 ## Give the draft its own text
 
 A draft begins as a copy of selected information. It does not need another copy of the entire capture, its response bodies, or every timing. It needs its own URL text, header choices, and the identity of the request it came from.

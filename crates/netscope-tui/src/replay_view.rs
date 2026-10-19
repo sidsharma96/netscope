@@ -926,9 +926,9 @@ impl ReplayEditor {
             .map(|(i, name)| {
                 ratatui::text::Span::styled(
                     if i == active {
-                        format!("[ {} {name} ]", i + 1)
+                        format!("[ {} {name} ]{} ", i + 1, if i < 3 { " →" } else { "" })
                     } else {
-                        format!("  {} {name}{}", i + 1, if i < 3 { " →" } else { "" })
+                        format!(" {} {name}{} ", i + 1, if i < 3 { " →" } else { "" })
                     },
                     Style::default().fg(if i == active {
                         crate::workspace_view::MINT
@@ -963,75 +963,93 @@ impl ReplayEditor {
             ]),
             steps,
         );
-        if content.width < 100 || matches!(self.mode, Mode::Compare | Mode::SaveReview(_, _)) {
+        if matches!(self.mode, Mode::Compare | Mode::SaveReview(_, _)) {
             self.draw_panel(frame, content, session);
             return;
         }
-        let [left, right] =
-            Layout::horizontal([Constraint::Percentage(45), Constraint::Min(1)]).areas(content);
-        let editing = active == 0;
-        self.draw_panel(frame, if editing { left } else { right }, session);
-        let passive = if editing { right } else { left };
-        let title = if editing {
-            " Context / retained result "
-        } else {
-            " Request · separate from capture "
-        };
-        let block = crate::workspace_view::block(title.into(), false);
-        let inner = block.inner(passive);
-        frame.render_widget(block, passive);
-        let mut lines = if editing {
-            vec![
-                "PREPARE → CHECK → SEND".into(),
-                "No request is sent while editing.".into(),
-                "Review the destination, headers and body before Send.".into(),
-                String::new(),
-                "Changing the destination clears body and header choices.".into(),
-                "Enter saves a field; Esc discards an unfinished edit.".into(),
-                "Header values remain masked until v reveals them.".into(),
-            ]
-        } else {
-            let (method, destination, bytes) = self
-                .result
-                .as_ref()
-                .filter(|_| matches!(self.mode, Mode::Result))
-                .map(|r| (r.method, r.destination.as_str(), r.request_body_bytes))
-                .unwrap_or((
-                    self.draft.method(),
-                    self.draft.url(),
-                    self.draft.body().len(),
-                ));
-            vec![
-                "DESTINATION OF THIS REQUEST".into(),
-                format!("{} {}", method.as_str(), terminal_text(destination)),
-                format!("{bytes} request body bytes · HTTP/1.1"),
-                String::new(),
-                "Capture unchanged".into(),
-                "A replay result belongs to this send, not the imported capture.".into(),
-                "Esc returns to editing; editing requires a fresh review.".into(),
-            ]
-        };
-        if editing {
-            if let Some(result) = &self.result {
-                lines.extend([
-                    String::new(),
-                    "LAST RETAINED RESULT · may describe an older draft".into(),
-                    terminal_text(&result.destination),
-                    format!(
-                        "{:?} · {} retained bytes",
-                        result.outcome,
-                        result.body.len()
-                    ),
-                    "o opens the retained result".into(),
-                ]);
-            } else {
-                lines.extend([String::new(), "No retained result yet.".into()]);
-            }
+        let mut context = self.context();
+        if matches!(self.mode, Mode::Draft) && self.result.is_some() {
+            context.push("o opens the retained result (from an earlier send).".into());
         }
+        if content.width < 100 {
+            let note_height = (crate::view::wrap_words(
+                &context.join(" "),
+                usize::from(content.width.saturating_sub(2)),
+            )
+            .len()
+                + 2)
+            .min(6) as u16;
+            let available = content.height.saturating_sub(note_height);
+            let main_height = if self.editing() {
+                available
+            } else {
+                (self
+                    .content()
+                    .iter()
+                    .map(|s| {
+                        crate::view::wrap_words(s, usize::from(content.width.saturating_sub(2)))
+                            .len()
+                    })
+                    .sum::<usize>()
+                    + 2)
+                .min(usize::from(available)) as u16
+            };
+            let main = Rect {
+                height: main_height,
+                ..content
+            };
+            let note = Rect::new(content.x, main.bottom(), content.width, note_height);
+            self.draw_panel(frame, main, session);
+            let b = crate::workspace_view::block(" NEXT / WHY ".into(), false);
+            let inner = b.inner(note);
+            frame.render_widget(b, note);
+            frame.render_widget(
+                Paragraph::new(context.join(" ")).wrap(ratatui::widgets::Wrap { trim: false }),
+                inner,
+            );
+            return;
+        }
+        let [left, right] =
+            Layout::horizontal([Constraint::Percentage(58), Constraint::Min(1)]).areas(content);
+        self.draw_panel(frame, left, session);
+        let lines = context
+            .iter()
+            .flat_map(|s| {
+                crate::view::wrap_words(s, usize::from(right.width.saturating_sub(2)))
+                    .into_iter()
+                    .chain(std::iter::once(String::new()))
+            })
+            .collect::<Vec<_>>();
+        let right = Rect {
+            height: right.height.min((lines.len() + 2) as u16),
+            ..right
+        };
+        let b = crate::workspace_view::block(" NEXT / WHY ".into(), false);
+        let inner = b.inner(right);
+        frame.render_widget(b, right);
         frame.render_widget(
-            Paragraph::new(lines.join("\n")).wrap(ratatui::widgets::Wrap { trim: false }),
+            Paragraph::new(
+                lines
+                    .into_iter()
+                    .map(crate::presentation::report_line)
+                    .collect::<Vec<_>>(),
+            ),
             inner,
         );
+    }
+    fn context(&self) -> Vec<String> {
+        match &self.mode {
+            Mode::Draft if self.row == 0 => vec!["DESTINATION".into(),"Enter edits the URL. Changing destination clears body and header choices; the original capture stays unchanged.".into()],
+            Mode::Draft if self.row <= self.draft.captured().len() => vec!["CAPTURED HEADER".into(),"Enter includes or excludes this field. Headers carry request metadata; values stay hidden until v reveals them.".into()],
+            Mode::Draft if self.row <= self.draft.captured().len()+self.draft.added().len() => vec!["ADDED HEADER".into(),"Enter removes this added field from the draft. The recorded request stays unchanged.".into()],
+            Mode::Draft if self.row == self.draft.captured().len()+self.draft.added().len()+1 => vec!["ADD REQUEST METADATA".into(),"Enter adds a header name and value. Review shows which fields will be included in the new request.".into()],
+            Mode::Draft => vec!["CHECK BEFORE SENDING".into(),"Enter opens Review. Nothing is sent yet; check the effective destination and included fields there.".into()],
+            Mode::Review | Mode::StreamReview => vec!["READY FOR YOUR DECISION".into(),"s sends this reviewed request. Esc returns to editing. A send is a new network operation, not a replay of recorded timings.".into()],
+            Mode::Running(_) => vec!["WAITING FOR THE SERVER".into(),"Esc cancels local I/O. The server may already have acted; cancellation cannot undo that work.".into()],
+            Mode::Result if self.draft.has_capture() => vec!["A NEW OBSERVATION".into(),"c compares with the captured response. A partial result contains only bytes received before the stop.".into()],
+            Mode::Result => vec!["A NEW OBSERVATION".into(),"Esc returns to the saved draft. A partial result contains only bytes received before the stop.".into()],
+            _ => vec!["EDITING LOCAL TEXT".into(),"Enter keeps this edit; Esc discards it. Editing never sends a request.".into()],
+        }
     }
     fn draw_panel(&mut self, frame: &mut Frame, area: Rect, session: &netscope_core::Session) {
         if matches!(self.mode, Mode::Compare) {
@@ -1072,7 +1090,6 @@ impl ReplayEditor {
         };
         let block = crate::workspace_view::block(title, true);
         let inner = block.inner(area);
-        frame.render_widget(block, area);
         let content = self.content();
         let mut lines: Vec<String> = content
             .iter()
@@ -1085,6 +1102,18 @@ impl ReplayEditor {
                 }
             })
             .collect();
+        let area = if self.editing() {
+            area
+        } else {
+            Rect {
+                height: area
+                    .height
+                    .min((lines.len() + 2).min(usize::from(u16::MAX)) as u16),
+                ..area
+            }
+        };
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
         let height = usize::from(inner.height);
         let cursor = self.edit_text().map(|text| {
             let width = usize::from(inner.width).max(2);
@@ -1132,6 +1161,25 @@ impl ReplayEditor {
             ),
             inner,
         );
+        if content
+            .iter()
+            .map(|s| crate::view::wrap_words(s, usize::from(inner.width).max(2)).len())
+            .sum::<usize>()
+            > height
+            && !self.editing()
+        {
+            crate::view::line(
+                frame,
+                Rect::new(
+                    area.x + 1,
+                    area.bottom() - 1,
+                    area.width.saturating_sub(2),
+                    1,
+                ),
+                " ↑↓ / PgUp PgDn · more details ".into(),
+                Style::default().fg(crate::presentation::MUTED),
+            );
+        }
         if let Some((row, column)) = cursor {
             frame.set_cursor_position((
                 inner.x + column as u16,

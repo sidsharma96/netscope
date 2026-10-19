@@ -1,30 +1,30 @@
 NETSCOPE / NEW RESULT                                                                               
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-  1 Edit →  2 Review →  3 Send →[ 4 Result ]                                                        
+ 1 Edit →  2 Review →  3 Send → [ 4 Result ]                                                        
 This is a new observation. c compares it with the captured response.                                
                                                                                                     
-┌ Request · separate from capture ──────────┐┌ New result · scroll for details ────────────────────┐
-│DESTINATION OF THIS REQUEST                ││Source #0 · GET · HTTP/1.1 · no body                 │
-│GET https://example.test/api/books         ││Only Enter or s from Review sends a request          │
-│0 request body bytes · HTTP/1.1            ││New request: https://example.test/api/books          │
-│                                           ││Outcome: Timed out; partial response retained        │
-│Capture unchanged                          ││Elapsed: 0.025s · retained 5 bytes                   │
-│A replay result belongs to this send, not  ││Response: HTTP/1.1 · 200                             │
-│the imported capture.                      ││Response headers (v reveals values):                 │
-│Esc returns to editing; editing requires a ││  content-type: [hidden; v reveals all values]       │
-│fresh review.                              ││Body preview (content encoding is not decoded):      │
-│                                           ││hello                                                │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘
+┌ New result · scroll for details ───────────────────────┐┌ NEXT / WHY ────────────────────────────┐
+│Source #0 · GET · HTTP/1.1 · no body                    ││A NEW OBSERVATION                       │
+│Only Enter or s from Review sends a request             ││                                        │
+│New request: https://example.test/api/books             ││c compares with the captured response.  │
+│Outcome: Timed out; partial response retained           ││A partial result contains only bytes    │
+│Elapsed: 0.025s · retained 5 bytes                      ││received before the stop.               │
+│Response: HTTP/1.1 · 200                                ││                                        │
+│Response headers (v reveals values):                    │└────────────────────────────────────────┘
+│  content-type: [hidden; v reveals all values]          │                                          
+│Body preview (content encoding is not decoded):         │                                          
+│hello                                                   │                                          
+└────────────────────────────────────────────────────────┘                                          
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
 ↑/↓ scroll · c compare · v reveal headers · Esc edit draft · q quit                                 

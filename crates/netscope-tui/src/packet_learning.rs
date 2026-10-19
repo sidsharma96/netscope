@@ -10,19 +10,24 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
-    text::{Line, Span},
+    text::Line,
     widgets::Paragraph,
 };
 
 #[derive(Debug, Default)]
 pub(crate) struct Learning {
     topic: usize,
+    help: bool,
     offset: usize,
     page: usize,
 }
 impl Learning {
     pub(crate) fn key(&mut self, key: KeyCode) {
         match key {
+            KeyCode::Char('h') => {
+                self.help = !self.help;
+                self.offset = 0;
+            }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.topic = self.topic.saturating_sub(1);
                 self.offset = 0;
@@ -113,6 +118,11 @@ impl Learning {
                 _ => vec!["WHAT IS STILL UNKNOWN?".into(), "A recorded packet does not prove receiver acceptance. The reader does not verify checksums, reassemble IP fragments or decrypt encrypted application data.".into(), "Unsupported bytes remain stored. Press 2 for the full report, including any parsed datagram evidence.".into()],
              })
         };
+        let explanation = if self.help {
+            explanation
+        } else {
+            packet_summary(packet, self.topic)
+        };
         self.draw(frame, area, diagram, labels, explanation);
     }
     fn draw(
@@ -136,7 +146,7 @@ impl Learning {
         ])
         .areas(area);
         frame.render_widget(
-            Paragraph::new("[1 Explain]  2 Recorded report · ↑↓ topic · PgUp/PgDn explanation")
+            Paragraph::new("[1 Explain]  2 Recorded report · ↑↓ field · h detailed help")
                 .style(Style::default().fg(MINT)),
             tabs,
         );
@@ -147,38 +157,16 @@ impl Learning {
         let inner = b.inner(summary);
         frame.render_widget(b, summary);
         frame.render_widget(
-            Paragraph::new(
-                diagram
-                    .into_iter()
-                    .map(|text| {
-                        if text.starts_with("0 [") {
-                            Line::from(
-                                text.chars()
-                                    .map(|c| {
-                                        Span::styled(
-                                            c.to_string(),
-                                            match c {
-                                                '?' | '!' => Style::default()
-                                                    .fg(crate::presentation::AMBER)
-                                                    .add_modifier(Modifier::BOLD),
-                                                '=' => Style::default().fg(MINT),
-                                                _ => Style::default(),
-                                            },
-                                        )
-                                    })
-                                    .collect::<Vec<_>>(),
-                            )
-                        } else {
-                            Line::from(text)
-                        }
-                    })
-                    .collect::<Vec<_>>(),
-            ),
+            Paragraph::new(diagram.into_iter().map(Line::from).collect::<Vec<_>>()),
             inner,
         );
         let [left, right] =
             Layout::horizontal([Constraint::Length(29), Constraint::Min(1)]).areas(body);
-        let b = block(" Choose a topic ".into(), true);
+        let left = Rect {
+            height: left.height.min(6),
+            ..left
+        };
+        let b = block(" FIELDS · ↑↓ selects ".into(), true);
         let inner = b.inner(left);
         frame.render_widget(b, left);
         frame.render_widget(
@@ -203,10 +191,40 @@ impl Learning {
             ),
             inner,
         );
-        let b = block(" What this means ".into(), false);
+        let b = block(
+            if self.help {
+                " FIELD HELP · h closes "
+            } else {
+                " SELECTED FIELD · h explains more "
+            }
+            .into(),
+            false,
+        );
+        let inner = b.inner(right);
+        let width = usize::from(inner.width).max(2);
+        let lines = if self.help {
+            explanation_lines(&explanation, width)
+        } else {
+            explanation
+                .iter()
+                .enumerate()
+                .flat_map(|(i, s)| {
+                    s.lines()
+                        .flat_map(|line| view::wrap_words(line, width))
+                        .chain((i > 0 && i + 1 < explanation.len()).then(String::new))
+                })
+                .collect()
+        };
+        let right = if self.help {
+            right
+        } else {
+            Rect {
+                height: right.height.min((lines.len() + 2) as u16),
+                ..right
+            }
+        };
         let inner = b.inner(right);
         frame.render_widget(b, right);
-        let lines = explanation_lines(&explanation, usize::from(inner.width).max(2));
         self.page = usize::from(inner.height).max(1);
         self.offset = self.offset.min(lines.len().saturating_sub(self.page));
         let position = format!(
@@ -238,6 +256,33 @@ impl Learning {
     }
 }
 
+fn packet_summary(packet: &Packet, topic: usize) -> Vec<String> {
+    let Some(tcp) = &packet.tcp else {
+        return vec![
+            "NO SUPPORTED TCP HEADER".into(),
+            if packet.udp.is_some() {
+                "This packet carries UDP. It has no TCP sequence, ACK or flags.".into()
+            } else {
+                "The TCP header is absent, unsupported or incomplete. Missing fields are not zero values.".into()
+            },
+            "Press 2 for recorded layers and bytes; h explains more.".into(),
+        ];
+    };
+    match topic {
+        0 => {
+            let mut lines = vec!["CONTROL FLAGS".into()];
+            lines.extend(FLAGS.iter().filter(|(mask,_,_)| tcp.flags & mask != 0).map(|(_,name,meaning)| format!("{name} · {meaning}")));
+            if tcp.flags == 0 { lines.push("No control flags are set.".into()); }
+            lines.push("Flags are on/off instructions. They do not prove the peer accepted this packet. Press h for all definitions.".into()); lines
+        },
+        1 => { let start = tcp.sequence.wrapping_add(u32::from(tcp.flags & 2 != 0)); let end = start.wrapping_add(tcp.declared_payload as u32);
+            vec!["WHERE DO THESE BYTES BELONG?".into(), format!("Data starts at {start}; ends before {end}. {} bytes declared, {} retained.", tcp.declared_payload, tcp.payload.len()), "Sender ── numbered bytes ──→ Peer".into(), "Sequence numbers locate bytes in this direction. SYN uses one position before data; FIN uses one after. Press h for wrap-around and capture limits.".into()]
+        },
+        2 => vec!["WHAT IS BEING ACKNOWLEDGED?".into(), if tcp.flags & 16 == 0 { format!("ACK flag is off. Field {} is inactive; it reports no receipt.", tcp.acknowledgement) } else {format!("ACK {}: this sender expects that position next from its peer.", tcp.acknowledgement)}, "Sender ←── peer's data ───── Peer
+Sender ── ACK for that data → Peer".into(), "Direction illustration, not a delivery trace. ACK reports TCP receipt, not application processing.".into()],
+        _ => vec!["READ FROM THE OUTSIDE IN".into(), format!("{} bytes stored. TCP data occupies packet offsets [{}..{}).",packet.bytes.len(),tcp.payload.start,tcp.payload.end), "A layer carries the next layer inside it. Packet offsets locate stored bytes; sequence numbers locate bytes in a stream.".into(), "Press 2 for recorded layers and hex; h explains the boundaries.".into()],
+    }
+}
 fn explanation_lines(paragraphs: &[String], width: usize) -> Vec<String> {
     paragraphs
         .iter()

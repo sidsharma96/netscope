@@ -1,7 +1,7 @@
 NETSCOPE / SENDING                                                              
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-  1 Edit →  2 Review →[ 3 Send ]  4 Result                                      
+ 1 Edit →  2 Review → [ 3 Send ] →  4 Result                                    
 Active network operation · Esc cancels; retained data stays available.          
                                                                                 
 ┌ ◐ Active · Esc cancels ──────────────────────────────────────────────────────┐
@@ -11,14 +11,14 @@ Active network operation · Esc cancels; retained data stays available.
 │Sending a new request · Esc cancels                                           │
 │10 seconds total · 2 MiB body limit · no redirects or retries                 │
 │Cancellation stops local I/O; the server may already have acted.              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
+┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
+│WAITING FOR THE SERVER Esc cancels local I/O. The server may already have     │
+│acted; cancellation cannot undo that work.                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
 Esc cancel · q / Ctrl+c quit and cancel                                         

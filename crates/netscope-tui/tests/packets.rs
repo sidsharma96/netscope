@@ -154,7 +154,7 @@ fn explanations_preserve_identity_and_report_access_across_topics_and_resize()
         "../../../tests/fixtures/pcap/streams.pcap"
     ))?;
     let original = netscope_tui::packet_view::packet_summary(&capture);
-    for (width, height) in [(80, 24), (100, 30), (160, 50)] {
+    for (width, height) in [(80, 24), (100, 30), (120, 34), (160, 50)] {
         let mut app = PacketApp::new(&capture);
         app.key(KeyEvent::from(KeyCode::Enter), &capture);
         assert!(render(&capture, &mut app, width, height)?.contains("[1 Explain]"));
@@ -163,6 +163,10 @@ fn explanations_preserve_identity_and_report_access_across_topics_and_resize()
         app.key(KeyEvent::from(KeyCode::Down), &capture);
         let ack = render(&capture, &mut app, width, height)?;
         assert!(ack.contains("ACK flag is off"));
+        app.key(KeyEvent::from(KeyCode::Char('h')), &capture);
+        assert!(render(&capture, &mut app, width, height)?.contains("FIELD HELP"));
+        app.key(KeyEvent::from(KeyCode::Char('h')), &capture);
+        assert_eq!(render(&capture, &mut app, width, height)?, ack);
         app.key(KeyEvent::from(KeyCode::PageDown), &capture);
         let _ = render(&capture, &mut app, width, height)?;
         assert!(render(&capture, &mut app, 50, 10)?.contains("resize"));

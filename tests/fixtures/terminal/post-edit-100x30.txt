@@ -1,30 +1,30 @@
 NETSCOPE / REPLAY DRAFT                                                                             
 synthetic.har · 1 requests                                                                          
 Capture unchanged · only Review → Send starts network traffic                                       
-[ 1 Edit ]  2 Review →  3 Send →  4 Result                                                          
+[ 1 Edit ] →  2 Review →  3 Send →  4 Result                                                        
 Editing a field · Enter saves this edit · Esc discards it.                                          
                                                                                                     
-┌ Editing · Enter saves ────────────────────┐┌ Context / retained result ──────────────────────────┐
-│Source #0 · POST · HTTP/1.1 · 17 request bo││PREPARE → CHECK → SEND                               │
-│dy bytes                                   ││No request is sent while editing.                    │
-│Only Enter or s from Review sends a request││Review the destination, headers and body before Send.│
-│EDIT BODY · Ctrl+n newline · Tab inserts ta││                                                     │
-│b                                          ││Changing the destination clears body and header      │
-│←/→ move · Home/End start/end · Backspace/D││choices.                                             │
-│elete remove · Ctrl+u clear                ││Enter saves a field; Esc discards an unfinished edit.│
-│{"title":"café"}                           ││Header values remain masked until v reveals them.    │
-│[type at cursor · Enter saves · Esc cancels││                                                     │
-│]                                          ││No retained result yet.                              │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-│                                           ││                                                     │
-└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘
+┌ Editing · Enter saves ─────────────────────────────────┐┌ NEXT / WHY ────────────────────────────┐
+│Source #0 · POST · HTTP/1.1 · 17 request body bytes     ││EDITING LOCAL TEXT                      │
+│Only Enter or s from Review sends a request             ││                                        │
+│EDIT BODY · Ctrl+n newline · Tab inserts tab            ││Enter keeps this edit; Esc discards it. │
+│←/→ move · Home/End start/end · Backspace/Delete remove ││Editing never sends a request.          │
+│· Ctrl+u clear                                          ││                                        │
+│{"title":"café"}                                        │└────────────────────────────────────────┘
+│[type at cursor · Enter saves · Esc cancels]            │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+│                                                        │                                          
+└────────────────────────────────────────────────────────┘                                          
 Ctrl+n newline · Tab tab · Enter save · Esc cancel · Ctrl+c quit                                    

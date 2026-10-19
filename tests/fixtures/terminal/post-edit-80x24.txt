@@ -1,7 +1,7 @@
 NETSCOPE / REPLAY DRAFT                                                         
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-[ 1 Edit ]  2 Review →  3 Send →  4 Result                                      
+[ 1 Edit ] →  2 Review →  3 Send →  4 Result                                    
 Editing a field · Enter saves this edit · Esc discards it.                      
                                                                                 
 ┌ Editing · Enter saves ───────────────────────────────────────────────────────┐
@@ -16,9 +16,9 @@ Editing a field · Enter saves this edit · Esc discards it.
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
+│EDITING LOCAL TEXT Enter keeps this edit; Esc discards it. Editing never sends│
+│a request.                                                                    │
 └──────────────────────────────────────────────────────────────────────────────┘
 Ctrl+n newline · Tab tab · Enter save · Esc cancel · Ctrl+c quit                

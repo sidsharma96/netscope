@@ -1,7 +1,7 @@
 NETSCOPE / REVIEW                                                               
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-  1 Edit →[ 2 Review ]  3 Send →  4 Result                                      
+ 1 Edit → [ 2 Review ] →  3 Send →  4 Result                                    
 Check the destination and included fields. s sends a real request.              
                                                                                 
 ┌ Review · s sends ────────────────────────────────────────────────────────────┐
@@ -16,9 +16,9 @@ Check the destination and included fields. s sends a real request.
 │No body framing, cookies, auth, or User-Agent added implicitly                │
 │Semantic preview; header spelling/order may differ                            │
 │Captured headers left out:                                                    │
-│  X-Example                                                                   │
-│  X-Example                                                                   │
-│                                                                              │
-│                                                                              │
+└ ↑↓ / PgUp PgDn · more details ───────────────────────────────────────────────┘
+┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
+│READY FOR YOUR DECISION s sends this reviewed request. Esc returns to editing.│
+│A send is a new network operation, not a replay of recorded timings.          │
 └──────────────────────────────────────────────────────────────────────────────┘
 ↑/↓ scroll · v headers · Enter / s send · l review live SSE · Esc edit          

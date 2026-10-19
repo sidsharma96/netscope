@@ -58,7 +58,9 @@ The following table gives the most common control bits a concrete purpose. “Se
 
 Other recorded bits include URG, which makes the urgent-pointer field active, and ECE/CWR, used for explicit congestion notification. Their meaning depends on other fields and negotiated behaviour. Netscope labels these bits, but does not decode the urgent pointer or reconstruct congestion control. The [TCP header specification](https://www.rfc-editor.org/rfc/rfc9293#section-3.1) defines the fields and their control-bit meanings.
 
-In the packet inspector, Explain shows both the flag names and their raw hexadecimal value. Selecting Flags opens the definitions; selecting ACK explains whether this particular number is active. The Recorded report remains available for the checked layer descriptions and byte preview. If there is no supported TCP header—for example, the packet carries UDP—the view explains that absence instead of displaying invented zero-valued TCP fields.
+In the packet inspector, the recorded values stay above a compact field selector. Choosing Flags shows the meanings of the bits set in this packet; choosing ACK explains whether this particular number is active. The short explanation gives the immediate consequence first. Optional field help keeps the full definitions and capture limitations available without crowding that first reading.
+
+The ACK view includes a direction illustration: data travels from the peer toward this sender, and the sender reports an acknowledgement back. This drawing explains what the field refers to; it is not evidence that those packets were captured or accepted. A zero with the ACK flag set can be a real sequence position, while a zero with that flag off is an inactive field. The recorded values and the explanation must keep that distinction visible. The Recorded report remains available for the checked layer descriptions and byte preview. If there is no supported TCP header—for example, the packet carries UDP—the view explains that absence instead of displaying invented zero-valued TCP fields.
 
 ## Check availability before indexing
 

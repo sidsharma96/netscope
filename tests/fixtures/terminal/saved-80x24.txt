@@ -1,7 +1,7 @@
 NETSCOPE / REPLAY DRAFT                                                         
 synthetic.har · 0 requests                                                      
 Saved request · no capture · only Review → Send starts network traffic          
-[ 1 Edit ]  2 Review →  3 Send →  4 Result                                      
+[ 1 Edit ] →  2 Review →  3 Send →  4 Result                                    
 Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.         
                                                                                 
 ┌ Draft · Enter chooses ───────────────────────────────────────────────────────┐
@@ -11,14 +11,14 @@ Prepare a separate request. ↑↓ chooses a field; Enter edits or reviews.
 │> Edit URL: http://127.0.0.1:8080/books                                       │
 │  Add a header                                                                │
 │  Review request                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
+┌ NEXT / WHY ──────────────────────────────────────────────────────────────────┐
+│DESTINATION Enter edits the URL. Changing destination clears body and header  │
+│choices; the original capture stays unchanged.                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
 m method · t format · b body · w save · Enter choose/save · Esc back · Ctrl+c qu

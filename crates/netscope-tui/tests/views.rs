@@ -224,14 +224,12 @@ fn workbench_render_and_resize_never_queue_send_or_save() -> Result<(), Box<dyn 
 {
     let session = session()?;
     let mut app = reviewed_app(&session);
-    for (width, height) in [(120, 30), (80, 24), (100, 30)] {
+    for (width, height) in [(120, 34), (80, 24), (100, 30)] {
         let text = render(&session, &mut app, width, height)?;
         assert!(text.contains("[ 2 Review ]"));
         assert!(text.contains("Enter / s send"));
-        assert_eq!(
-            text.contains("Request · separate from capture"),
-            width >= 100
-        );
+        assert!(text.contains("NEXT / WHY"));
+        assert!(text.contains("READY FOR YOUR DECISION"));
         let editor = app.replay.as_mut().ok_or("editor")?;
         assert!(editor.take_send().is_none());
         assert!(editor.take_save().is_none());
@@ -2593,5 +2591,24 @@ fn nonstandard_exporter_timing_is_not_displayed_as_a_duration()
     let text = netscope_tui::inspector_lines(&request, RequestId(0)).join("\n");
     assert!(text.contains("Exporter value -0.787 · not a duration"));
     assert!(!text.contains("-0.787 ms"));
+    Ok(())
+}
+
+#[test]
+fn replay_guidance_follows_selection_without_sending() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session()?;
+    for (width, height) in [(80, 24), (120, 34)] {
+        let mut app = App::new(&session);
+        app.resize(width, height, &session);
+        app.apply(Action::Open, &session);
+        app.apply(Action::Replay, &session);
+        assert!(render(&session, &mut app, width, height)?.contains("DESTINATION"));
+        press(&mut app, &session, KeyCode::Down);
+        let header = render(&session, &mut app, width, height)?;
+        assert!(header.contains("CAPTURED HEADER"));
+        assert!(header.contains("[hidden; v reveals all values]"));
+        assert!(app.replay.as_mut().ok_or("editor")?.take_send().is_none());
+        assert!(app.replay.as_mut().ok_or("editor")?.take_save().is_none());
+    }
     Ok(())
 }

@@ -1,7 +1,7 @@
 NETSCOPE / RESPONSE COMPARISON                                                  
 synthetic.har · 1 requests                                                      
 Capture unchanged · only Review → Send starts network traffic                   
-  1 Edit →  2 Review →  3 Send →[ 4 Result ]                                    
+ 1 Edit →  2 Review →  3 Send → [ 4 Result ]                                    
 Aligned rows compare observations. ↑↓ scrolls both columns.                     
                                                                                 
 ┌ Captured response · original ────────┐┌ Replay response · new observation ───┐
