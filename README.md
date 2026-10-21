@@ -4,7 +4,9 @@ A Rust terminal application for inspecting HTTP and supported packet captures an
 
 ## Install and start
 
-From a source checkout:
+Install the registry package with `cargo install netscope --locked` (Rust 1.92 or newer). Cargo compiles the source on your machine; this is not a prebuilt-binary download.
+
+Or install from a source checkout:
 
 ```sh
 cargo install --path crates/netscope-tui --locked
@@ -12,7 +14,7 @@ netscope --help
 netscope tests/fixtures/har/single-request.har
 ```
 
-The command is `netscope`; Cargo installs it into its configured bin directory, which must be on PATH. See [installation](docs/INSTALLATION.md) for prerequisites, selecting version 0.2.0, offline builds, and removal. Opening a capture or saved draft never sends a request.
+The command is `netscope`; Cargo installs it into its configured bin directory, which must be on PATH. See [installation](docs/INSTALLATION.md) for prerequisites, selecting a release version, offline builds, and removal. Opening a capture or saved draft never sends a request.
 
 ## Inspect a capture
 
@@ -28,7 +30,7 @@ Press r from an eligible GET/POST inspector to create a separate editable draft.
 
 Press w from a valid draft to name a file and confirm its save preview. Reopen with `netscope --draft request.json`. Known credential headers are excluded from saved files. Use the [local testing walkthrough](docs/DEVELOPMENT.md#try-a-local-send) to try GET, JSON POST, and save/reopen.
 
-Replay uses HTTP/1.1 over HTTP or verified HTTPS. POST text is limited to 16 KiB; responses have a 10-second total deadline and a 2 MiB body limit. Redirects, retries, proxy discovery, a browser cookie jar, and decompression are absent. The [release notes](CHANGELOG.md) describe version 0.2.0 and its boundaries.
+Replay uses HTTP/1.1 over HTTP or verified HTTPS. POST text is limited to 16 KiB; responses have a 10-second total deadline and a 2 MiB body limit. Redirects, retries, proxy discovery, a browser cookie jar, and decompression are absent. The [release notes](CHANGELOG.md) describe the released versions and its boundaries.
 
 ## Learn and contribute
 

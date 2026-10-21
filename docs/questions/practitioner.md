@@ -17,7 +17,7 @@ The workspace has four crates: `netscope-core`, `netscope-import`, `netscope-net
 
 The dependencies point toward the data rules: the terminal crate depends on import and net, and both of those depend on core. Keeping I/O out of core makes its analysis deterministic and easy to test with plain values. It also gives a structural guarantee: the crates that parse captures have no network dependency, so opening a capture cannot send traffic. The workspace lints also forbid `unsafe` code and deny `unwrap` and `expect`.
 
-**Learn more:** [Make dependencies point toward the data rules](../chapters/23-shaping-the-program.md#make-dependencies-point-toward-the-data-rules) · [Package boundaries](../ARCHITECTURE.md#package-boundaries) · [`[dependencies]`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/Cargo.toml#L11-L14) · [`[workspace.lints.rust]`](https://github.com/sidsharma96/netscope/blob/main/Cargo.toml#L15-L23)
+**Learn more:** [Make dependencies point toward the data rules](../chapters/23-shaping-the-program.md#make-dependencies-point-toward-the-data-rules) · [Package boundaries](../ARCHITECTURE.md#package-boundaries) · [`[dependencies]`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/Cargo.toml#L18) · [`[workspace.lints.rust]`](https://github.com/sidsharma96/netscope/blob/main/Cargo.toml#L15-L23)
 
 </details>
 

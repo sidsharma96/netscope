@@ -465,11 +465,11 @@ impl Drop for Worker {
 #[cfg(test)]
 mod tests;
 
-#[doc = include_str!("../../../docs/chapters/17-waiting-for-a-response.md")]
+#[doc = include_str!("../lessons/17-waiting-for-a-response.md")]
 pub mod waiting_lesson {}
 
 /// Pure comparison of captured and replayed response data.
 pub mod comparison;
 
-#[doc = include_str!("../../../docs/chapters/18-comparing-responses.md")]
+#[doc = include_str!("../lessons/18-comparing-responses.md")]
 pub mod comparison_lesson {}

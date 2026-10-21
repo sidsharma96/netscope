@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.2.1 — October 20, 2026
+
+- Name the installable package `netscope`, retaining the executable name and source directory. Prepare versioned registry dependencies and package descriptions.
+- Apply MIT OR Apache-2.0 licensing and include both licenses in every package. Include embedded book lessons as regular archive files, with the book remaining their single source.
+- Verify extracted package builds and archive contents in CI. The install command is `cargo install netscope --locked`.
+
 ## 0.2.0 — October 20, 2026
 
 This source release completes the agreed M1–M8 scope and includes the interface and book refinements below. Install from tag `v0.2.0` using Cargo. There are no crates.io packages or prebuilt executables; Windows interactive behavior remains unverified.

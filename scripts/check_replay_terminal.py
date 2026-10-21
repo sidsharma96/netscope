@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path(os.environ.get('NETSCOPE_CHECK_BINARY', ROOT / 'target/debug/netscope'))
 WORKING_DIRECTORY = Path(os.environ.get('NETSCOPE_CHECK_CWD', ROOT))
 if 'NETSCOPE_CHECK_BINARY' not in os.environ:
-    subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--locked', '--offline'], cwd=ROOT, check=True)
+    subprocess.run(['cargo', 'build', '-p', 'netscope', '--locked', '--offline'], cwd=ROOT, check=True)
 
 
 from terminal_cells import screen_text

@@ -13,6 +13,8 @@ jobs:
         run: cargo fetch --locked
       - name: Check Rust and documentation
         run: python3 scripts/check.py
+      - name: Check registry packages
+        run: python3 scripts/check_package.py
       - name: Check terminal restoration
         run: python3 scripts/check_terminal.py
       - name: Check local replay and cancellation

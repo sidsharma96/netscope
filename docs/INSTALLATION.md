@@ -1,6 +1,6 @@
 # Install and run Netscope
 
-Version 0.2.0 installs from a local checkout. Use `git checkout v0.2.0` in a clean checkout to select this release before installing. It is not published on crates.io. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
+Version 0.2.1 is the first registry release: install it with `cargo install netscope --version 0.2.1 --locked`. For a source installation, use `git checkout v0.2.1` in a clean checkout before the command below. The older v0.2.0 tag remains a source-only release. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
 
 From the repository root:
 
@@ -10,7 +10,7 @@ netscope --version
 netscope --help
 ```
 
-The package is named netscope-tui; the installed command is netscope. Cargo uses a release build for installation. Its usual destination is `$HOME/.cargo/bin`, unless your Cargo configuration or environment selects another installation root. Ensure that directory is on PATH. On a standard macOS/Linux rustup setup, opening a new terminal usually activates the configured environment. Use `command -v netscope` to see which executable your shell finds. You can also run the installed executable by its full path. See [Cargo's installation reference](https://doc.rust-lang.org/cargo/commands/cargo-install.html) for destination options.
+Both the package and installed command are named netscope. In the v0.2.0 source tag, the package was named netscope-tui. Cargo uses a release build for installation. Its usual destination is `$HOME/.cargo/bin`, unless your Cargo configuration or environment selects another installation root. Ensure that directory is on PATH. On a standard macOS/Linux rustup setup, opening a new terminal usually activates the configured environment. Use `command -v netscope` to see which executable your shell finds. You can also run the installed executable by its full path. See [Cargo's installation reference](https://doc.rust-lang.org/cargo/commands/cargo-install.html) for destination options.
 
 After dependencies have been downloaded, add `--offline` to the install command to prohibit Cargo network access. `--locked` keeps dependency selection tied to Cargo.lock. Reinstall from the updated checkout to replace the installed version; editing source files alone does not update it. This project is not publishing a registry package or downloading prebuilt release binaries in this step.
 
@@ -44,7 +44,7 @@ python3 scripts/check_install.py
 
 This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, malformed and empty captures, and failure exit codes. On POSIX systems it also runs navigation/search, small-window recovery, local GET/POST replay, cancellation, and save/reopen against the installed release binary. An injected drawing-error check uses a separate development probe. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
 
-To remove a normal Cargo installation, use `cargo uninstall netscope-tui`. If you selected a custom installation root, supply that same `--root` to uninstall.
+To remove a normal Cargo installation, use `cargo uninstall netscope` (or `cargo uninstall netscope-tui` for the older source release). If you selected a custom installation root, supply that same `--root` to uninstall.
 
 <a id="packet-inspection-on-unreleased-main"></a>
 
@@ -53,7 +53,16 @@ To remove a normal Cargo installation, use `cargo uninstall netscope-tui`. If yo
 Version 0.2.0 includes M5–M8. To run the current packet viewer without replacing an older installed binary:
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap
+cargo run -p netscope --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap
 ```
 
 Use the normal source-install command from this checkout to install this release. --pcap selects the bounded classic-PCAP subset; it does not require capture privileges or libpcap/tcpdump to run. See [milestone status](MILESTONES.md) and the [packet walkthrough](DEVELOPMENT.md#inspect-packets-and-streams).
+
+
+## Registry publication
+
+Version 0.2.1 packages the application as `netscope`. Registry installation compiles the published source on your machine; it does not download a prebuilt executable. The directory remains `crates/netscope-tui`; its Cargo package name is now `netscope`, so development commands use `cargo run -p netscope`.
+
+Run `python3 scripts/check_package.py` before publishing. It creates and builds all four archives using Cargo's temporary registry, then checks their normalized dependency versions, both license files and embedded lesson text. Repository tests and examples use shared fixtures and remain in the checkout rather than the published archives. The current workspace test suite still checks the book's Rust examples.
+
+Sign in to crates.io, verify your email and create a publishing token. Run `cargo login` locally and enter the token only at its prompt. After the workspace and packaging checks pass, `cargo publish --workspace --locked` publishes the dependencies before the application. Recheck name ownership and availability before the first upload. Confirm a clean `cargo install netscope --version 0.2.1 --locked` from the registry afterwards, then tag the published commit.

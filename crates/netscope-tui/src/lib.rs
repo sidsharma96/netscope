@@ -22,7 +22,7 @@ pub mod saved_file;
 mod text_edit;
 
 /// Text boundaries differ from byte positions and screen columns.
-#[doc = include_str!("../../../docs/chapters/21-moving-through-text.md")]
+#[doc = include_str!("../lessons/21-moving-through-text.md")]
 pub mod text_editing_lesson {}
 
 mod sse_view;

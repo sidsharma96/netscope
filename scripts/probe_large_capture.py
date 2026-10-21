@@ -30,7 +30,7 @@ def capture(count, scenario):
 
 
 if __name__ == '__main__':
-    subprocess.run(['cargo', 'build', '--release', '-p', 'netscope-tui', '--example', 'capture_probe', '--locked', '--offline'], cwd=ROOT, check=True)
+    subprocess.run(['cargo', 'build', '--release', '-p', 'netscope', '--example', 'capture_probe', '--locked', '--offline'], cwd=ROOT, check=True)
     with tempfile.TemporaryDirectory(prefix='netscope-large-') as directory:
         for scenario in ('spread', 'overlapping-retries', 'overlapping-redirects'):
             for count in (1000, 10000):

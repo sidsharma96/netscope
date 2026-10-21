@@ -611,8 +611,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "netscope"
+version = "0.2.1"
+dependencies = [
+ "base64 0.22.1",
+ "crossterm",
+ "netscope-core",
+ "netscope-import",
+ "netscope-net",
+ "ratatui",
+ "serde_json",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
 name = "netscope-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -621,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "netscope-import"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -633,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "netscope-net"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bytes",
  "http-body-util",
@@ -645,21 +660,6 @@ dependencies = [
  "tokio-rustls",
  "url",
  "webpki-roots",
-]
-
-[[package]]
-name = "netscope-tui"
-version = "0.2.0"
-dependencies = [
- "base64 0.22.1",
- "crossterm",
- "netscope-core",
- "netscope-import",
- "netscope-net",
- "ratatui",
- "serde_json",
- "unicode-segmentation",
- "unicode-width 0.2.0",
 ]
 
 [[package]]

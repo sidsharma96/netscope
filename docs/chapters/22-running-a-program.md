@@ -8,7 +8,7 @@ There are two separate steps. First, the Rust source must become an [executable]
 
 A Rust source file contains instructions written for people and the [compiler](../GLOSSARY.md#compiler). The compiler checks those instructions and translates them into a form the target computer can execute. Building also brings together code from the application's dependencies. The result includes an executable file: a program the operating system can start.
 
-[Cargo](../GLOSSARY.md#cargo) coordinates this work. It reads package information from Cargo.toml, selects dependencies under the lockfile rules, and invokes the compiler. In this project, the package that owns the terminal application is named netscope-tui, while its executable is named netscope. Package names and command names can differ.
+[Cargo](../GLOSSARY.md#cargo) coordinates this work. It reads package information from Cargo.toml, selects dependencies under the lockfile rules, and invokes the compiler. The current application package and its executable are both named netscope. The source directory still has its earlier name, crates/netscope-tui. Package names, directory names and command names can differ; Cargo reads the manifest to find the package and executable names.
 
 Follow the arrows in this diagram as actions that produce or place files. Running the final file is a later action; compiling does not start the interactive application.
 
@@ -29,6 +29,14 @@ A running process with its own memory
 ```
 
 The source and executable are separate files. Changing a source file does not rewrite an already installed executable. You must rebuild and reinstall to make the installed command reflect your edits. Cargo's [introduction to building and running](https://doc.rust-lang.org/book/ch01-03-hello-cargo.html) explains that separation and its normal build locations.
+
+## A registry supplies source, not a running program
+
+Suppose another developer wants to install Netscope without cloning the repository. A package registry stores a versioned archive of the source files. Cargo can download that archive and the dependencies it names, compile them on the developer's machine, and install the resulting executable. Publishing makes the source available; installing performs the build. A downloadable prebuilt executable would skip that compilation step, but it would have to match the user's operating system and processor.
+
+An archive has a smaller boundary than a repository. A source file cannot assume that a neighboring project folder will exist on the recipient's machine. Netscope's Rust documentation embeds chapters using `include_str!`, a macro that reads a text file during compilation. The exclamation mark marks a macro invocation. The resulting text becomes part of the documentation; it is not read from disk when the installed program opens a capture.
+
+That distinction explains a packaging failure you can predict: if a referenced chapter is missing from the archive, compilation fails before the user can run Netscope. We therefore include the referenced chapters inside each package and verify their contents against the book. The full test fixtures and generated book website remain in the repository. A successful build from an extracted archive checks this boundary more directly than another build inside the original checkout.
 
 ## The shell has to find the executable
 

@@ -98,7 +98,7 @@ Calculating only when Hosts is first opened would defer that work for readers wh
 From the project directory, run:
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/multi-host.har
+cargo run -p netscope --locked --offline -- tests/fixtures/har/multi-host.har
 ```
 
 Press h to open Hosts. The invented capture contains three host groups. Select `api.example.test` and press Enter to see its three requests. The summary includes one recorded 2xx status, one 5xx status, and one entry with no status recorded.

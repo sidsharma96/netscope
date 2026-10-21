@@ -14,7 +14,7 @@ from terminal_cells import screen_text
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path(os.environ.get('NETSCOPE_CHECK_BINARY', ROOT / 'target/debug/netscope'))
 WORKING_DIRECTORY = Path(os.environ.get('NETSCOPE_CHECK_CWD', ROOT))
-subprocess.run(['cargo', 'build', '-p', 'netscope-tui', '--examples', '--bins', '--locked', '--offline'], cwd=ROOT, check=True)
+subprocess.run(['cargo', 'build', '-p', 'netscope', '--examples', '--bins', '--locked', '--offline'], cwd=ROOT, check=True)
 
 
 def check(command, expected_exit, quit_key, small=False):

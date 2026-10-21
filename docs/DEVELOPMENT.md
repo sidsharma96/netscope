@@ -10,7 +10,7 @@ This checks rustfmt, every workspace target, Clippy, Rust tests and rustdoc exam
 
 ## Current implementation
 
-The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET or POST requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
+The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET or POST requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
 
 Core timing tests exercise timing distinctions, valid precision, and invalid numbers. Rustdoc also checks chapter examples, including an intentional compiler rejection. The pure tests do not depend on elapsed time, network, random input, or terminal state; the separate pseudo-terminal check is described below. Importer tests consume the synthetic fixtures and mutate fixed values to cover malformed input, body states, warnings, identity, and limits. Binary integration tests verify exit codes and escaped output.
 
@@ -55,7 +55,7 @@ The GitHub workflow is configured to run the same check script on Linux. The rep
 
 ## Terminal verification
 
-`cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har` starts the viewer when both input and output are terminals. Up/Down or j/k move; Enter inspects; Esc returns; ? toggles help; q quits. Press h for host summaries, Enter to filter, and a to return to all requests. From Requests, / edits a literal, case-sensitive full-URL search; Enter applies and Esc cancels. Ctrl+u clears the edit. Search combines with the host filter; an empty query clears only search, while a clears both filters. Ctrl+C also requests a clean exit. Redirected output uses the safe summary without changing terminal state.
+`cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har` starts the viewer when both input and output are terminals. Up/Down or j/k move; Enter inspects; Esc returns; ? toggles help; q quits. Press h for host summaries, Enter to filter, and a to return to all requests. From Requests, / edits a literal, case-sensitive full-URL search; Enter applies and Esc cancels. Ctrl+u clears the edit. Search combines with the host filter; an empty query clears only search, while a clears both filters. Ctrl+C also requests a clean exit. Redirected output uses the safe summary without changing terminal state.
 
 `python3 scripts/check_terminal.py` is a separate POSIX pseudo-terminal check. It builds the terminal_probe example, compares input/output modes after keyboard exit and an injected rendering error, and verifies alternate-screen exit and cursor visibility. The check has a bounded process timeout and is separate from the deterministic buffer suite. On macOS it excludes the transient PENDIN input-retype bit when comparing mode flags. GitHub's Linux workflow runs this check after the pure suite.
 
@@ -85,7 +85,7 @@ python3 -m http.server 8080 --bind 127.0.0.1 --directory /tmp/netscope-local
 In the Netscope terminal, run:
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
+cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har
 ```
 
 Enter opens the inspector; r opens a draft. On URL, press Enter, Ctrl+u, and type `http://127.0.0.1:8080/hello.txt`, then Enter saves. Leave headers unselected, move to Review request, and press Enter to review. Check the local destination before pressing Enter or s again to send. Expect status 200, a complete body, and the local greeting. Press c to compare the captured and replayed responses side by side. Up/Down scroll both columns, v reveals header values, and Esc returns to the result. The [comparison contract](contracts/m3-response-comparison.md) distinguishes stored-byte equality from incomplete or unavailable data. Esc from the result returns to the draft; Esc again returns to the unchanged captured request. Stop the local server with Ctrl+C in its terminal.
@@ -121,7 +121,7 @@ From a valid replay draft, press w. Enter a name, then a file path such as `/tmp
 Close Netscope and reopen the file:
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- --draft /tmp/book.json
+cargo run -p netscope --locked --offline -- --draft /tmp/book.json
 ```
 
 The saved name identifies the screen. The request opens for editing, with no captured response or comparison. Review and explicitly Send only when ready. Esc from the draft exits. The supplied `tests/fixtures/drafts/book.json` is a local POST example you can open with the same command and use with the echo server above.
@@ -157,7 +157,7 @@ Keep [the architecture record](ARCHITECTURE.md) alongside material changes. Reco
 ## Inspect retained SSE text
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/sse.har
+cargo run -p netscope --locked --offline -- tests/fixtures/har/sse.har
 ```
 
 Open request #0, press 3 for Body, and scroll to SSE EVENTS. Its synthetic text produces an added event containing `first line\ncafé`, then an empty message event inheriting ID book-7. Retry 1500 is a setting, not an observed retry. The final block is unfinished. The original body appears below the derived section. Request #1 contains base64-decoded UTF-8 with an empty ID reset; #2 has no retained text; #3 contains SSE-like plain text that is not automatically interpreted. These are generated examples, not native browser recordings.
@@ -188,11 +188,11 @@ Classic PCAP only: Ethernet with bounded VLAN tags, BSD loopback (link type 0, m
 
 ### Reduced motion during terminal review
 
-Run `NETSCOPE_REDUCE_MOTION=1 cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/multi-host.har` from the repository root for a stationary indicator during active replay. Omitting the variable enables the activity animation. Recorded views never animate. The terminal supplies elapsed time, while tests supply fixed durations; regenerating screen buffers does not require sleeps or a network service.
+Run `NETSCOPE_REDUCE_MOTION=1 cargo run -p netscope --locked --offline -- tests/fixtures/har/multi-host.har` from the repository root for a stationary indicator during active replay. Omitting the variable enables the activity animation. Recorded views never animate. The terminal supplies elapsed time, while tests supply fixed durations; regenerating screen buffers does not require sleeps or a network service.
 
 ### Explore a packet explanation
 
-From the repository root, run `cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap`. Enter opens the selected packet in Explain. Use Up/Down to choose Flags, Sequence, ACK or Layers. The first pane explains the selected field briefly; h opens or closes the detailed guidance, and Page Down reads more when needed. Press 2 for the full recorded report, 1 to return, or Esc for the list. From a list, s opens one-way streams; Enter opens the stream inspector. It selects the first missing or conflicting range when one exists. Up/Down (or j/k and Left/Right) selects ranges; Home/End reaches the first/last range. The map highlight, byte preview and explanation follow that selection. Every retained range is reachable, including those beyond the recorded report's 64-run display cut.
+From the repository root, run `cargo run -p netscope --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap`. Enter opens the selected packet in Explain. Use Up/Down to choose Flags, Sequence, ACK or Layers. The first pane explains the selected field briefly; h opens or closes the detailed guidance, and Page Down reads more when needed. Press 2 for the full recorded report, 1 to return, or Esc for the list. From a list, s opens one-way streams; Enter opens the stream inspector. It selects the first missing or conflicting range when one exists. Up/Down (or j/k and Left/Right) selects ranges; Home/End reaches the first/last range. The map highlight, byte preview and explanation follow that selection. Every retained range is reachable, including those beyond the recorded report's 64-run display cut.
 
 Press b to switch text/hex, [ and ] to page through selected bytes, and h to open or close the detailed guidance. Page Up/Page Down scrolls guidance when needed. Press 2 for the recorded report and 1 to return with your range selection intact. Esc returns to the selected stream in the list. Stream #2 demonstrates a gap and #3 a conflict. The inspector works from 80×24 upward; smaller terminals pause navigation until resized.
 

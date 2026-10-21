@@ -19,7 +19,7 @@ root.mkdir(parents=True,exist_ok=True)
 if any(root.iterdir()):raise SystemExit('Output directory must be empty; preserve earlier campaigns')
 script=Path(__file__).resolve().parent
 (root/'cases.json').write_text(json.dumps(cases(),ensure_ascii=False,indent=2)+'\n')
-subprocess.run(['cargo','build','-p','netscope-tui','--example','check_campaign','--offline'],cwd=script.parents[1],check=True)
+subprocess.run(['cargo','build','-p','netscope','--example','check_campaign','--offline'],cwd=script.parents[1],check=True)
 processes=[]
 def wait_file(path):
     for _ in range(100):
@@ -45,7 +45,7 @@ try:
             print(f'PASS: {browser} native campaign export',flush=True)
         (root/'provenance.json').write_text(json.dumps(dict(started_utc=started,ended_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),scenarios=120,browser_runs=240,transport='loopback HTTP/1.1 and controlled self-signed HTTPS/H2',chrome_tls_exception='test certificate SPKI only',firefox_tls_exception='disposable session acceptInsecureCerts',normal_profiles_modified=False),indent=2)+'\n')
         # Probe the production client while the controlled endpoints still exist.
-        subprocess.run(['cargo','run','-p','netscope-tui','--example','check_campaign','--offline','--',str(root),'--live'],cwd=script.parents[1],check=True,timeout=240)
+        subprocess.run(['cargo','run','-p','netscope','--example','check_campaign','--offline','--',str(root),'--live'],cwd=script.parents[1],check=True,timeout=240)
 finally:
     for proc in reversed(processes):
         proc.terminate()

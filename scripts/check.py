@@ -10,7 +10,7 @@ commands = [
     ['cargo', 'clippy', '--workspace', '--all-targets', '--locked', '--offline', '--', '-D', 'warnings'],
     ['cargo', 'test', '--workspace', '--locked', '--offline'],
     ['cargo', 'build', '--workspace', '--locked', '--offline'],
-    ['cargo','run','-p','netscope-tui','--example','check_campaign','--locked','--offline','--','tests/fixtures/campaign/native-120'],
+    ['cargo','run','-p','netscope','--example','check_campaign','--locked','--offline','--','tests/fixtures/campaign/native-120'],
     [sys.executable, 'scripts/check_docs.py'],
 ]
 for command in commands:

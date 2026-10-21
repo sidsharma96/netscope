@@ -27,7 +27,7 @@ Firefox's `HTTP/1` label remains exactly as exported and is not converted to HTT
 2. Use a fresh browser profile and open its developer tools before navigating to that URL. Select the Network panel, enable recording, and clear earlier entries.
 3. Navigate to the printed URL. Wait for the title to become `Netscope capture complete`, then wait for the Network panel to finish receiving entries and response bodies. Our complete files contain nine entries, including the favicon; that incidental browser request may vary across versions.
 4. Use the browser's HAR export/save action with response content included. If exporting cookies is optional, the only cookie needed here is the synthetic one from this server. Inspect the file before adding it to the repository.
-5. Run `cargo run -p netscope-tui --locked --offline -- /absolute/path/to/export.har`. Inspect the form, JSON body, binary preview, redirect, and 404. Redirecting output exercises summary mode instead of opening the terminal interface.
+5. Run `cargo run -p netscope --locked --offline -- /absolute/path/to/export.har`. Inspect the form, JSON body, binary preview, redirect, and 404. Redirecting output exercises summary mode instead of opening the terminal interface.
 
 The helper reproduces the scenarios, not identical HAR bytes. Ports, timestamps, measurements, browser metadata, and collection order can change. Firefox documents its HAR actions in the [Network Monitor toolbar](https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/toolbar/index.html) and [request list](https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/request_list/index.html).
 

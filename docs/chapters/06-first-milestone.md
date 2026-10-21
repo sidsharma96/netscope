@@ -9,7 +9,7 @@ Use the supplied synthetic capture for this walkthrough. It contains invented tr
 From the project directory, run:
 
 ```sh
-cargo run -p netscope-tui --locked --offline -- tests/fixtures/har/single-request.har
+cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har
 ```
 
 [Cargo](../GLOSSARY.md#cargo) is Rust's build tool. This command builds and starts the terminal application, then passes it the sample file. The [development guide](../DEVELOPMENT.md) covers toolchain and dependency setup if this is your first run on another machine.
