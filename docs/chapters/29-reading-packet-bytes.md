@@ -58,9 +58,7 @@ The following table gives the most common control bits a concrete purpose. “Se
 
 Other recorded bits include URG, which makes the urgent-pointer field active, and ECE/CWR, used for explicit congestion notification. Their meaning depends on other fields and negotiated behaviour. Netscope labels these bits, but does not decode the urgent pointer or reconstruct congestion control. The [TCP header specification](https://www.rfc-editor.org/rfc/rfc9293#section-3.1) defines the fields and their control-bit meanings.
 
-In the packet inspector, the recorded values stay above a compact field selector. Choosing Flags shows the meanings of the bits set in this packet; choosing ACK explains whether this particular number is active. The short explanation gives the immediate consequence first. Optional field help keeps the full definitions and capture limitations available without crowding that first reading.
-
-The ACK view includes a direction illustration: data travels from the peer toward this sender, and the sender reports an acknowledgement back. This drawing explains what the field refers to; it is not evidence that those packets were captured or accepted. A zero with the ACK flag set can be a real sequence position, while a zero with that flag off is an inactive field. The recorded values and the explanation must keep that distinction visible. The Recorded report remains available for the checked layer descriptions and byte preview. If there is no supported TCP header—for example, the packet carries UDP—the view explains that absence instead of displaying invented zero-valued TCP fields.
+In the packet inspector, select ACK to see whether the recorded acknowledgement number is active. If the ACK flag is off, a displayed zero is simply an inactive field. With the flag on, zero can be a real sequence position. The [stream lesson](30-putting-bytes-in-order.md) explains that numbering with an example; the [usage guide](../UI_LAYOUT.md) gives the packet controls.
 
 ## Check availability before indexing
 
@@ -93,12 +91,9 @@ Try the 120-byte packet with an 80-byte capture again. If a supported TCP header
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Captured length and original length
-
-**Level:** Newcomer
-
 
 A PCAP record says the original packet was 120 bytes but only 80 were captured. What does Netscope do with the missing 40?
 
@@ -111,48 +106,7 @@ It treats them as unavailable, never as zeros. The capture tool stored only the 
 
 </details>
 
-### What can the PCAP importer read?
-
-**Level:** Practitioner
-
-
-Which container formats, link types and network and transport layers does the PCAP importer support? What happens to a packet whose layers it cannot parse?
-
-<details>
-<summary>Answer</summary>
-
-Only classic PCAP version 2.4 is supported, in either byte order and with microsecond or nanosecond timestamps. A PCAPNG file is rejected with an explicit message. The supported link types are 0 (BSD loopback, as macOS `lo0` writes), 1 (Ethernet, with up to two VLAN tags), 101 (raw IP), 113 and 276 (Linux cooked SLL and SLL2, as `tcpdump -i any` writes), 228 (raw IPv4) and 229 (raw IPv6). IPv4 and IPv6 are parsed, and the transport layers are TCP and UDP. Fragmented IPv4 packets are not reassembled, IPv6 extension headers are not walked, and checksums are never verified.
-
-Errors in the file's framing fail the import: a snap length of 0 or above 256 KiB, a file over 32 MiB, a captured length above the snap length or original length, or a timestamp fraction out of range. Two framing problems keep what was read instead: a truncated final record is dropped with a note, and the records after the 20,000th are left unread with a note. Errors inside a packet do not fail the import. The packet keeps its bytes and gets a reason in its layer list, such as "Link type unsupported; packet bytes retained". An 802.11 capture (link type 105) therefore opens, but every packet carries that reason.
-
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L188) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L255)
-
-</details>
-
-### A capture taken with a 96-byte snap length
-
-**Level:** Expert
-
-
-A capture was recorded with a snap length of 96 bytes, so every TCP payload is cut. What do the reassembled byte states look like, what does `contiguous_prefix` return, and what does the HTTP framing inspector see?
-
-<details>
-<summary>Answer</summary>
-
-Each record keeps 96 bytes. After a 14-byte Ethernet header, a 20-byte IPv4 header, and a 20 to 32-byte TCP header, between about 30 and 42 payload bytes remain. The importer adds the layer note "Capture cut: fewer bytes retained than original packet".
-
-The segment's declared payload comes from the IP length field, not from the captured length, so reassembly reserves the full sequence range the sender used. Only the retained bytes are written. The rest of each segment's range stays Missing. The stream becomes a run of Observed bytes, then a run of Missing positions, then Observed again for the next segment, and so on.
-
-`contiguous_prefix` stops at the first Missing position, inside the first data segment. The HTTP inspector therefore sees a few dozen bytes. It usually stops with "No complete HTTP/1.1 start line in prefix" or a header-line error. It never joins the retained fragments across the holes, and a Missing position is never read as a zero byte.
-
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [`retained`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L175-L179) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L372) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
-
-</details>
-
 ### Reading a two-byte number
-
-**Level:** Newcomer
-
 
 A TCP header holds the port as bytes `01 bb`. What number is that, and why can't Netscope use the computer's own byte order?
 
@@ -165,20 +119,27 @@ It is 443: the first byte is the high part, so 1 × 256 + 187. Network headers u
 
 </details>
 
-### Which length bounds a TCP payload?
-
-**Level:** Practitioner
-
-
-A TCP segment's payload length could come from the captured record length, the IP header's length field, or the snap length. Which one does Netscope use for `declared_payload`, which one for the retained byte range, and why does the difference matter?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-The IP layer computes a declared end: the start of the IP header plus the IPv4 total length, or plus 40 and the IPv6 payload length. The retained end is the smaller of that declared end and the captured bytes. `declared_payload` is the declared end minus the IP and TCP headers, so it comes from the IP length field. The retained `payload` range runs from the end of the TCP header to the retained end, so it holds only bytes that are present in the file.
+<a id="what-can-the-pcap-importer-read"></a>
 
-Two cases show why both are needed. Ethernet pads short frames to 60 bytes, and using the record length would turn that padding into fake TCP payload; the IP length excludes it. In a capture cut by its snap length, the declared length still says how much was sent, so reassembly reserves the whole sequence range and marks the uncaptured part `Missing` instead of pretending the segment was short. UDP works the same way, with a `complete` flag when the whole datagram was retained.
+[What can the PCAP importer read?](../questions/practitioner.md#what-can-the-pcap-importer-read)
 
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L265-L307) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L364-L373)
+<a id="which-length-bounds-a-tcp-payload"></a>
+
+[Which length bounds a TCP payload?](../questions/practitioner.md#which-length-bounds-a-tcp-payload)
+
+<a id="what-does-netscope-show-for-https-in-a-pcap"></a>
+
+[What does Netscope show for HTTPS in a PCAP?](../questions/practitioner.md#what-does-netscope-show-for-https-in-a-pcap)
+
+<a id="a-capture-taken-with-a-96-byte-snap-length"></a>
+
+[A capture taken with a 96-byte snap length](../questions/expert.md#a-capture-taken-with-a-96-byte-snap-length)
+
+<a id="one-far-away-segment-pushes-out-a-stream"></a>
+
+[One far-away segment pushes out a stream](../questions/expert.md#one-far-away-segment-pushes-out-a-stream)
 
 </details>

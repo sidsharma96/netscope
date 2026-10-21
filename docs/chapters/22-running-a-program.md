@@ -1,6 +1,6 @@
 # How does source code become a command?
 
-You have opened Netscope from its project directory several times. Now you want to type `netscope` from a different folder and inspect a capture there. What needs to exist for that command to work?
+You type `netscope` in a terminal and the shell reports “command not found.” The source files may already be on your computer, but that alone does not make the command available. What needs to exist for that command to work?
 
 There are two separate steps. First, the Rust source must become an [executable](../GLOSSARY.md#executable) that your computer can run. Then the shell—the program reading your terminal commands—must find that executable. Understanding the difference helps explain why a successful build can still be followed by “command not found.”
 
@@ -8,7 +8,7 @@ There are two separate steps. First, the Rust source must become an [executable]
 
 A Rust source file contains instructions written for people and the [compiler](../GLOSSARY.md#compiler). The compiler checks those instructions and translates them into a form the target computer can execute. Building also brings together code from the application's dependencies. The result includes an executable file: a program the operating system can start.
 
-[Cargo](../GLOSSARY.md#cargo) coordinates this work. It reads package information from Cargo.toml, selects dependencies under the lockfile rules, and invokes the compiler. The current application package and its executable are both named netscope. The source directory still has its earlier name, crates/netscope-tui. Package names, directory names and command names can differ; Cargo reads the manifest to find the package and executable names.
+[Cargo](../GLOSSARY.md#cargo) coordinates this work. It reads package information from Cargo.toml, selects dependencies under the lockfile rules, and invokes the compiler. A package describes a group of Rust code and the programs or libraries it builds. Its manifest is the file containing that description. Cargo reads it to find the dependencies and the executable to produce.
 
 Follow the arrows in this diagram as actions that produce or place files. Running the final file is a later action; compiling does not start the interactive application.
 
@@ -32,11 +32,9 @@ The source and executable are separate files. Changing a source file does not re
 
 ## A registry supplies source, not a running program
 
-Suppose another developer wants to install Netscope without cloning the repository. A package registry stores a versioned archive of the source files. Cargo can download that archive and the dependencies it names, compile them on the developer's machine, and install the resulting executable. Publishing makes the source available; installing performs the build. A downloadable prebuilt executable would skip that compilation step, but it would have to match the user's operating system and processor.
+You can install Netscope without obtaining the whole repository. A package registry stores versions of source code that Cargo can download. Cargo downloads the requested package and its dependencies, builds them on your computer, and installs the resulting command. The [installation guide](../INSTALLATION.md) supplies that command.
 
-An archive has a smaller boundary than a repository. A source file cannot assume that a neighboring project folder will exist on the recipient's machine. Netscope's Rust documentation embeds chapters using `include_str!`, a macro that reads a text file during compilation. The exclamation mark marks a macro invocation. The resulting text becomes part of the documentation; it is not read from disk when the installed program opens a capture.
-
-That distinction explains a packaging failure you can predict: if a referenced chapter is missing from the archive, compilation fails before the user can run Netscope. We therefore include the referenced chapters inside each package and verify their contents against the book. The full test fixtures and generated book website remain in the repository. A successful build from an extracted archive checks this boundary more directly than another build inside the original checkout.
+A prebuilt executable would skip compilation, but would need to match your operating system and processor. In either case, the result is a file the operating system can run. A registry package is useful because another person can build from it without needing your project folder. The [publishing guide](../PUBLISHING.md) covers that boundary for maintainers.
 
 ## The shell has to find the executable
 
@@ -81,12 +79,9 @@ The [entry-point contract](../contracts/m4-installation.md) records argument and
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Building, installing and running
-
-**Level:** Newcomer
-
 
 You built Netscope, but typing `netscope` in another folder prints "command not found". What are the separate steps between source code and a working command, and which one failed?
 
@@ -101,9 +96,6 @@ Building turns the Rust source into an executable file in the build directory. I
 
 ### Where a relative capture path points
 
-**Level:** Newcomer
-
-
 You run `netscope capture.har`. Netscope is installed in one folder and the shell is open in another. Which folder must contain `capture.har`?
 
 <details>
@@ -116,9 +108,6 @@ The folder the shell is in, called the working directory. A relative path such a
 </details>
 
 ### Exit status and version output
-
-**Level:** Newcomer
-
 
 What exit statuses does Netscope return, and what does `netscope --version` prove?
 

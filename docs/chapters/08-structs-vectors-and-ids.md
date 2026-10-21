@@ -109,46 +109,9 @@ The session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Why the view stores request IDs
-
-**Level:** Newcomer
-
-
-The screen must remember which request you selected across many redraws. Why does Netscope store a request ID for this instead of a reference to the request?
-
-<details>
-<summary>Answer</summary>
-
-A reference is suited to short access, such as reading during one draw. Remembering a selection lasts across many key presses and redraws. An ID is a plain number the view state can own, and the program looks the request up in the session whenever it needs it. The lookup returns an `Option`, so an ID with no matching request becomes a visible absence instead of a crash.
-
-**Learn more:** [Why store IDs?](../chapters/03-storing-requests.md#why-store-ids) · [`Session::request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L264)
-
-</details>
-
-### How does a session keep several orders?
-
-**Level:** Practitioner
-
-
-How does a `Session` identify a request, and how does it offer chronological order and per-host order without moving or copying any request?
-
-<details>
-<summary>Answer</summary>
-
-A request's identity is `RequestId`, a wrapper around the entry's position in the HAR `entries` array. That number never changes, whatever order the screen shows. The `Session` owns one `Vec<Request>` in source order and keeps separate lists of IDs for each view: `chronological` is a `Vec<RequestId>`, `host_order` is a `Vec<HostId>` sorted by host name, and each host summary keeps its own `request_ids` in chronological order. Redirect and retry evidence are vectors indexed by the same `RequestId`.
-
-Views borrow a request by looking up its ID, so sorting a view sorts small numbers and never moves the requests themselves. A lookup with an ID that is out of range returns `None` instead of panicking. A saved draft that has no captured request uses the sentinel `RequestId(usize::MAX)`, so it can never be mistaken for a real entry.
-
-**Learn more:** [Sorting should preserve identity](../chapters/08-structs-vectors-and-ids.md#sorting-should-preserve-identity) · [Why store requests in a vector addressed by RequestId?](../chapters/34-defending-the-design.md#why-store-requests-in-a-vector-addressed-by-requestid) · [`RequestId`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L6) · [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197-L205) · [`SAVED_SOURCE`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L151)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Structs and vectors
-
-**Level:** Newcomer
-
 
 What is the difference between a `struct` and a `Vec`, and how does Netscope use each for requests?
 
@@ -161,30 +124,7 @@ A `struct` groups named fields that belong to one thing, such as one request's m
 
 </details>
 
-### How are requests sorted and hosts grouped?
-
-**Level:** Practitioner
-
-
-How exactly is chronological order computed, including the tie-break and the cost? How are timestamps with different UTC offsets compared? What is the host grouping key, does it include the port, and in what order are hosts listed?
-
-<details>
-<summary>Answer</summary>
-
-`startedDateTime` must be an RFC 3339 timestamp with an explicit offset, or the import fails. The importer converts it to UTC seconds and nanoseconds, so timestamps written with different offsets compare as real instants. The chronological list is the request IDs sorted by `(instant, source index)`. Equal instants keep source order, and the sort costs O(n log n).
-
-The host key is the URL host as normalised by the `url` crate: lowercased, with international names converted to their ASCII form and IPv6 addresses in brackets. The port and scheme are not part of the key, so `example.com:8443` and `https://example.com` share one host. Hosts receive IDs in the order they first appear, using a `BTreeMap` lookup, and each host's request IDs are filled in chronological order. The host view lists hosts sorted by name, byte by byte.
-
-**Common wrong answer.** "Hosts are grouped by host and port." Netscope groups only by the normalised host name.
-
-**Learn more:** [Choose what makes a group](../chapters/12-grouping-requests.md#choose-what-makes-a-group) · [Deterministic identity and display](../contracts/m1-har-inspection.md#deterministic-identity-and-display) · [`timestamp`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L212-L216) · [`Session::new`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L209-L234)
-
-</details>
-
 ### Separate types for separate IDs
-
-**Level:** Newcomer
-
 
 A request ID and a host ID are both numbers. Why does Netscope wrap them in `RequestId` and `HostId` instead of using plain `usize` values?
 
@@ -194,5 +134,35 @@ A request ID and a host ID are both numbers. Why does Netscope wrap them in `Req
 `RequestId(usize)` and `HostId(usize)` are tuple structs, so the compiler treats them as different types. A function that expects a `RequestId` rejects a `HostId` at compile time, even when both hold the number 2. That catches a whole class of mix-ups before any test runs. The wrapper does not prove the request exists. A lookup must still check that.
 
 **Learn more:** [Give different IDs different types](../chapters/08-structs-vectors-and-ids.md#give-different-ids-different-types) · [The compiler checks Rust's rules](../chapters/04-quality-and-tests.md#the-compiler-checks-rusts-rules) · [`RequestId`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L6)
+
+</details>
+
+### Sorting without renumbering
+
+The list shows requests in time order, but request 0 still means the first entry in the file. How can both be true?
+
+<details>
+<summary>Answer</summary>
+
+The session keeps requests in a vector in file order, and a request's ID is its position there. A separate vector holds IDs sorted by start time, with ties kept in file order. The screen reads that second vector. Sorting it never moves a request, so an ID always names the same entry, and a host filter or search shows a subset of IDs without renumbering anything.
+
+**Learn more:** [Sorting should preserve identity](../chapters/08-structs-vectors-and-ids.md#sorting-should-preserve-identity) · [Filter the view while keeping identity](../chapters/12-grouping-requests.md#filter-the-view-while-keeping-identity) · [`chronological`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L210-L211)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="why-the-view-stores-request-ids"></a>
+
+[Why the view stores request IDs](../questions/newcomer.md#why-the-view-stores-request-ids)
+
+<a id="how-does-a-session-keep-several-orders"></a>
+
+[How does a session keep several orders?](../questions/practitioner.md#how-does-a-session-keep-several-orders)
+
+<a id="how-are-requests-sorted-and-hosts-grouped"></a>
+
+[How are requests sorted and hosts grouped?](../questions/practitioner.md#how-are-requests-sorted-and-hosts-grouped)
 
 </details>

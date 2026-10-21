@@ -1,68 +1,74 @@
-# Inspection and replay workspace
+<a id="inspection-and-replay-workspace"></a>
 
-This layout follows the October 13, 2026 design discussion. The split inspector is the default browsing view on terminals at least 100 columns wide. The journey is optional; the replay workbench is used only after opening a draft. These are complementary views, not competing defaults.
+# Using Netscope
+
+Open a recording, select an entry, and inspect its details. The bright border marks the pane receiving your keys. In a wide terminal the list stays beside the details; in a narrower terminal you move between them. Netscope needs at least 80 columns and 24 rows.
 
 ## Browse and inspect
 
-At 100 columns or wider, the request list occupies 40% of the width. The remaining space previews the selected request. Enter or Tab focuses the inspector; Tab or Esc returns to list navigation. The bright border identifies the pane receiving movement keys, while a filled row identifies the selected request. Up/Down and page/home/end keys select requests when the list has focus and scroll details when the inspector has focus.
+Use Up/Down to select a request, Enter to inspect it, and Esc to return. Tab switches between list and details when both are visible. Page Up/Down moves by a screen; Home/End goes to either end. Press `?` for help and `q` to quit.
 
-At 80–99 columns, the list and inspector occupy separate screens. The same selection, filters, section choice, and source IDs remain in use. Below 80 × 24 the existing resize message preserves state. This avoids squeezed panes and a second set of navigation rules.
+Choose an inspector section with its number:
 
-Inspector sections use number keys:
-
-| Key | Section | Contents |
+| Key | Section | Use it to find |
 |---|---|---|
-| 1 | Summary | Status, reported total, retained representation, capture boundaries |
-| 2 | Headers | Request/response fields, query fields, cookies; duplicates retained |
-| 3 | Body | Request and response previews; retained SSE analysis when eligible |
-| 4 | Timing | Reported stages, including missing, not-applicable (-1), and non-duration distinctions |
-| 5 | Evidence | Import warnings, protocol labels, WebSocket upgrade metadata, redirect/retry candidates |
-| 6 | All | Complete original report, including sizes and exporter connection/IP fields |
+| 1 | Summary | The destination, response status, and available content |
+| 2 | Headers | Request and response fields, cookies, and query values |
+| 3 | Body | Captured request and response content |
+| 4 | Timing | Recorded durations and missing measurements |
+| 5 | Evidence | Warnings and possible relationships between requests |
+| 6 | All | The complete report |
 
-Full tab names occupy two rows, including in the split pane. The selected tab has a filled background. A bottom-border position label indicates additional content and whether Tab is needed before scrolling. Changing section resets its scroll position. A wide list shows paths, with the selected request's host and URL available in its details. Long URLs remain fully accessible in All; the two-line heading is a clipped summary. Original previews and their existing byte limits remain unchanged; this layout adds neither decompression nor body normalization. Replay header masking follows its existing rules; captured headers retain their previous display policy.
+Captured content can include private information. Inspecting a file does not remove that information or make the file safe to share.
 
-Press g from the list or inspector for a request journey. It presents HTTP-direction arrows explicitly labelled as an illustration, reported stage values, and short explanations of those stages. It does not reconstruct DNS/TCP/TLS messages, certificate checks, server processing time, or event arrival times. Missing stages remain missing; SSL is part of connect. Press g or Esc to return to the chosen section at its beginning. Number keys also return directly to a section.
+### Search and hosts
+
+Press `/`, type part of a URL, and press Enter to apply the search. Matching is case-sensitive and treats punctuation literally: `books` matches `/books`, while `Books` does not. Esc cancels an unfinished search; applying empty text clears it.
+
+Press `h` to see host groups, then Enter to filter the request list by a host. A host filter and URL search both have to match. Press `a` to clear both. A host's summed durations can include overlapping requests, so the sum does not measure total page-load time.
 
 ### Request journey
 
-Following the October 14 screenshot review, the journey uses a compact exchange diagram above two panes: all seven timing fields on the left and the selected field's explanation on the right. It starts on Wait. Up/Down selects a stage; Home/End selects the first/last. Page Up/Down scrolls only the explanation when it does not fit. Changing stage returns that explanation to its beginning. The stage list remains visible at the supported 80 × 24 minimum, and the layout stops growing at 140 columns and 30 body rows in a larger terminal.
-
-The total and sum of known main-stage durations are shown together. The sum excludes SSL because it is included in Connect, and excludes missing, unavailable, and exporter-negative non-duration values. A difference above 0.01 ms is highlighted without assigning it to an unknown stage or naming a cause. Fractional sums are rounded for display with an approximation sign; original values remain available. Numeric sum overflow has its own label.
-
-Bars compare durations on an explicitly labelled common scale: the larger of the reported total and largest reported stage. They do not place stages on a reconstructed timeline. Zero has no filled bar; missing/unavailable values show a dash; non-duration exporter values have an asterisk and no duration bar. The selected explanation distinguishes these cases. Selecting TLS on a plain HTTP URL does not call a missing SSL value a failed handshake. Reported SSL/Connect inconsistencies remain visible as conflicting or insufficient evidence.
+Press `g` to see timing stages beside explanations. Up/Down selects a stage; Page Up/Down scrolls its explanation. Press `g` or Esc to return. The bars compare reported durations. The arrows illustrate request direction; they do not reconstruct missing messages or explain an unrecorded delay.
 
 ## Edit and review
 
-Replay keeps Edit → Review → Send → Result visible. The draft presents Method, URL, Headers and Body, followed by Review request. Up/Down selects a field; Enter switches the method or opens the selected editor. Headers opens a separate list: Enter toggles a captured field or removes an added field, a adds a header, and Esc returns. Values remain masked until v reveals them.
+Press `r` from a supported captured request to create a draft. Up/Down selects Method, URL, Headers, or Body; Enter changes or opens the selected field. In Headers, Enter selects or deselects a captured field, or removes one you added. The Add a header row accepts a new name and value.
 
-Review opens Summary. Left/Right or Tab switches to Headers and Body. Summary names the destination and byte counts; Headers separates chosen, automatic and omitted fields; Body displays outgoing text with controls escaped. Enter or s sends only from a valid review. In a body editor, Tab inserts a tab rather than changing review sections.
+Changing the URL clears the selected headers and body. They were chosen for the old destination. Header values stay hidden until you reveal them with `v`; editing a value shows what you type.
 
-At 100 columns or wider, the active request view stays on the left and a short explanation appears on the right. Narrow terminals place that explanation below the request. Field rows show values, while controls live in the footer. Editing and review preserve the same layout instead of moving the active pane between stages.
+Choose Review request after editing. Left/Right or Tab switches between Summary, Headers, and Body. Check the destination and outgoing information, then press Enter or `s` to send. Esc returns to editing. Opening Review does not send anything.
 
-The strip describes the current state, not four independently clickable controls. Drawing, resizing, changing inspection section, and entering Review queue no send. Enter or s in a valid review remains the explicit send boundary. Live SSE has its separate review; cancellation, immutable sent values, unique operation IDs, and retained partial results follow the existing contracts. Saved-file previews and response comparison use the full available width. A retained result is labelled with its own destination and is not silently updated to match a later draft.
+During a send, Esc cancels local waiting. The server may already have received and processed the request. The result keeps available response data and explains why the operation ended. Press `c` on a result to compare it with its captured source. From the draft, `o` reopens a retained result, which continues to describe its original send even if you have since edited the draft.
 
-## Verification
+### Text editing and saving
 
-Fixed cell buffers cover both original sizes and new 120-column section/journey views. State tests exercise focus, identity, resize, text-key routing, missing evidence, and absence of send/save effects from rendering. Process checks exercise terminal restoration, real local sends, comparison, cancellation, saved drafts, and SSE. These checks establish specified behaviour; they do not substitute for user review of the appearance or guarantee identical Unicode rendering in every terminal.
+Left/Right moves through displayed character groups. Backspace removes the previous group and Delete removes the next. Home/End goes to the beginning/end of the field; Ctrl+u clears it. Enter saves an edit and Esc abandons it. In a body field, Ctrl+n inserts a newline and Tab inserts a tab. While editing, ordinary letters become text rather than browsing shortcuts.
 
-The [architecture record](ARCHITECTURE.md) explains alternatives and costs. [Development](DEVELOPMENT.md) contains the exact commands; the [book](chapters/11-drawing-and-navigation.md) explains how focus differs from selection.
+Press `w` from a valid draft to choose a name and file path, then inspect the save preview before confirming. Reopen with `netscope --draft request.json`. Known credential headers are omitted, but the URL, body, and other headers can still contain secrets.
 
-## Beginner guidance and activity
+### Event streams
 
-The October 18, 2026 pass gives each inspection section a short reading prompt. Summary explains the recorded status class before listing measurements. Headers, Body, Timing and Evidence explain what to look for; All retains the full original report. Help begins with a route through inspection before listing navigation and replay controls. Empty search results offer a way to change or clear the filters.
-
-Hosts retain the alphabetical table and add outcome bars for the selected host. Each bar uses that host's request count as its denominator; the displayed counts remain exact even when the bar rounds down to a terminal cell. Other status classes and missing statuses remain labelled. Summed request durations do not measure elapsed page-load time because requests can overlap.
-
-Packet and stream views share the charcoal background, mint focus border and selected-row fill. A guide above the records explains a packet or one-way TCP stream and shows the selected endpoints when available. These arrows represent recorded direction, not packet animation or a verified receiver transcript. The record pane uses its actual remaining height for paging. The comparison view keeps aligned rows and marks differing statuses and header values with both words and amber colour.
-
-Replay has numbered Edit → Review → Send → Result steps and concise guidance for the selected field or review section. The active network operation has a rotating indicator, advancing every 180 ms. This indicates activity only: it is not a percentage, a handshake stage, or proof of response progress. Observed SSE data continues to use the existing retained-byte and event observations. The terminal supplies elapsed time; the renderer reads no clock. Fixed-buffer fixtures therefore keep a stable initial phase.
-
-Set `NETSCOPE_REDUCE_MOTION=1` before starting Netscope for a stationary activity indicator. Any presence of this variable enables reduced motion, including a value of `0`. Captured data, editing and completed results do not animate. Colour supplements labels and selection markers; it is never the only indication of state.
+A captured server-sent event response, or SSE response, shows its retained events under Body. Those saved events have no recovered arrival times. To make a new live observation, press `l` from a GET review, inspect the separate live review, then explicitly send. The result reports when Netscope observed complete events. See the [live-events lesson](chapters/27-observing-live-events.md) for what those times mean.
 
 ## Packet and stream learning panes
 
-Packet inspectors open in **1 Explain**; stream inspectors open in **1 Inspect**. In packets, Up/Down selects a topic and h opens its longer explanation. In streams, Up/Down selects an exact byte range, b switches text/hex, and h opens the longer range explanation. Page Up/Down scrolls explanations; [ and ] page stream bytes. **2 Recorded report** retains the complete scrollable report; **1** returns to the selected explanation or range. Esc returns to the list; if the ? keyboard-help overlay is open, Esc closes it first. Press h again to close the longer field/range explanation. These views remain usable at 80×24.
+Open a classic packet recording with `netscope --pcap capture.pcap`. Use `p` for packets and `s` for streams, then Enter to inspect a selected entry.
 
-TCP topics cover flags, sequence positions, acknowledgements, and stored layers/bytes. ACK-off fields are labelled inactive. SYN adjusts the first data position, FIN consumes a position after data, and sequence arithmetic wraps at 32 bits. Packet byte offsets remain distinct from stream positions. UDP and unsupported headers receive separate explanations instead of fabricated TCP values.
+In a packet, Up/Down selects a field such as flags or acknowledgement. In a stream, it selects a byte range. The explanation follows the selection. The stream map shows observed, missing, and conflicting positions; its scale is bytes, not time. HTTP reading stops at a gap or conflict, while later retained bytes remain inspectable.
 
-The stream workbench links the selected exact range to a byte-coverage map, the available text/hex bytes, and an explanation. It starts on the first missing or conflicting range when one exists. Short spans use one mark per byte; larger spans group positions with conflict-over-missing-over-observed priority. Exact counts accompany the map, and every retained range is reachable. Missing or disputed bytes are never shown as known data. No map uses time, inferred delivery, or bytes outside the retained span.
+Press `h` for a longer explanation and Page Up/Down to scroll it. In a stream, `b` switches text and hexadecimal byte previews; `[` and `]` page through bytes. Press `2` for the recorded report and `1` to return to inspection. Esc returns to the list. If the keyboard-help overlay is open, Esc closes that first.
+
+## Beginner guidance and activity
+
+Explanations describe the selected information. A moving indicator appears only during active network work; it is not a completion percentage. For a stationary indicator on macOS or Linux, start with:
+
+```sh
+NETSCOPE_REDUCE_MOTION=1 netscope capture.har
+```
+
+Any presence of this environment variable enables reduced motion. Remove it entirely to restore animation.
+
+## Verification
+
+Contributors can find the checks in [development](DEVELOPMENT.md#terminal-verification). The [navigation lesson](chapters/11-drawing-and-navigation.md) explains why selection, focus, and scrolling have separate state.

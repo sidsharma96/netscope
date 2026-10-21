@@ -38,6 +38,8 @@ The final application bytes are `abcdef`. If the third observation instead conta
 
 Likewise, `abc`, a three-byte hole, and `ghi` must not become `abcghi`. Removing the hole manufactures adjacency. HTTP inspection uses only the uniquely observed prefix before the first hole or conflict. Later recorded bytes remain visible as sequence ranges even when application interpretation cannot continue.
 
+There is one qualification to the conflict rule. TCP can use a small keep-alive probe to check whether a peer still responds. Netscope excludes a particular one-byte pattern as a possible probe before comparing overlapping bytes. The pattern alone does not establish intent: a genuine disagreement can fit it too. The original packet remains available, but the derived stream does not mark that excluded byte as a conflict. The [capstone](34-defending-the-design.md#follow-a-packet-gap-into-the-application) returns to this uncertainty when examining the design's limits.
+
 ## Read a coverage map without hiding a hole
 
 Suppose a recording retains `abc`, then three unknown positions, then `ghi`. A useful map must preserve the unknown space between the two pieces. It must also distinguish absence from conflicting copies of a byte.
@@ -78,7 +80,7 @@ Selected range:           3–5 · 3 bytes · Missing
                                   Later bytes remain inspectable.
 ```
 
-This arrangement lets you investigate a particular piece of evidence before reading the longer lesson. A stream opens at its first missing or conflicting range, if one exists. Moving to another range changes the map highlight, byte preview and explanation together. All retained ranges remain reachable by scrolling the table. The default explanation gives the immediate consequence and a next action. Optional help explains offsets, escape notation and capture limits alongside the same selection. Opening or scrolling that help, or paging through a long byte preview, leaves the selected range unchanged. Range and preview panes use only the space their contents need, up to the available height.
+Selecting a range connects three things: its location in the stream, its retained bytes, and the consequence for reading the message. The first gap or conflict is selected when the stream opens, so you can begin with the place that prevents a continuous interpretation. The [usage guide](../UI_LAYOUT.md) explains how to move between ranges and scroll the preview.
 
 The preview has text and hexadecimal representations. Hexadecimal writes each byte as two base-sixteen digits: a recorded zero becomes `00`. Unknown bytes appear as `??`, and conflicting positions as `!!`; neither is replaced with a guessed value. Text mode displays printable ASCII bytes directly, uses `\r` and `\n` for line endings, and escapes other bytes. For example, `\x1b` represents one byte whose hexadecimal value is `1b`; it cannot act as a terminal control command. Literal question marks and exclamation marks are also escaped so they cannot be mistaken for missing or conflicting evidence. This is a byte representation, not a decoder for every text encoding.
 
@@ -118,7 +120,7 @@ A captured TCP header can declare six payload bytes while only three are stored.
 
 A consistent SYN-to-FIN span with all positions observed can support a limited end-of-data interpretation. Reset flags, inconsistent FIN positions, conflicts, missing bytes, or excluded segments prevent that result. Even an unambiguous observed span is not a proof that the receiver accepted the connection or that no duplicate capture exists elsewhere.
 
-Budgets are part of the meaning too. Netscope checks the budgets one segment at a time, in file order. A segment that would stretch its epoch past 256 KiB of sequence span, or push the sum of all retained spans past 8 Mi positions, is skipped and counted in that epoch's skipped-segment total. The epoch itself survives with the segments that fitted before it, so which bytes remain depends on record order. A skipped segment also prevents the observed-end result. The 8 Mi figure counts sequence positions, not bytes of memory: each position costs one byte for the value and one byte for its evidence state, so the reassembly arrays can reach 16 MiB. If the epoch count is exhausted, a refused new connection must not send its later records back into an older group merely because the endpoint tuple matches. A safe stop needs a state rule as well as an allocation limit.
+The amount of retained data also limits the conclusion. If accepting a segment would exceed the permitted span or total storage, Netscope skips it and reports that omission. Earlier accepted segments remain, so record order affects what fits. A skipped segment prevents the observed-end result: the tool must not claim completeness after deliberately leaving evidence out. The [stream reference](../contracts/m8-streams.md) gives the exact limits.
 
 Try changing `def` in the illustration to arrive twice, then to arrive as `dXf`. Predict the agreeing-overlap count and the prefix available to an application parser. Then inspect the supplied gap and conflict examples in the [packet walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams). The reassembly implementation [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L89) and fixed tests [`sequence_span_and_total_memory_budgets_remain_bounded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L56) preserve the distinctions above.
 
@@ -126,12 +128,9 @@ Try changing `def` in the illustration to arrive twice, then to arrive as `dXf`.
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Sequence numbers and gaps
-
-**Level:** Newcomer
-
 
 TCP segments arrive with `abc` at positions 0 to 2 and `ghi` at positions 6 to 8. What does Netscope build, and what does the HTTP parser see?
 
@@ -144,76 +143,51 @@ TCP sequence numbers give each byte a position in one direction's stream. Netsco
 
 </details>
 
-### What is the unit of TCP reassembly?
-
-**Level:** Practitioner
-
-
-What does Netscope reassemble TCP payload into, and how does it represent a byte position that was never seen, or one that was seen twice with different values?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-The unit is a directed epoch: one direction (source socket to destination socket) of one connection lifetime. The two directions of a connection are never merged or paired. Each epoch has a `bytes` vector and a parallel `states` vector of the same length, where every position is `Missing`, `Observed` or `Conflict`.
+<a id="repeated-bytes-in-a-trace"></a>
 
-A gap stays `Missing`. Its slot in `bytes` holds a placeholder 0 that means nothing, because a byte value is meaningful only where the state is `Observed`. If two observations of the same position agree, the state stays `Observed` and `repeated_bytes` goes up by one. If they disagree, the position becomes `Conflict`. `contiguous_prefix` returns bytes only up to the first position that is not `Observed`, so later analysis such as HTTP framing never crosses a hole or a disagreement.
+[Repeated bytes in a trace](../questions/newcomer.md#repeated-bytes-in-a-trace)
 
-**Learn more:** [Remember absence separately from the value](../chapters/30-putting-bytes-in-order.md#remember-absence-separately-from-the-value) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`ByteState`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L13-L20) · [`contiguous_prefix`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L53-L60)
+<a id="what-is-the-unit-of-tcp-reassembly"></a>
 
-</details>
+[What is the unit of TCP reassembly?](../questions/practitioner.md#what-is-the-unit-of-tcp-reassembly)
 
-### A reused port, a repeated SYN, and a late ACK
+<a id="which-length-bounds-a-tcp-payload"></a>
 
-**Level:** Expert
+[Which length bounds a TCP payload?](../questions/practitioner.md#which-length-bounds-a-tcp-payload)
 
+<a id="how-does-a-segment-find-its-directed-epoch"></a>
 
-A client reuses the same source port for a second connection to the same server. Separately, a SYN is retransmitted. Separately, a pure ACK arrives after the FIN. Which directed epoch does each of these packets join?
+[How does a segment find its directed epoch?](../questions/practitioner.md#how-does-a-segment-find-its-directed-epoch)
 
-<details>
-<summary>Answer</summary>
+<a id="what-limits-bound-reassembly"></a>
 
-Netscope keeps one active epoch per direction and decides on each packet in file order. A SYN starts a new epoch when the active one has no SYN, when its sequence number differs from the active anchor (a different ISN), or when the active epoch was already closed by a FIN or RST. Port reuse with a new SYN therefore starts a new epoch, and the second connection never merges into the first.
+[What limits bound reassembly?](../questions/practitioner.md#what-limits-bound-reassembly)
 
-A retransmitted SYN with the same ISN on an open epoch matches the anchor, so it joins the existing epoch. A pure ACK after the FIN is not a SYN, so it joins the active epoch even though that epoch is closed. It adds no byte positions, because a segment with no payload and no FIN or RST is skipped when bytes are placed.
+<a id="a-reused-port-a-repeated-syn-and-a-late-ack"></a>
 
-The weak case is reuse where the new connection's SYN was not captured. Its first packet is not a SYN, so it joins the old closed epoch, and its bytes are placed relative to the old anchor.
+[A reused port, a repeated SYN, and a late ACK](../questions/expert.md#a-reused-port-a-repeated-syn-and-a-late-ack)
 
-**Learn more:** [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`is_none_or`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L99-L101) · [`tuple_reuse_resets_directions_and_budget_does_not_merge_new_epochs_into_old`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/tests/reassembly.rs#L36)
+<a id="a-capture-that-starts-mid-connection"></a>
 
-</details>
+[A capture that starts mid-connection](../questions/expert.md#a-capture-that-starts-mid-connection)
 
-### Repeated bytes in a trace
+<a id="a-capture-taken-with-a-96-byte-snap-length"></a>
 
-**Level:** Newcomer
+[A capture taken with a 96-byte snap length](../questions/expert.md#a-capture-taken-with-a-96-byte-snap-length)
 
+<a id="which-copy-wins-when-segments-overlap"></a>
 
-Two TCP segments carry the same sequence range with the same bytes. Is that a retransmission after packet loss?
+[Which copy wins when segments overlap](../questions/expert.md#which-copy-wins-when-segments-overlap)
 
-<details>
-<summary>Answer</summary>
+<a id="one-far-away-segment-pushes-out-a-stream"></a>
 
-It might be, but the trace does not say so. The sender may have sent again, or the capture setup may have recorded the same packet twice. Netscope counts agreeing overlaps as repeated bytes and marks positions where copies disagree as conflicts. It does not label a repeat as loss recovery, because the cause is not in the recorded fields.
+[One far-away segment pushes out a stream](../questions/expert.md#one-far-away-segment-pushes-out-a-stream)
 
-**Common wrong answer.** "Repeated bytes always mean loss and retransmission."
+<a id="a-keep-alive-probe-that-looks-like-an-attack"></a>
 
-**Learn more:** [Repeated bytes are visible; their cause may not be](../chapters/33-interpreting-a-trace.md#repeated-bytes-are-visible-their-cause-may-not-be) · [Put bytes at positions before reading their meaning](../chapters/30-putting-bytes-in-order.md#put-bytes-at-positions-before-reading-their-meaning)
-
-</details>
-
-### Which length bounds a TCP payload?
-
-**Level:** Practitioner
-
-
-A TCP segment's payload length could come from the captured record length, the IP header's length field, or the snap length. Which one does Netscope use for `declared_payload`, which one for the retained byte range, and why does the difference matter?
-
-<details>
-<summary>Answer</summary>
-
-The IP layer computes a declared end: the start of the IP header plus the IPv4 total length, or plus 40 and the IPv6 payload length. The retained end is the smaller of that declared end and the captured bytes. `declared_payload` is the declared end minus the IP and TCP headers, so it comes from the IP length field. The retained `payload` range runs from the end of the TCP header to the retained end, so it holds only bytes that are present in the file.
-
-Two cases show why both are needed. Ethernet pads short frames to 60 bytes, and using the record length would turn that padding into fake TCP payload; the IP length excludes it. In a capture cut by its snap length, the declared length still says how much was sent, so reassembly reserves the whole sequence range and marks the uncaptured part `Missing` instead of pretending the segment was short. UDP works the same way, with a `complete` flag when the whole datagram was retained.
-
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [How does Netscope turn TCP segments into a byte stream?](../chapters/34-defending-the-design.md#how-does-netscope-turn-tcp-segments-into-a-byte-stream) · [`declared_end`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L265-L307) · [`declared_payload`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L364-L373)
+[A keep-alive probe that looks like an attack](../questions/expert.md#a-keep-alive-probe-that-looks-like-an-attack)
 
 </details>

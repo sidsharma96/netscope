@@ -50,7 +50,7 @@ GET stays bodyless in this replay profile. Changing the method to POST begins a 
 
 ## Content type gives the server an interpretation
 
-The byte sequence alone does not tell the server whether it should read a title, a [JSON](../GLOSSARY.md#json) document, or some other representation. Content-Type supplies a [media type](../GLOSSARY.md#media-type), a label describing how the content should be interpreted. Netscope offers plain text with UTF-8 and JSON for this slice.
+The byte sequence alone does not tell the server whether it should read a title, a [JSON](../GLOSSARY.md#json) document, or some other representation. Content-Type supplies a [media type](../GLOSSARY.md#media-type), a label describing how the content should be interpreted. Netscope can submit UTF-8 plain text or JSON.
 
 These two bodies submit different data:
 
@@ -111,12 +111,9 @@ The [body contract](../contracts/m3-request-bodies.md) records exact limits and 
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Counting the bytes in café
-
-**Level:** Newcomer
-
 
 You POST the plain-text body `café`. What Content-Length does Netscope send, and why?
 
@@ -131,38 +128,15 @@ Five. Content-Length counts bytes, not letters. Rust stores text as UTF-8, where
 
 </details>
 
-### What stops a capture from sending traffic?
-
-**Level:** Practitioner
-
-
-Replay can send real traffic. What guarantees that opening a capture or a saved draft never sends anything, and which methods and body types can be replayed?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-Network code lives only in `netscope-net`, and the only place that starts it is the terminal loop. That loop starts a worker only when `take_send` returns a pending send, and a pending send is set only when you press Enter or `s` on the Review screen. Drawing and editing never start I/O. `ReplayReview` is plain data with no way to send anything, and the draft is a separately owned copy, so editing it never changes the imported request. A saved draft opens in the editor with no automatic send.
+<a id="what-stops-a-capture-from-sending-traffic"></a>
 
-Replay supports two methods. GET is accepted only when the capture reports a request body size of 0 and recorded no body. POST is accepted with `text/plain` or `application/json`, in UTF-8 (an optional `charset=utf-8` is the only parameter allowed), at most 16 KiB, and without a content encoding. WebSocket URLs are refused because WebSocket captures are inspection-only.
+[What stops a capture from sending traffic?](../questions/practitioner.md#what-stops-a-capture-from-sending-traffic)
 
-**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L152) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L189-L204)
+<a id="what-happens-between-a-draft-and-the-wire"></a>
 
-</details>
-
-### What happens between a draft and the wire?
-
-**Level:** Practitioner
-
-
-Walk through what happens between editing a draft and bytes leaving the socket. Which validations run where, which headers may you not set, which headers does the client add, and how are URL credentials and fragments handled?
-
-<details>
-<summary>Answer</summary>
-
-A draft starts with every captured header unselected, and headers named in the captured `Connection` header cannot be selected. Each selected or added header must have a token name, a value of printable ASCII or tabs, and at most 8 KiB per name or value. Names the client manages are refused: `host`, `content-length`, `content-type`, `content-encoding`, `transfer-encoding`, `connection`, `proxy-connection`, `keep-alive`, `te`, `trailer`, `upgrade`, `proxy-authorization` and `accept-encoding`. Changing the URL clears selections, added headers and the body.
-
-`review` checks the body (GET must be empty; JSON must parse but is sent byte for byte) and the URL: at most 16 KiB, no whitespace, controls or backslashes, HTTP or HTTPS with a host, and no embedded credentials. It removes the fragment, keeping it only for display. `netscope_net::validate` then repeats the transport checks without I/O. On Send the review is rebuilt from the current draft. The client inserts `Host`, `Accept-Encoding: identity`, and for POST `Content-Type` and `Content-Length`; live SSE also inserts `Accept: text/event-stream`.
-
-**Learn more:** [Review the current draft, not an earlier one](../chapters/16-preparing-a-request.md#review-the-current-draft-not-an-earlier-one) · [Choose outgoing headers explicitly](../contracts/m3-single-request-replay.md#choose-outgoing-headers-explicitly) · [`validate_replay_header`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L388-L424) · [`review`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L329-L383) · [`request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L99-L156)
+[What happens between a draft and the wire?](../questions/practitioner.md#what-happens-between-a-draft-and-the-wire)
 
 </details>

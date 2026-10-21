@@ -8,13 +8,9 @@ Opening a [review](../GLOSSARY.md#review) prepares a possible action. It does no
 
 ## Understand the field before changing it
 
-Suppose you want to send a title to a local book service. Four choices describe the request: Method, URL, Headers and Body. The method says what kind of operation you want; GET asks for a resource, while POST sends a body for the server to process. The URL identifies the destination. Headers are named fields accompanying the request, such as Accept, which describes a preferred response format. The body contains the text you want to send.
+Suppose you want to send a title to a local book service. Four fields describe the request. Method names the operation: GET asks for a resource, while POST sends data for the server to process. URL identifies the destination. Headers provide additional information, such as a preferred response format. Body contains the data you want to send.
 
-Select a field with Up or Down. Enter switches the method, opens the URL or body editor, or opens the header choices. In the header list, Enter includes or excludes a captured field; on an added field, it removes that field. The Add a header row lets you supply a name and value. Esc returns to the four-field draft. A short explanation follows the selected field, so you can understand the consequence before acting. The fields show values; keyboard instructions live in the footer. This keeps the destination and the information you will send easy to find without repeating the same instruction in every row.
-
-The sequence across the top names the stages: Edit, Review, Send and Result. Its highlighted stage shows where you are, not how much network work is complete. Opening Review shows the effective destination and outgoing fields; an explicit send action is still required. Scrolling, resizing or reading guidance does not send anything.
-
-On a narrow terminal, the guidance sits directly below the request instead of squeezing the fields into a narrow column. Long reviews remain scrollable, with an indicator when more details are available. A previous result remains a separate observation and can be reopened from the draft; it must not silently describe edits made after that send.
+Select a field to see its value and explanation. Editing changes the draft. Review shows the destination and information the new request would carry; sending is a separate action. The [usage guide](../UI_LAYOUT.md#edit-and-review) supplies the controls so we can concentrate here on what those actions mean.
 
 ## Give the draft its own text
 
@@ -93,66 +89,23 @@ Review describes the intended request. Header spelling and order can differ when
 
 Returning to edit leaves the review. You must review again after changing the draft; there is no old approval carried into a new destination. Only Enter or s from a valid review starts sending. Opening the review itself does no network work.
 
-Keeping a draft beside its review makes the relationship easier to see, but two visible panes do not grant two kinds of authority. The workbench's Edit → Review → Send → Result strip describes the current operation. It is not permission to jump past review. In a wide window, the active editor or review occupies one pane and the other supplies context; a narrower window puts the explanation beneath the active pane. Neither drawing a pane nor resizing the window queues a request.
-
 After sending, the result belongs to the accepted request. If you return to editing and change the draft, an older retained result must still name its own destination. Otherwise the screen could suggest that an answer came from a server which has not been contacted. This is the same ownership distinction as the two independent URL strings: equal-looking values can have different responsibilities and different lifetimes.
 
 This separation matters during sending. A draft can change while someone is preparing it. An accepted operation needs a definite set of values to work with. The next chapter follows that operation through waiting and cancellation.
 
 ## Try the boundary yourself
 
-Open the single-request sample from the [walkthrough](06-first-milestone.md), inspect it, and press r. The draft begins with the captured URL and no selected headers. Use Up and Down to choose one of the four fields, then Enter to work on it. Open Headers to select a captured field or add your own. Return with Esc, choose Review request, and inspect Summary, Headers and Body with Left and Right.
+Open the sample from the [walkthrough](06-first-milestone.md), inspect it, and press r. Choose a header, then change the URL. The header selection should clear because the destination changed. Review the valid draft without sending, then return to the inspector. Its captured URL should still be the original one.
 
-Text is inserted at the visible cursor. Left/Right move by displayed character groups; Home/End move to the beginning/end of the whole field. Backspace removes the preceding group, Delete removes the following group, and Ctrl+u clears the field. Enter saves, and Esc cancels that edit. Ordinary characters such as q, h, and j become text while editing. Outside text fields, q quits; Ctrl+c quits from anywhere. The [text-editing lesson](21-moving-through-text.md) explains why those movement units differ from bytes.
-
-Select one header, change the URL, and confirm that the header selection is cleared. Review the valid draft without sending. Return with Esc, then leave the draft with Esc again. The inspector should have its previous scroll position, and the captured URL should still be the original one.
-
-Explain why borrowing the original String for mutation would not give us the two independent values shown in the diagram. Then read the draft model [`ReplayDraft`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L65) and editor [`ReplayEditor`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L31). The [next chapter](17-waiting-for-a-response.md) explains how an accepted send keeps the interface responsive.
+The draft model [`ReplayDraft`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L65) owns the editable data, and [`ReplayEditor`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L31) handles the interaction. The [next chapter](17-waiting-for-a-response.md) follows an accepted send while the server is still working.
 
 <!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Borrowing versus cloning
-
-**Level:** Newcomer
-
-
-A drawing function needs to read a request's URL. A replay draft needs a URL it can edit. Which one should borrow and which one should clone, and why?
-
-<details>
-<summary>Answer</summary>
-
-The drawing function should borrow with a shared reference such as `&Request`. It reads the existing bytes while the session stays the owner, and nothing is copied. The draft should clone. It must change its text while the captured URL stays as recorded, so it needs its own buffer. Cloning costs an allocation and a copy of the bytes, which is why Netscope clones only what the draft needs, not the whole capture.
-
-**Learn more:** [Borrow while drawing](../chapters/03-storing-requests.md#borrow-while-drawing) · [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text)
-
-</details>
-
-### What stops a capture from sending traffic?
-
-**Level:** Practitioner
-
-
-Replay can send real traffic. What guarantees that opening a capture or a saved draft never sends anything, and which methods and body types can be replayed?
-
-<details>
-<summary>Answer</summary>
-
-Network code lives only in `netscope-net`, and the only place that starts it is the terminal loop. That loop starts a worker only when `take_send` returns a pending send, and a pending send is set only when you press Enter or `s` on the Review screen. Drawing and editing never start I/O. `ReplayReview` is plain data with no way to send anything, and the draft is a separately owned copy, so editing it never changes the imported request. A saved draft opens in the editor with no automatic send.
-
-Replay supports two methods. GET is accepted only when the capture reports a request body size of 0 and recorded no body. POST is accepted with `text/plain` or `application/json`, in UTF-8 (an optional `charset=utf-8` is the only parameter allowed), at most 16 KiB, and without a content encoding. WebSocket URLs are refused because WebSocket captures are inspection-only.
-
-**Learn more:** [Give the draft its own text](../chapters/16-preparing-a-request.md#give-the-draft-its-own-text) · [Review before sending](../contracts/m3-single-request-replay.md#review-before-sending) · [`take_send`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L152) · [`from_request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L126-L189) · [`Worker::start_at`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L189-L204)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Draft, review and send
-
-**Level:** Newcomer
-
 
 You press `r` on a captured request. What do you get, and what has to happen before anything goes over the network?
 
@@ -165,38 +118,23 @@ You get a draft: a separate, editable copy of the URL with no captured headers s
 
 </details>
 
-### What happens between a draft and the wire?
-
-**Level:** Practitioner
-
-
-Walk through what happens between editing a draft and bytes leaving the socket. Which validations run where, which headers may you not set, which headers does the client add, and how are URL credentials and fragments handled?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-A draft starts with every captured header unselected, and headers named in the captured `Connection` header cannot be selected. Each selected or added header must have a token name, a value of printable ASCII or tabs, and at most 8 KiB per name or value. Names the client manages are refused: `host`, `content-length`, `content-type`, `content-encoding`, `transfer-encoding`, `connection`, `proxy-connection`, `keep-alive`, `te`, `trailer`, `upgrade`, `proxy-authorization` and `accept-encoding`. Changing the URL clears selections, added headers and the body.
+<a id="borrowing-versus-cloning"></a>
 
-`review` checks the body (GET must be empty; JSON must parse but is sent byte for byte) and the URL: at most 16 KiB, no whitespace, controls or backslashes, HTTP or HTTPS with a host, and no embedded credentials. It removes the fragment, keeping it only for display. `netscope_net::validate` then repeats the transport checks without I/O. On Send the review is rebuilt from the current draft. The client inserts `Host`, `Accept-Encoding: identity`, and for POST `Content-Type` and `Content-Length`; live SSE also inserts `Accept: text/event-stream`.
+[Borrowing versus cloning](../questions/newcomer.md#borrowing-versus-cloning)
 
-**Learn more:** [Review the current draft, not an earlier one](../chapters/16-preparing-a-request.md#review-the-current-draft-not-an-earlier-one) · [Choose outgoing headers explicitly](../contracts/m3-single-request-replay.md#choose-outgoing-headers-explicitly) · [`validate_replay_header`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L388-L424) · [`review`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/replay.rs#L329-L383) · [`request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L99-L156)
+<a id="what-stops-a-capture-from-sending-traffic"></a>
 
-</details>
+[What stops a capture from sending traffic?](../questions/practitioner.md#what-stops-a-capture-from-sending-traffic)
 
-### What does opening a saved draft check?
+<a id="what-happens-between-a-draft-and-the-wire"></a>
 
-**Level:** Practitioner
+[What happens between a draft and the wire?](../questions/practitioner.md#what-happens-between-a-draft-and-the-wire)
 
+<a id="what-does-opening-a-saved-draft-check"></a>
 
-A saved draft is a small JSON file. When you open one with `netscope --draft`, what does Netscope check before it shows the editor, and why does it reject a file with an extra field instead of ignoring the field?
-
-<details>
-<summary>Answer</summary>
-
-`SavedDraft::decode` first refuses a file larger than 512 KiB. It then parses the JSON into a structure marked `deny_unknown_fields`, so a misspelled or unexpected field fails the load instead of being dropped silently. A dropped field could mean the request you reopen differs from the one you saved, and you would not be told.
-
-`to_draft` then checks the meaning of the values. The version must be 1, the name must hold 1 to 128 bytes with no control characters, the method must be GET or POST, and a GET must use the plain, empty body. Headers are limited to 100 entries and 32 KiB in total, each must pass the same header rules as an edited draft, and a credential header such as `Authorization` or `Cookie` rejects the file. Saving runs the same checks through `encode`, so Netscope never writes a file it would refuse to open. The editor opens with no automatic send and no link to a captured request.
-
-**Learn more:** [A readable file can still be the wrong request](../chapters/20-remembering-a-request.md#a-readable-file-can-still-be-the-wrong-request) · [`decode`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L139-L148) · [`to_draft`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L74-L121)
+[What does opening a saved draft check?](../questions/practitioner.md#what-does-opening-a-saved-draft-check)
 
 </details>

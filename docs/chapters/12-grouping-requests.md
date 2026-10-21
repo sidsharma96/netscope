@@ -117,48 +117,9 @@ The host tests [`host_identity_counts_and_chronology_are_distinct`](https://gith
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Sorting without renumbering
-
-**Level:** Newcomer
-
-
-The list shows requests in time order, but request 0 still means the first entry in the file. How can both be true?
-
-<details>
-<summary>Answer</summary>
-
-The session keeps requests in a vector in file order, and a request's ID is its position there. A separate vector holds IDs sorted by start time, with ties kept in file order. The screen reads that second vector. Sorting it never moves a request, so an ID always names the same entry, and a host filter or search shows a subset of IDs without renumbering anything.
-
-**Learn more:** [Sorting should preserve identity](../chapters/08-structs-vectors-and-ids.md#sorting-should-preserve-identity) · [Filter the view while keeping identity](../chapters/12-grouping-requests.md#filter-the-view-while-keeping-identity) · [`chronological`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L210-L211)
-
-</details>
-
-### How are requests sorted and hosts grouped?
-
-**Level:** Practitioner
-
-
-How exactly is chronological order computed, including the tie-break and the cost? How are timestamps with different UTC offsets compared? What is the host grouping key, does it include the port, and in what order are hosts listed?
-
-<details>
-<summary>Answer</summary>
-
-`startedDateTime` must be an RFC 3339 timestamp with an explicit offset, or the import fails. The importer converts it to UTC seconds and nanoseconds, so timestamps written with different offsets compare as real instants. The chronological list is the request IDs sorted by `(instant, source index)`. Equal instants keep source order, and the sort costs O(n log n).
-
-The host key is the URL host as normalised by the `url` crate: lowercased, with international names converted to their ASCII form and IPv6 addresses in brackets. The port and scheme are not part of the key, so `example.com:8443` and `https://example.com` share one host. Hosts receive IDs in the order they first appear, using a `BTreeMap` lookup, and each host's request IDs are filled in chronological order. The host view lists hosts sorted by name, byte by byte.
-
-**Common wrong answer.** "Hosts are grouped by host and port." Netscope groups only by the normalised host name.
-
-**Learn more:** [Choose what makes a group](../chapters/12-grouping-requests.md#choose-what-makes-a-group) · [Deterministic identity and display](../contracts/m1-har-inspection.md#deterministic-identity-and-display) · [`timestamp`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L212-L216) · [`Session::new`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L209-L234)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### What a host summary counts
-
-**Level:** Newcomer
-
 
 Two requests to the same host start together and report 40 ms and 60 ms. The host view shows 100 ms. Does the host's traffic take 100 ms?
 
@@ -171,38 +132,23 @@ No. The host view adds each request's reported total once, and labels the value 
 
 </details>
 
-### What does a host summary's duration mean?
-
-**Level:** Practitioner
-
-
-The host view shows status counts and a duration for each host. What exactly is that duration, how are entries with status 0 counted, and why is the summary computed once at import instead of when the screen is drawn?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-The duration is the sum of every entry's reported `time` for that host. Requests can overlap, so the sum is not elapsed time: two simultaneous requests of 40 ms and 60 ms add up to 100 ms although only 60 ms passed. If the sum ever overflows to a non-finite number, the summary stores `None` instead of a misleading value.
+<a id="sorting-without-renumbering"></a>
 
-Status counts use the HTTP classes 1xx to 5xx. Status 0, which HAR uses when no HTTP status was recorded, has its own "not recorded" count instead of being treated as a success or as a particular network failure. The summary also counts requests that have at least one warning, once per request.
+[Sorting without renumbering](../questions/newcomer.md#sorting-without-renumbering)
 
-`Session::new` records each entry once, in source order, when the capture is imported. Drawing then reads finished numbers, so scrolling or resizing does not repeat the work, and the counts cannot depend on which view happens to be showing.
+<a id="computing-summaries-once"></a>
 
-**Learn more:** [A sum answers a different question from elapsed time](../chapters/12-grouping-requests.md#a-sum-answers-a-different-question-from-elapsed-time) · [Keep missing statuses visible](../chapters/12-grouping-requests.md#keep-missing-statuses-visible) · [Why compute summaries and matches once at import?](../chapters/34-defending-the-design.md#why-compute-summaries-and-matches-once-at-import) · [`HostSummary`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/hosts.rs#L23-L35) · [`record`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/hosts.rs#L46-L61)
+[Computing summaries once](../questions/newcomer.md#computing-summaries-once)
 
-</details>
+<a id="how-are-requests-sorted-and-hosts-grouped"></a>
 
-### Computing summaries once
+[How are requests sorted and hosts grouped?](../questions/practitioner.md#how-are-requests-sorted-and-hosts-grouped)
 
-**Level:** Newcomer
+<a id="what-does-a-host-summarys-duration-mean"></a>
 
-
-Netscope builds host summaries and redirect and retry candidates when it loads a capture. Why is that a sound choice here, and when would it stop being one?
-
-<details>
-<summary>Answer</summary>
-
-A loaded capture never changes while you browse it, so answers computed once stay correct. Storing them costs memory for counts and lists of request IDs, not copies of request bodies, and it avoids recounting on every key press. If requests could arrive while you watched, as in a live capture, the stored summaries would go stale. They would need updating, rebuilding, or computing on demand.
-
-**Learn more:** [Spend memory to avoid repeating a question](../chapters/23-shaping-the-program.md#spend-memory-to-avoid-repeating-a-question) · [Why calculate a group before drawing it?](../chapters/12-grouping-requests.md#why-calculate-a-group-before-drawing-it)
+[What does a host summary's duration mean?](../questions/practitioner.md#what-does-a-host-summarys-duration-mean)
 
 </details>

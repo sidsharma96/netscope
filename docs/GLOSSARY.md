@@ -94,7 +94,7 @@ Making an independent copy of a value by calling `clone()`. Cloning a `String` a
 
 ## Close-delimited body
 
-A response body with neither a `Content-Length` nor chunked coding, which ends when the server closes the connection. Netscope accepts that ending only when it observed the whole direction from SYN to FIN with nothing missing. See [How HTTP/1.1 marks where a message ends](chapters/34-defending-the-design.md#how-http11-marks-where-a-message-ends).
+A response body with neither a `Content-Length` nor chunked coding, which ends when the server closes the connection. Netscope accepts that ending only when it observed the whole direction from SYN to FIN with nothing missing. See [How HTTP/1.1 marks where a message ends](chapters/31-finding-http-boundaries.md#a-length-and-a-delimiter-answer-different-questions).
 
 ## Closure
 
@@ -282,7 +282,7 @@ An HTTP property of a request: sending it twice has the same intended effect on 
 
 ## Initial sequence number
 
-The sequence number a TCP sender chooses for its SYN, often shortened to ISN. The first data byte is numbered ISN + 1. See [How TCP numbers its bytes](chapters/34-defending-the-design.md#how-tcp-numbers-its-bytes).
+The sequence number a TCP sender chooses for its SYN, often shortened to ISN. The first data byte is numbered ISN + 1. See [How TCP numbers its bytes](chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap).
 
 ## IP
 
@@ -310,7 +310,7 @@ The response header that names a redirect's destination. Netscope requires exact
 
 ## Loopback
 
-A network interface that delivers traffic back to the same machine, such as `lo0` on macOS. macOS loopback captures use link type 0, `DLT_NULL`, whose 4-byte header gives the address family. See [Why refuse PCAPNG and other link types](chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do).
+A network interface that delivers traffic back to the same machine, such as `lo0` on macOS. macOS loopback captures use link type 0, `DLT_NULL`, whose 4-byte header gives the address family. See [Why refuse PCAPNG and other link types](INSTALLATION.md#packet-inspection).
 
 ## Macro
 
@@ -382,7 +382,7 @@ The classic packet capture file format: a 24-byte file header followed by one re
 
 ## PCAPNG
 
-A newer, block-based packet capture format that Wireshark writes by default. Netscope refuses it. Saving the capture as classic PCAP, for example with `editcap -F pcap`, makes it readable if it uses one supported link type. See [Why refuse PCAPNG and other link types](chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do).
+A newer, block-based packet capture format that Wireshark writes by default. Netscope refuses it. Saving the capture as classic PCAP, for example with `editcap -F pcap`, makes it readable if it uses one supported link type. See [Why refuse PCAPNG and other link types](INSTALLATION.md#packet-inspection).
 
 ## Persistent connection
 
@@ -550,7 +550,7 @@ A sequence of instructions the operating system can schedule independently of ot
 
 ## Timing stage
 
-One of the seven intervals a HAR records for a request: blocked, dns, connect, ssl, send, wait, and receive. `ssl` is part of `connect`, so the two must not be added together. See [What a HAR timing records](chapters/34-defending-the-design.md#what-a-har-timing-records).
+One of the seven intervals a HAR records for a request: blocked, dns, connect, ssl, send, wait, and receive. `ssl` is part of `connect`, so the two must not be added together. See [What a HAR timing records](chapters/02-reading-a-capture.md#missing-time-is-different-from-zero).
 
 ## TLS
 

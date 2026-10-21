@@ -1,68 +1,66 @@
 # Install and run Netscope
 
-Version 0.2.1 is the first registry release: install it with `cargo install netscope --version 0.2.1 --locked`. For a source installation, use `git checkout v0.2.1` in a clean checkout before the command below. The older v0.2.0 tag remains a source-only release. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
-
-From the repository root:
+Install [Rust through rustup](https://rustup.rs/) if Cargo is not already available. Netscope needs Rust 1.92 or newer to build. Then run:
 
 ```sh
-cargo install --path crates/netscope-tui --locked
-netscope --version
+cargo install netscope --locked
 netscope --help
 ```
 
-Both the package and installed command are named netscope. In the v0.2.0 source tag, the package was named netscope-tui. Cargo uses a release build for installation. Its usual destination is `$HOME/.cargo/bin`, unless your Cargo configuration or environment selects another installation root. Ensure that directory is on PATH. On a standard macOS/Linux rustup setup, opening a new terminal usually activates the configured environment. Use `command -v netscope` to see which executable your shell finds. You can also run the installed executable by its full path. See [Cargo's installation reference](https://doc.rust-lang.org/cargo/commands/cargo-install.html) for destination options.
+Cargo downloads the source and builds the executable on your machine. The first installation needs internet access and the build tools for your operating system. macOS and Linux are tested; interactive behavior on Windows has not been verified.
 
-After dependencies have been downloaded, add `--offline` to the install command to prohibit Cargo network access. `--locked` keeps dependency selection tied to Cargo.lock. Reinstall from the updated checkout to replace the installed version; editing source files alone does not update it. This project is not publishing a registry package or downloading prebuilt release binaries in this step.
+Cargo usually puts the command in `$HOME/.cargo/bin`. If your shell reports “command not found,” open a new terminal after installing Rust. On macOS or Linux, `command -v netscope` shows which executable the shell finds. The [running-a-program lesson](chapters/22-running-a-program.md) explains how command lookup works.
 
 ## First run
 
-From the checkout, try:
+Export a HAR recording from your browser's developer tools, or [download the invented sample](https://raw.githubusercontent.com/sidsharma96/netscope/main/tests/fixtures/har/single-request.har) and save it as `single-request.har`. From the folder containing that file, run:
 
 ```sh
-netscope tests/fixtures/har/single-request.har
-netscope --draft tests/fixtures/drafts/book.json
+netscope single-request.har
 ```
 
-Elsewhere, provide an absolute path to the file or copy it into the current directory. Capture paths and saved-draft paths are resolved from the directory where you invoke Netscope, not from the source checkout or installed binary's directory.
+The sample shows one request for a list of books. Press Enter to inspect it, `?` for help, and `q` to quit. Opening a capture reads the file without sending a request. The [first-capture walkthrough](chapters/06-first-milestone.md) explains what to look for.
 
-The interactive view needs a terminal at least 80 columns by 24 rows. Enter opens the selected capture request; / searches its full URL; h opens host summaries; a clears host and URL filters. Use r to prepare a replay draft, ? for navigation help, and q to quit. A saved draft opens directly for editing. Opening either kind of file never sends a request. Use the [local server walkthrough](DEVELOPMENT.md#try-a-local-post) before testing Send.
+The interactive view needs at least 80 columns and 24 rows. Enlarge the terminal if Netscope asks for more space. When output is redirected to a file or pipe, it prints a text summary instead.
 
-When input or output is redirected, Netscope prints a capture summary or the saved request's name and exits. `--help`/`-h` and `--version`/`-V` always print text without entering the terminal UI. No arguments show help. Exit status 0 means success, 1 means a file/validation/terminal failure, and 2 means invalid arguments.
+A relative path begins in the folder where you run the command. You can also give a full path, such as `netscope /path/to/capture.har`. The file does not need to live beside the installed executable.
 
-A filename starting with a dash needs an explicit separator:
+## Saved requests
 
-```sh
-netscope -- -capture.har
-netscope --draft -- -request.json
-```
-
-## Verify an isolated installation
-
-```sh
-python3 scripts/check_install.py
-```
-
-This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, malformed and empty captures, and failure exit codes. On POSIX systems it also runs navigation/search, small-window recovery, local GET/POST replay, cancellation, and save/reopen against the installed release binary. An injected drawing-error check uses a separate development probe. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
-
-To remove a normal Cargo installation, use `cargo uninstall netscope` (or `cargo uninstall netscope-tui` for the older source release). If you selected a custom installation root, supply that same `--root` to uninstall.
-
-<a id="packet-inspection-on-unreleased-main"></a>
+Open a saved draft with `netscope --draft request.json`. It opens for editing; you must review it and choose Send to make a network request. The [local walkthrough](DEVELOPMENT.md#try-a-local-send) supplies a test server for trying this workflow.
 
 ## Packet inspection
 
-Version 0.2.0 includes M5–M8. To run the current packet viewer without replacing an older installed binary:
+For a classic PCAP recording, run:
 
 ```sh
-cargo run -p netscope --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap
+netscope --pcap capture.pcap
 ```
 
-Use the normal source-install command from this checkout to install this release. --pcap selects the bounded classic-PCAP subset; it does not require capture privileges or libpcap/tcpdump to run. See [milestone status](MILESTONES.md) and the [packet walkthrough](DEVELOPMENT.md#inspect-packets-and-streams).
+Netscope reads an existing file, so it needs no packet-capture privileges. PCAPNG is a different format and is not supported. In Wireshark, save a compatible recording using its pcap export option. See [packet inspection](DEVELOPMENT.md#inspect-packets-and-streams) for supplied samples and controls.
 
+## Install from a checkout
+
+From the repository root, run:
+
+```sh
+cargo install --path crates/netscope-tui --locked
+```
+
+The directory is named `netscope-tui`; the package and installed command are named `netscope`. Reinstall after changing source code to update the installed command. Add `--offline` only after the required dependencies have been downloaded. To install a particular published version instead, use `cargo install netscope --version 0.2.1 --locked`.
+
+## Command-line details
+
+`netscope --version` prints the installed version. A filename beginning with a dash needs a separator: `netscope -- -capture.har`. Exit status 0 means success, 1 means a file or runtime failure, and 2 means invalid arguments.
+
+To remove the application, run `cargo uninstall netscope`. If you installed with a custom `--root`, use that same root when removing it.
+
+## Verify an isolated installation
+
+Contributors can run `python3 scripts/check_install.py` from a checkout to test a temporary installation. See [installation checks](DEVELOPMENT.md#installation-checks) for what it exercises.
 
 ## Registry publication
 
-Version 0.2.1 packages the application as `netscope`. Registry installation compiles the published source on your machine; it does not download a prebuilt executable. The directory remains `crates/netscope-tui`; its Cargo package name is now `netscope`, so development commands use `cargo run -p netscope`.
+Maintainers should follow [publishing a release](PUBLISHING.md).
 
-Run `python3 scripts/check_package.py` before publishing. It creates and builds all four archives using Cargo's temporary registry, then checks their normalized dependency versions, both license files and embedded lesson text. Repository tests and examples use shared fixtures and remain in the checkout rather than the published archives. The current workspace test suite still checks the book's Rust examples.
-
-Sign in to crates.io, verify your email and create a publishing token. Run `cargo login` locally and enter the token only at its prompt. After the workspace and packaging checks pass, `cargo publish --workspace --locked` publishes the dependencies before the application. Recheck name ownership and availability before the first upload. Confirm a clean `cargo install netscope --version 0.2.1 --locked` from the registry afterwards, then tag the published commit.
+<a id="packet-inspection-on-unreleased-main"></a>

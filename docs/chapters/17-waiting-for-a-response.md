@@ -143,12 +143,9 @@ For a local experiment, follow the [replay instructions](../DEVELOPMENT.md#try-a
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Waiting without freezing the screen
-
-**Level:** Newcomer
-
 
 A server accepts your request and then sends nothing. How can Netscope still react when you press Esc?
 
@@ -161,76 +158,47 @@ Each Send runs on its own worker thread, so the terminal thread keeps reading ke
 
 </details>
 
-### How does a synchronous terminal meet an async client?
-
-**Level:** Practitioner
-
-
-The terminal loop is synchronous, while the HTTP client is async (tokio and hyper). How do the two meet? Describe the threads, runtimes and channels involved.
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-Each Send creates a `Worker`, which spawns a dedicated OS thread named `netscope-replay`. That thread builds a current-thread tokio runtime and blocks on the exchange inside it. Three channels connect the worker to the terminal. A `tokio::sync::oneshot` carries cancellation from the terminal to the worker. A `std::sync::mpsc::sync_channel(1)` carries the single final `ReplayResult` back. For live SSE only, a `tokio::sync::watch` carries the newest cumulative snapshot, replacing the previous one instead of queueing every update.
+<a id="handing-over-a-result"></a>
 
-The terminal loop waits at most 50 ms for a key, and on every pass it calls `progress` and `poll`, which use non-blocking reads. At most one worker runs at a time. Dropping a `Worker` sends cancellation and joins its thread. The terminal therefore stays synchronous and needs no async runtime of its own, and each replay gets a small runtime that is torn down when it finishes.
+[Handing over a result](../questions/newcomer.md#handing-over-a-result)
 
-**Learn more:** [Why keep a separate worker at all?](../chapters/17-waiting-for-a-response.md#why-keep-a-separate-worker-at-all) · [Hand the value over when responsibility changes](../chapters/24-sharing-work.md#hand-the-value-over-when-responsibility-changes) · [Why give each send its own thread and runtime?](../chapters/34-defending-the-design.md#why-give-each-send-its-own-thread-and-runtime) · [`start_mode`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L362-L428) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L445-L454)
+<a id="times-in-a-live-sse-observation"></a>
 
-</details>
+[Times in a live SSE observation](../questions/newcomer.md#times-in-a-live-sse-observation)
 
-### Races in the replay screen
+<a id="how-does-a-synchronous-terminal-meet-an-async-client"></a>
 
-**Level:** Expert
+[How does a synchronous terminal meet an async client?](../questions/practitioner.md#how-does-a-synchronous-terminal-meet-an-async-client)
 
+<a id="how-do-the-deadline-and-cancellation-work"></a>
 
-What happens when (a) a result arrives in the same loop iteration as an Esc key, (b) a result for an earlier Send arrives, (c) the worker thread panics, and (d) the user presses q while a request is in flight?
+[How do the deadline and cancellation work?](../questions/practitioner.md#how-do-the-deadline-and-cancellation-work)
 
-<details>
-<summary>Answer</summary>
+<a id="races-in-the-replay-screen"></a>
 
-(a) Completion is accepted before a later cancellation. At the top of each loop pass the terminal loop polls the worker first and sends the cancel signal only when no result is waiting. When a key arrives, it polls again before handling the key. If the cancel flag was already set when the result is accepted, `complete` returns to the draft and keeps the result. The message depends on the outcome: "Operation stopped; o opens its retained result" for `Cancelled`, and "Finished before Esc took effect; o opens its retained result" for any other outcome.
+[Races in the replay screen](../questions/expert.md#races-in-the-replay-screen)
 
-(b) Each Send gets a `u64` ID from a counter owned by `App`, which outlives editors. `complete` and `progress` ignore a result whose ID is not the running one. When the counter would overflow, sending is disabled with "Send IDs exhausted" instead of wrapping.
+<a id="cancelling-while-dns-is-still-resolving"></a>
 
-(c) A panic drops the worker's end of the `sync_channel`, so `try_recv` reports `Disconnected`. `poll` then returns a prebuilt fallback result with `Failed("Worker stopped without a result")`, exactly once.
+[Cancelling while DNS is still resolving](../questions/expert.md#cancelling-while-dns-is-still-resolving)
 
-(d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
+<a id="a-company-ca-a-proxy-and-an-http2-only-server"></a>
 
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L444-L454)
+[A company CA, a proxy, and an HTTP/2-only server](../questions/expert.md#a-company-ca-a-proxy-and-an-http2-only-server)
 
-</details>
+<a id="why-hyper-instead-of-reqwest"></a>
 
-### Handing over a result
+[Why hyper instead of reqwest](../questions/expert.md#why-hyper-instead-of-reqwest)
 
-**Level:** Newcomer
+<a id="esc-pressed-just-after-the-worker-finished"></a>
 
+[Esc pressed just after the worker finished](../questions/expert.md#esc-pressed-just-after-the-worker-finished)
 
-Why does the worker send its finished result through a channel instead of sharing a growing response body with the terminal under a lock?
+<a id="a-replay-that-times-out-although-ipv4-works"></a>
 
-<details>
-<summary>Answer</summary>
-
-Only one part of the program needs to change the body at a time. The worker owns it while receiving, then moves it into the result and sends that through a channel with room for one value. The terminal owns what it receives. Nothing is edited by two threads at once, so there is no lock to hold and no consistency rule to protect. A mutex would only be worth it if two parts really had to change related data together.
-
-**Learn more:** [Hand the value over when responsibility changes](../chapters/24-sharing-work.md#hand-the-value-over-when-responsibility-changes) · [Protect several related changes together](../chapters/24-sharing-work.md#protect-several-related-changes-together) · [`sync_channel`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L377)
-
-</details>
-
-### How do the deadline and cancellation work?
-
-**Level:** Practitioner
-
-
-When does the replay deadline start, how long is it for a normal replay and for live SSE, does progress extend it, and what makes Esc take effect? In what order are cancellation, the deadline and completion checked?
-
-<details>
-<summary>Answer</summary>
-
-The deadline starts at the instant the terminal accepted Send, before the worker thread exists, so thread setup counts against it. It is one absolute deadline covering connection, TLS, headers and the whole body: 10 seconds for a normal replay and 30 seconds for live SSE. Progress never extends it, and tests check that a slow stream of bytes does not restart the clock.
-
-The worker runs the exchange inside a `tokio::select!` marked `biased`, which checks the cancellation channel first, then `sleep_until(deadline)`, then the work. When cancellation or the deadline wins, the losing futures are dropped, and dropping them closes the connection and its socket. Because the deadline is checked before the work, an already expired deadline never opens a connection. Bytes copied into the result before the stop are kept and reported with the `Cancelled` or `TimedOut` outcome.
-
-**Learn more:** [Keep one deadline for the whole request](../chapters/17-waiting-for-a-response.md#keep-one-deadline-for-the-whole-request) · [Cancellation follows ownership](../chapters/17-waiting-for-a-response.md#cancellation-follows-ownership) · [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [`wait_for`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L321-L332) · [`TIME_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L30) · [`started`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L512)
+[A replay that times out although IPv4 works](../questions/expert.md#a-replay-that-times-out-although-ipv4-works)
 
 </details>

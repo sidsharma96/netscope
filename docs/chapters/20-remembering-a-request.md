@@ -106,12 +106,9 @@ The [saved-draft contract](../contracts/m3-saved-drafts.md) records the precise 
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Saving a draft
-
-**Level:** Newcomer
-
 
 You save a draft and reopen it tomorrow. What comes back, what is left out, and does opening it send anything?
 
@@ -124,40 +121,15 @@ The file is versioned JSON holding the name, URL, method, body format, body and 
 
 </details>
 
-### What does opening a saved draft check?
-
-**Level:** Practitioner
-
-
-A saved draft is a small JSON file. When you open one with `netscope --draft`, what does Netscope check before it shows the editor, and why does it reject a file with an extra field instead of ignoring the field?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-`SavedDraft::decode` first refuses a file larger than 512 KiB. It then parses the JSON into a structure marked `deny_unknown_fields`, so a misspelled or unexpected field fails the load instead of being dropped silently. A dropped field could mean the request you reopen differs from the one you saved, and you would not be told.
+<a id="what-does-opening-a-saved-draft-check"></a>
 
-`to_draft` then checks the meaning of the values. The version must be 1, the name must hold 1 to 128 bytes with no control characters, the method must be GET or POST, and a GET must use the plain, empty body. Headers are limited to 100 entries and 32 KiB in total, each must pass the same header rules as an edited draft, and a credential header such as `Authorization` or `Cookie` rejects the file. Saving runs the same checks through `encode`, so Netscope never writes a file it would refuse to open. The editor opens with no automatic send and no link to a captured request.
+[What does opening a saved draft check?](../questions/practitioner.md#what-does-opening-a-saved-draft-check)
 
-**Learn more:** [A readable file can still be the wrong request](../chapters/20-remembering-a-request.md#a-readable-file-can-still-be-the-wrong-request) · [`decode`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L139-L148) · [`to_draft`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L74-L121)
+<a id="what-a-saved-draft-keeps-leaks-and-survives"></a>
 
-</details>
-
-### What a saved draft keeps, leaks, and survives
-
-**Level:** Expert
-
-
-What does a saved draft contain, what does Netscope strip, what can still leak, and how crash-safe is the write? What happens when the destination is a symlink or a stale temporary file exists?
-
-<details>
-<summary>Answer</summary>
-
-The file is pretty-printed JSON with `version: 1`, a name, the URL, method, body format, body, and headers. Decoding rejects unknown fields and files over 512 KiB, and every load and save runs the full draft review.
-
-Nine header names are dropped on save: Authorization, Proxy-Authorization, Cookie, Cookie2, Set-Cookie, X-Api-Key, Api-Key, X-Auth-Token, and X-Access-Token. A file that contains one of them is rejected on load, not silently accepted. The leak surface remains: the URL is saved verbatim, including query-string tokens and the fragment, and so are the body and any secret header outside the list, such as `X-CSRF-Token`.
-
-The write refuses a destination that is not a regular file, including a symlink. It creates `<name>.netscope-tmp` with `create_new` and mode 0600, writes it, calls `sync_all`, and renames it over the destination. A failure removes the temporary file. A leftover temporary file makes `create_new` fail, so the save is refused. Two weaknesses remain: the parent directory is not synced after the rename, so a power loss can undo it, and the symlink check and the rename are separate steps.
-
-**Learn more:** [Replacing a file has a vulnerable middle](../chapters/20-remembering-a-request.md#replacing-a-file-has-a-vulnerable-middle) · [Secrets inside capture and draft files](../chapters/34-defending-the-design.md#secrets-inside-capture-and-draft-files) · [`sensitive_saved_header`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/saved.rs#L27) · [`replace`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/saved_file.rs#L44-L73)
+[What a saved draft keeps, leaks, and survives](../questions/expert.md#what-a-saved-draft-keeps-leaks-and-survives)
 
 </details>

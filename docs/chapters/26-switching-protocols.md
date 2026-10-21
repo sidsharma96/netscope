@@ -20,9 +20,11 @@ client                                  server
    |<--- WebSocket data frame --------------|
 ```
 
-A client also supplies `Sec-WebSocket-Key`, the [base64](../GLOSSARY.md#base64) encoding of a random 16-byte value, and version `13`. The server computes `Sec-WebSocket-Accept` as base64(SHA-1(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")), where the long string is a fixed value from the specification. Only a server that understands WebSocket would compute that answer, so the check stops a client from treating an ordinary HTTP response, or a cached one, as an accepted upgrade. Netscope checks only that the accept field has the right shape; it does not compute the expected value. Seeing an accept field is weaker evidence than checking its calculated value. Neither check proves that a later application message arrived. The [WebSocket specification](https://www.rfc-editor.org/rfc/rfc6455#section-4.2.2) defines the acceptance checks.
+The client also includes a random value when it asks to switch protocols. The server calculates a reply from that value, and the client checks the reply before continuing. This helps distinguish an answer to this WebSocket request from an unrelated HTTP response. It does not establish that a later application message arrived.
 
-Netscope examines the recorded header shape. It reports missing or inconsistent fields, but does not calculate the accept value, validate extensions, or reproduce a browser's acceptance policy. Read “expected classic upgrade header shape” with that limit in mind. A 403 response is an observed refusal, even if some upgrade headers remain in the export. Status zero means no HTTP status was recorded.
+Netscope checks whether the recorded reply field is present, but does not verify its calculation. That limits the conclusion we can draw from its report. The [WebSocket specification](https://www.rfc-editor.org/rfc/rfc6455#section-4.2.2) defines the calculation for readers implementing a client.
+
+The inspector reports missing or inconsistent agreement headers. A report that the expected headers are present is a narrower check than a browser accepting the connection. A 403 response is an observed refusal, even if some upgrade headers remain in the export. Status zero means no HTTP status was recorded.
 
 ## Choosing a language for the conversation
 
@@ -50,62 +52,32 @@ Try explaining a 101 capture with no body text to another reader. What agreement
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### A WebSocket upgrade
 
-**Level:** Newcomer
-
-
-A HAR contains a request answered with status 101. What happened on that connection, and what can Netscope show about it?
+A recorded HTTP/1.1 response has status 101 and headers agreeing to switch to WebSocket. What agreement does it record, and what does it leave unknown?
 
 <details>
 <summary>Answer</summary>
 
-101 Switching Protocols means the server agreed to stop speaking HTTP/1.1 on that connection and start WebSocket. Later traffic is WebSocket frames, not an HTTP body. Netscope checks the recorded handshake headers, such as `Upgrade`, `Connection`, the key, version 13 and any chosen subprotocol. It does not compute the expected `Sec-WebSocket-Accept` value, and it shows no messages, because the exports do not contain them.
+The response records the server agreeing to switch the connection to WebSocket. Later traffic would use WebSocket messages rather than an ordinary HTTP response body. The captured agreement does not tell us which messages followed. Netscope checks the presence and consistency of selected agreement headers, but does not verify the server’s calculated reply or reconstruct a conversation missing from the file.
 
-**Common wrong answer.** "Netscope verifies the accept hash." It checks only that one non-empty accept field is present.
+**Common wrong answer.** "The agreement proves that the page received a message." A later message needs its own recorded evidence.
 
 **Learn more:** [An agreement has two sides](../chapters/26-switching-protocols.md#an-agreement-has-two-sides) · [The exporter can stop at the agreement](../chapters/26-switching-protocols.md#the-exporter-can-stop-at-the-agreement) · [`websocket_evidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L28)
 
 </details>
 
-### What does Netscope inspect in SSE and WebSocket captures?
-
-**Level:** Practitioner
-
-
-For server-sent events and WebSocket, what does Netscope actually inspect in a HAR, and what does it explicitly not claim?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-For a response whose MIME type is `text/event-stream` (letter case and parameters ignored), Netscope parses the retained response text into events. The view states "Order only · event arrival times and actual browser delivery are not recorded", because a HAR keeps the text but not when each event arrived. The last-event-ID buffer starts empty, since earlier connection state is unknown, and a final blank line does not prove the capture is complete.
+<a id="what-does-netscope-inspect-in-sse-and-websocket-captures"></a>
 
-For WebSocket, Netscope inspects only the classic HTTP/1.1 upgrade headers and reports a summary with notes. It does not recover frames or messages, does not verify the `Sec-WebSocket-Accept` digest, and does not check extensions or origin policy. A handshake reported over another HTTP version gets "Outside classic HTTP/1.1 upgrade inspection". Separately, live SSE replay can observe a real stream with local timing.
+[What does Netscope inspect in SSE and WebSocket captures?](../questions/practitioner.md#what-does-netscope-inspect-in-sse-and-websocket-captures)
 
-**Learn more:** [A blank line gives a boundary meaning](../chapters/25-reading-event-streams.md#a-blank-line-gives-a-boundary-meaning) · [The exporter can stop at the agreement](../chapters/26-switching-protocols.md#the-exporter-can-stop-at-the-agreement) · [`inspect_sse`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/sse.rs#L55-L73) · [`websocket_evidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L28-L47)
+<a id="a-wrong-sec-websocket-accept-value"></a>
 
-</details>
-
-### A wrong Sec-WebSocket-Accept value
-
-**Level:** Expert
-
-
-A HAR contains a 101 response whose `Sec-WebSocket-Accept` value is wrong for the request's `Sec-WebSocket-Key`. Every other header is shaped correctly. What summary does Netscope show?
-
-<details>
-<summary>Answer</summary>
-
-It shows "Recorded 101 with expected classic upgrade header shape".
-
-`websocket_evidence` checks only that exactly one non-empty `Sec-WebSocket-Accept` header is present. It does not compute the expected value, which is the base64 of SHA-1 over the key followed by a fixed GUID. A wrong value passes. The other checks are about shape: HTTP/1.1 on both sides, GET, Upgrade containing `websocket` and Connection containing `Upgrade` in both directions, one non-empty key, a version of exactly `13`, and a selected subprotocol that is one exact offered value.
-
-The function's documentation says that challenge digests, extensions, origin policy, and later frames are not validated. The summary describes recorded header shape. It does not claim the handshake was valid.
-
-**Common wrong answer.** "Netscope recomputes the SHA-1 accept value and flags the mismatch." It does not hash anything, so this case looks the same as a correct handshake.
-
-**Learn more:** [An agreement has two sides](../chapters/26-switching-protocols.md#an-agreement-has-two-sides) · [`websocket_evidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L26-L28) · [`accepts`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L89-L92)
+[A wrong Sec-WebSocket-Accept value](../questions/expert.md#a-wrong-sec-websocket-accept-value)
 
 </details>

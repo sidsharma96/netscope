@@ -89,12 +89,9 @@ Compile with `rustc example.rs`, then run `./example` on macOS or Linux. `rustc`
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Naming a value with a type
-
-**Level:** Newcomer
-
 
 What does `let status: u16 = 200;` say, and why does `let status: u16 = "200";` fail to compile?
 
@@ -109,9 +106,6 @@ What does `let status: u16 = 200;` say, and why does `let status: u16 = "200";` 
 
 ### A function's last expression
 
-**Level:** Newcomer
-
-
 In `fn has_http_status(status: u16) -> bool { status != 0 }`, where does the returned value come from, and what changes if you add a semicolon after `status != 0`?
 
 <details>
@@ -124,9 +118,6 @@ The arrow says the function returns a `bool`. The last expression in the body, `
 </details>
 
 ### Why `mut` is needed
-
-**Level:** Newcomer
-
 
 Why does `let selected = 0_usize; selected += 1;` fail, and what does adding `mut` tell a reader?
 

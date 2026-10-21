@@ -93,12 +93,9 @@ Finally, change the Rust example so the later method is HEAD. Which Boolean beco
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Possible retries
-
-**Level:** Newcomer
-
 
 After a 503, the same GET appears again. When does Netscope list it as a possible retry, and what does it avoid claiming?
 
@@ -111,60 +108,19 @@ Netscope searches only after statuses 408, 429, 500, 502, 503 and 504, and only 
 
 </details>
 
-### Does Netscope say which request followed a redirect?
-
-**Level:** Practitioner
-
-
-Netscope shows redirect and retry relationships between requests in a HAR. Does it claim that request B is the redirect follow-up or retry of request A? What does it report instead, and why?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-It never claims a cause. `RedirectEvidence` and `RetryEvidence` each have three variants. `NotApplicable` means the source status is outside the analysis. `Unavailable(reason)` means the search could not run, for example because there is no usable `Location` header. `Candidates` lists up to 20 request IDs, with a `more` flag when further matches exist.
+<a id="does-netscope-say-which-request-followed-a-redirect"></a>
 
-A HAR does not record which request caused another. Two identical GETs after a 503 could be a user reload, another tab or a client retry. Netscope therefore reports requests that are consistent with the relationship and leaves the choice to you. Keeping three variants also separates "the search could not run" from "the search ran and found nothing", which an empty list alone could not express.
+[Does Netscope say which request followed a redirect?](../questions/practitioner.md#does-netscope-say-which-request-followed-a-redirect)
 
-**Learn more:** [Two plausible requests are still two requests](../chapters/13-following-redirects.md#two-plausible-requests-are-still-two-requests) · [Give different outcomes different Rust values](../chapters/13-following-redirects.md#give-different-outcomes-different-rust-values) · [`RedirectEvidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/redirects.rs#L7-L21) · [`RetryEvidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L7-L19)
+<a id="how-are-retry-candidates-found"></a>
 
-</details>
+[How are retry candidates found?](../questions/practitioner.md#how-are-retry-candidates-found)
 
-### The worst case for redirect and retry matching
+<a id="the-worst-case-for-redirect-and-retry-matching"></a>
 
-**Level:** Expert
-
-
-What is the worst-case time complexity of retry and redirect analysis for a capture with n entries? Which input triggers it, and what bounds it in practice?
-
-<details>
-<summary>Answer</summary>
-
-Building each index is O(n log n). For each source, `partition_point` finds the first possible candidate in O(log k), and a forward scan follows. The scan stops at the 30-second window or after 20 accepted candidates.
-
-For retries, a candidate with the same URL and method but a different header, cookie, or query list is skipped with `continue` and does not count toward the cap of 20. Take n GET requests to one URL, all inside 30 seconds, all with a retryable status such as 503, each with a changing request-ID header. Every source scans every later request and accepts none, so the work is O(n²) list comparisons. Redirect matching has the same shape, but only a method mismatch is skipped without counting, so it reaches O(n²) only when many same-URL requests use a method the status does not allow.
-
-Both analyses run once, eagerly, inside `Session::new`. The import limit of 10,000 entries bounds the adversarial case at roughly 5 × 10^7 comparisons.
-
-**Learn more:** [Why is binary search valid in redirect and retry matching?](../chapters/34-defending-the-design.md#why-is-binary-search-valid-in-redirect-and-retry-matching) · [Decide when to look for a repeat](../chapters/14-recognizing-repeats.md#decide-when-to-look-for-a-repeat) · [`partition_point`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L68) · [`headers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L80-L85) · [`analyze`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L235-L236)
-
-</details>
-
-### How are retry candidates found?
-
-**Level:** Practitioner
-
-
-Which source requests are eligible for retry analysis, which statuses start the search, what must match for a later request to be a candidate, what time window applies, and how is the search implemented?
-
-<details>
-<summary>Answer</summary>
-
-A source with status 0 gets "Unavailable", because a network failure cannot be assumed. Statuses other than 408, 429, 500, 502, 503 and 504 get "NotApplicable". The source must be a GET or HEAD with a reported body size of 0 and no captured body, its duration must be finite and non-negative, and its URL must parse conservatively as HTTP or HTTPS with the fragment removed.
-
-The index is a `BTreeMap` from (URL, method) to request IDs in chronological order, built once at import. For each source, `partition_point` binary-searches that list for the first request that starts strictly after the source starts and at or after the source ends. The scan then moves forward and stops once a request starts more than 30,000 ms after the source's end. A candidate must have exactly the same recorded headers, cookies and query lists, in the same order and case. Up to 20 candidates are kept, and `more` records that another exists.
-
-**Common wrong answer.** "Status 0 triggers a retry search because it means a network error." Netscope refuses to assume that.
-
-**Learn more:** [Decide when to look for a repeat](../chapters/14-recognizing-repeats.md#decide-when-to-look-for-a-repeat) · [Why is binary search valid in redirect and retry matching?](../chapters/34-defending-the-design.md#why-is-binary-search-valid-in-redirect-and-retry-matching) · [Eligibility and comparison](../contracts/m2-retry-suggestions.md#eligibility-and-comparison) · [`analyze`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L27-L96)
+[The worst case for redirect and retry matching](../questions/expert.md#the-worst-case-for-redirect-and-retry-matching)
 
 </details>

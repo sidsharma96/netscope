@@ -24,6 +24,7 @@ Netscope is a terminal program for inspecting recordings of network traffic. It 
 **Level:** Newcomer
 
 <!-- chapters: 02-reading-a-capture, 10-importing-a-har -->
+<!-- exercise: 02-reading-a-capture -->
 
 What is a HAR file, and who decides what goes into it?
 
@@ -41,13 +42,14 @@ A HAR (HTTP Archive) file is a JSON document that a browser or another capture t
 **Level:** Newcomer
 
 <!-- chapters: 02-reading-a-capture, 09-options-results-and-matching, 15-reading-protocol-labels -->
+<!-- exercise: 02-reading-a-capture -->
 
 A HAR's DNS timing can be absent, `-1`, or `0`. What does each one mean, and how does Netscope keep them apart?
 
 <details>
 <summary>Answer</summary>
 
-An absent field means the exporter recorded nothing. HAR 1.2 defines `-1` for an optional timing as "does not apply to the current request", for example DNS on a connection the browser had already opened. A `0` is a reported duration of zero at the exporter's precision. Netscope stores these as different variants of its `Timing` enum: `Missing`, `Unavailable` (shown as `Not applicable (-1)`), and `Milliseconds(0.0)`. None of them is turned into another.
+An absent field means the exporter recorded nothing. HAR 1.2 defines `-1` for an optional timing as "does not apply to the current request", for example DNS on a connection the browser had already opened. A `0` is a reported duration of zero at the exporter's precision. Netscope keeps separate labels for these cases: not recorded, not applicable, and a recorded duration of zero. That lets you read the capture without turning an absent measurement into a number.
 
 **Common wrong answer.** "`-1` means the value is unknown, so treat it like zero." It means the stage did not happen for this request, and adding it as zero would invent a measurement.
 
@@ -60,6 +62,7 @@ An absent field means the exporter recorded nothing. HAR 1.2 defines `-1` for an
 **Level:** Newcomer
 
 <!-- chapters: 02-reading-a-capture -->
+<!-- exercise: 02-reading-a-capture -->
 
 A request reports 30 ms for `connect` and 20 ms for `ssl`. Why is the connection setup not 50 ms?
 
@@ -77,6 +80,7 @@ HAR counts the TLS handshake as part of the connection time. The 20 ms of `ssl` 
 **Level:** Newcomer
 
 <!-- chapters: 22-running-a-program -->
+<!-- exercise: 22-running-a-program -->
 
 You built Netscope, but typing `netscope` in another folder prints "command not found". What are the separate steps between source code and a working command, and which one failed?
 
@@ -94,6 +98,7 @@ Building turns the Rust source into an executable file in the build directory. I
 **Level:** Newcomer
 
 <!-- chapters: 22-running-a-program -->
+<!-- exercise: 22-running-a-program -->
 
 You run `netscope capture.har`. Netscope is installed in one folder and the shell is open in another. Which folder must contain `capture.har`?
 
@@ -111,6 +116,7 @@ The folder the shell is in, called the working directory. A relative path such a
 **Level:** Newcomer
 
 <!-- chapters: 22-running-a-program -->
+<!-- exercise: 22-running-a-program -->
 
 What exit statuses does Netscope return, and what does `netscope --version` prove?
 
@@ -128,6 +134,7 @@ Netscope exits with 0 for success, 1 for a file or runtime failure, and 2 for in
 **Level:** Newcomer
 
 <!-- chapters: 07-values-and-functions -->
+<!-- exercise: 07-values-and-functions -->
 
 What does `let status: u16 = 200;` say, and why does `let status: u16 = "200";` fail to compile?
 
@@ -145,6 +152,7 @@ What does `let status: u16 = 200;` say, and why does `let status: u16 = "200";` 
 **Level:** Newcomer
 
 <!-- chapters: 07-values-and-functions -->
+<!-- exercise: 07-values-and-functions -->
 
 In `fn has_http_status(status: u16) -> bool { status != 0 }`, where does the returned value come from, and what changes if you add a semicolon after `status != 0`?
 
@@ -162,6 +170,7 @@ The arrow says the function returns a `bool`. The last expression in the body, `
 **Level:** Newcomer
 
 <!-- chapters: 07-values-and-functions, 11-drawing-and-navigation -->
+<!-- exercise: 07-values-and-functions -->
 
 Why does `let selected = 0_usize; selected += 1;` fail, and what does adding `mut` tell a reader?
 
@@ -179,6 +188,7 @@ Rust variables cannot be changed unless they are declared with `mut`. Writing `l
 **Level:** Newcomer
 
 <!-- chapters: 03-storing-requests -->
+<!-- exercise: 03-storing-requests -->
 
 After `let url = String::from("https://example.test/api/books"); let request_url = url;`, can you still print `url`? What happened to the text?
 
@@ -198,6 +208,7 @@ No. The assignment moves ownership of the `String` to `request_url`, and the com
 **Level:** Newcomer
 
 <!-- chapters: 03-storing-requests, 16-preparing-a-request -->
+<!-- exercise: 03-storing-requests -->
 
 A drawing function needs to read a request's URL. A replay draft needs a URL it can edit. Which one should borrow and which one should clone, and why?
 
@@ -232,6 +243,7 @@ A reference is suited to short access, such as reading during one draw. Remember
 **Level:** Newcomer
 
 <!-- chapters: 08-structs-vectors-and-ids -->
+<!-- exercise: 08-structs-vectors-and-ids -->
 
 What is the difference between a `struct` and a `Vec`, and how does Netscope use each for requests?
 
@@ -249,6 +261,7 @@ A `struct` groups named fields that belong to one thing, such as one request's m
 **Level:** Newcomer
 
 <!-- chapters: 08-structs-vectors-and-ids, 04-quality-and-tests -->
+<!-- exercise: 08-structs-vectors-and-ids -->
 
 A request ID and a host ID are both numbers. Why does Netscope wrap them in `RequestId` and `HostId` instead of using plain `usize` values?
 
@@ -266,6 +279,7 @@ A request ID and a host ID are both numbers. Why does Netscope wrap them in `Req
 **Level:** Newcomer
 
 <!-- chapters: 08-structs-vectors-and-ids, 12-grouping-requests -->
+<!-- exercise: 08-structs-vectors-and-ids -->
 
 The list shows requests in time order, but request 0 still means the first entry in the file. How can both be true?
 
@@ -283,6 +297,7 @@ The session keeps requests in a vector in file order, and a request's ID is its 
 **Level:** Newcomer
 
 <!-- chapters: 09-options-results-and-matching -->
+<!-- exercise: 09-options-results-and-matching -->
 
 What is the difference between `Option` and `Result`? Give one place where each appears in Netscope.
 
@@ -300,6 +315,7 @@ What is the difference between `Option` and `Result`? Give one place where each 
 **Level:** Newcomer
 
 <!-- chapters: 09-options-results-and-matching, 13-following-redirects -->
+<!-- exercise: 09-options-results-and-matching -->
 
 Why does Netscope use `match` to choose a label for a timing, and what happens if someone adds a new `Timing` variant later?
 
@@ -317,6 +333,7 @@ Why does Netscope use `match` to choose a label for a timing, and what happens i
 **Level:** Newcomer
 
 <!-- chapters: 09-options-results-and-matching, 10-importing-a-har, 04-quality-and-tests -->
+<!-- exercise: 09-options-results-and-matching -->
 
 What does `?` do after a call that returns a `Result`, and why does Netscope not call `unwrap` there instead?
 
@@ -334,6 +351,7 @@ If the result is `Ok`, `?` takes out the value and execution continues. If it is
 **Level:** Newcomer
 
 <!-- chapters: 10-importing-a-har -->
+<!-- exercise: 10-importing-a-har -->
 
 A HAR has three entries. The second has an invalid required wait time. In a second file, only the second entry's base64 body is malformed. What does Netscope show in each case?
 
@@ -351,6 +369,7 @@ In the first file the import fails. Netscope reports an error that names the fie
 **Level:** Newcomer
 
 <!-- chapters: 11-drawing-and-navigation -->
+<!-- exercise: 11-drawing-and-navigation -->
 
 In a wide window the request list and its details are both visible. Pressing Down could select the next request or scroll the body. What decides which one happens?
 
@@ -387,6 +406,7 @@ No. The search is an exact, case-sensitive substring match on the captured URL t
 **Level:** Newcomer
 
 <!-- chapters: 11-drawing-and-navigation, 04-quality-and-tests -->
+<!-- exercise: 11-drawing-and-navigation -->
 
 Netscope switches the terminal into raw mode and an alternate screen. How does it restore the terminal if drawing fails partway through?
 
@@ -404,6 +424,7 @@ A guard value owns the cleanup. When setup changes the terminal, the guard recor
 **Level:** Newcomer
 
 <!-- chapters: 12-grouping-requests -->
+<!-- exercise: 12-grouping-requests -->
 
 Two requests to the same host start together and report 40 ms and 60 ms. The host view shows 100 ms. Does the host's traffic take 100 ms?
 
@@ -421,6 +442,7 @@ No. The host view adds each request's reported total once, and labels the value 
 **Level:** Newcomer
 
 <!-- chapters: 13-following-redirects -->
+<!-- exercise: 13-following-redirects -->
 
 Request #0 got a 302 to `/books`, and requests #1 and #2 both ask for `/books` shortly afterwards. Does Netscope say which one the browser followed?
 
@@ -440,6 +462,7 @@ No. A HAR does not record which request caused another. Netscope lists both as p
 **Level:** Newcomer
 
 <!-- chapters: 14-recognizing-repeats -->
+<!-- exercise: 14-recognizing-repeats -->
 
 After a 503, the same GET appears again. When does Netscope list it as a possible retry, and what does it avoid claiming?
 
@@ -457,6 +480,7 @@ Netscope searches only after statuses 408, 429, 500, 502, 503 and 504, and only 
 **Level:** Newcomer
 
 <!-- chapters: 15-reading-protocol-labels, 28-sharing-a-connection -->
+<!-- exercise: 15-reading-protocol-labels -->
 
 Two overlapping requests are both labelled HTTP/2. Did they share one connection?
 
@@ -476,6 +500,7 @@ The label cannot tell you. HTTP/2 supports carrying several exchanges on one con
 **Level:** Newcomer
 
 <!-- chapters: 15-reading-protocol-labels -->
+<!-- exercise: 15-reading-protocol-labels -->
 
 A request's protocol says HTTP/1.1 and its response says HTTP/3. What does Netscope show?
 
@@ -493,6 +518,7 @@ It shows both original strings, classifies each one on its own, and labels the d
 **Level:** Newcomer
 
 <!-- chapters: 15-reading-protocol-labels, 18-comparing-responses -->
+<!-- exercise: 15-reading-protocol-labels -->
 
 A captured response has `Content-Encoding: gzip`, but its body in the HAR is plain readable text. Is the file broken?
 
@@ -510,6 +536,7 @@ No. The browser received compressed bytes, decompressed them, and saved the read
 **Level:** Newcomer
 
 <!-- chapters: 28-sharing-a-connection -->
+<!-- exercise: 28-sharing-a-connection -->
 
 What is an HTTP/2 stream, and how does it differ from an SSE event stream?
 
@@ -527,6 +554,7 @@ An HTTP/2 stream is one identified request and response exchange inside a connec
 **Level:** Newcomer
 
 <!-- chapters: 28-sharing-a-connection -->
+<!-- exercise: 28-sharing-a-connection -->
 
 What do HTTP/2 flow control and HPACK each do, and can Netscope recover either from a HAR?
 
@@ -544,6 +572,7 @@ Flow control limits how much body data a sender may send, with separate budgets 
 **Level:** Newcomer
 
 <!-- chapters: 16-preparing-a-request -->
+<!-- exercise: 16-preparing-a-request -->
 
 You press `r` on a captured request. What do you get, and what has to happen before anything goes over the network?
 
@@ -561,6 +590,7 @@ You get a draft: a separate, editable copy of the URL with no captured headers s
 **Level:** Newcomer
 
 <!-- chapters: 17-waiting-for-a-response, 24-sharing-work -->
+<!-- exercise: 17-waiting-for-a-response -->
 
 A server accepts your request and then sends nothing. How can Netscope still react when you press Esc?
 
@@ -578,6 +608,7 @@ Each Send runs on its own worker thread, so the terminal thread keeps reading ke
 **Level:** Newcomer
 
 <!-- chapters: 24-sharing-work, 17-waiting-for-a-response -->
+<!-- exercise: 24-sharing-work -->
 
 Why does the worker send its finished result through a channel instead of sharing a growing response body with the terminal under a lock?
 
@@ -595,6 +626,7 @@ Only one part of the program needs to change the body at a time. The worker owns
 **Level:** Newcomer
 
 <!-- chapters: 24-sharing-work -->
+<!-- exercise: 24-sharing-work -->
 
 Each Send gets an operation number. Why, and why is it an ordinary counter rather than an atomic one?
 
@@ -612,6 +644,7 @@ The number lets the terminal accept a result only for the operation it is curren
 **Level:** Newcomer
 
 <!-- chapters: 18-comparing-responses -->
+<!-- exercise: 18-comparing-responses -->
 
 After a complete replay, the comparison says "stored bytes match". Does that mean the server sent the same response as before?
 
@@ -631,6 +664,7 @@ Not necessarily. It means every byte the capture retained equals the replay's by
 **Level:** Newcomer
 
 <!-- chapters: 19-submitting-text, 21-moving-through-text -->
+<!-- exercise: 19-submitting-text -->
 
 You POST the plain-text body `café`. What Content-Length does Netscope send, and why?
 
@@ -650,6 +684,7 @@ Five. Content-Length counts bytes, not letters. Rust stores text as UTF-8, where
 **Level:** Newcomer
 
 <!-- chapters: 21-moving-through-text -->
+<!-- exercise: 21-moving-through-text -->
 
 The text `é` can be stored as `e` followed by a combining accent. If you press Left once after it, where should the cursor go?
 
@@ -667,6 +702,7 @@ Before the `e`, past the whole visible letter. The two Unicode values form one g
 **Level:** Newcomer
 
 <!-- chapters: 21-moving-through-text, 11-drawing-and-navigation -->
+<!-- exercise: 21-moving-through-text -->
 
 Why can't Netscope use a string's byte length to decide where to wrap a header on screen?
 
@@ -684,6 +720,7 @@ Bytes, visible characters and terminal columns are different lengths. `A` takes 
 **Level:** Newcomer
 
 <!-- chapters: 20-remembering-a-request -->
+<!-- exercise: 20-remembering-a-request -->
 
 You save a draft and reopen it tomorrow. What comes back, what is left out, and does opening it send anything?
 
@@ -701,6 +738,7 @@ The file is versioned JSON holding the name, URL, method, body format, body and 
 **Level:** Newcomer
 
 <!-- chapters: 25-reading-event-streams -->
+<!-- exercise: 25-reading-event-streams -->
 
 A captured `text/event-stream` body contains several `data:` lines. What marks the end of one event, and can Netscope tell you when each event arrived?
 
@@ -718,15 +756,16 @@ A blank line ends an event. Consecutive `data` lines before it are joined with n
 **Level:** Newcomer
 
 <!-- chapters: 26-switching-protocols -->
+<!-- exercise: 26-switching-protocols -->
 
-A HAR contains a request answered with status 101. What happened on that connection, and what can Netscope show about it?
+A recorded HTTP/1.1 response has status 101 and headers agreeing to switch to WebSocket. What agreement does it record, and what does it leave unknown?
 
 <details>
 <summary>Answer</summary>
 
-101 Switching Protocols means the server agreed to stop speaking HTTP/1.1 on that connection and start WebSocket. Later traffic is WebSocket frames, not an HTTP body. Netscope checks the recorded handshake headers, such as `Upgrade`, `Connection`, the key, version 13 and any chosen subprotocol. It does not compute the expected `Sec-WebSocket-Accept` value, and it shows no messages, because the exports do not contain them.
+The response records the server agreeing to switch the connection to WebSocket. Later traffic would use WebSocket messages rather than an ordinary HTTP response body. The captured agreement does not tell us which messages followed. Netscope checks the presence and consistency of selected agreement headers, but does not verify the server’s calculated reply or reconstruct a conversation missing from the file.
 
-**Common wrong answer.** "Netscope verifies the accept hash." It checks only that one non-empty accept field is present.
+**Common wrong answer.** "The agreement proves that the page received a message." A later message needs its own recorded evidence.
 
 **Learn more:** [An agreement has two sides](../chapters/26-switching-protocols.md#an-agreement-has-two-sides) · [The exporter can stop at the agreement](../chapters/26-switching-protocols.md#the-exporter-can-stop-at-the-agreement) · [`websocket_evidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L28)
 
@@ -737,6 +776,7 @@ A HAR contains a request answered with status 101. What happened on that connect
 **Level:** Newcomer
 
 <!-- chapters: 27-observing-live-events, 17-waiting-for-a-response -->
+<!-- exercise: 27-observing-live-events -->
 
 During live SSE, Netscope shows a time beside each event. Where does that clock start, and what does the time measure?
 
@@ -754,6 +794,7 @@ The clock starts when you accept Send, so connection setup, TLS and waiting for 
 **Level:** Newcomer
 
 <!-- chapters: 29-reading-packet-bytes -->
+<!-- exercise: 29-reading-packet-bytes -->
 
 A PCAP record says the original packet was 120 bytes but only 80 were captured. What does Netscope do with the missing 40?
 
@@ -771,6 +812,7 @@ It treats them as unavailable, never as zeros. The capture tool stored only the 
 **Level:** Newcomer
 
 <!-- chapters: 29-reading-packet-bytes -->
+<!-- exercise: 29-reading-packet-bytes -->
 
 A TCP header holds the port as bytes `01 bb`. What number is that, and why can't Netscope use the computer's own byte order?
 
@@ -788,6 +830,7 @@ It is 443: the first byte is the high part, so 1 × 256 + 187. Network headers u
 **Level:** Newcomer
 
 <!-- chapters: 30-putting-bytes-in-order -->
+<!-- exercise: 30-putting-bytes-in-order -->
 
 TCP segments arrive with `abc` at positions 0 to 2 and `ghi` at positions 6 to 8. What does Netscope build, and what does the HTTP parser see?
 
@@ -805,6 +848,7 @@ TCP sequence numbers give each byte a position in one direction's stream. Netsco
 **Level:** Newcomer
 
 <!-- chapters: 31-finding-http-boundaries -->
+<!-- exercise: 31-finding-http-boundaries -->
 
 How does a chunked HTTP/1.1 response mark where its body ends, and which bytes become the body?
 
@@ -822,6 +866,7 @@ Each chunk starts with its size in hexadecimal and a CRLF, then that many data b
 **Level:** Newcomer
 
 <!-- chapters: 32-reading-signaling -->
+<!-- exercise: 32-reading-signaling -->
 
 Netscope reports SDP-like text with an ICE username fragment and a STUN candidate in the same capture. Did the call's audio flow?
 
@@ -839,6 +884,7 @@ The capture does not show that. SDP is a text description that proposes a sessio
 **Level:** Newcomer
 
 <!-- chapters: 33-interpreting-a-trace, 32-reading-signaling -->
+<!-- exercise: 33-interpreting-a-trace -->
 
 A DNS response in a PCAP lists three addresses for one name. Does that show a load balancer, and which address did the client use?
 
@@ -858,6 +904,7 @@ Neither. The answer records the addresses the resolver returned. It does not say
 **Level:** Newcomer
 
 <!-- chapters: 33-interpreting-a-trace, 30-putting-bytes-in-order -->
+<!-- exercise: 33-interpreting-a-trace -->
 
 Two TCP segments carry the same sequence range with the same bytes. Is that a retransmission after packet loss?
 
@@ -877,6 +924,7 @@ It might be, but the trace does not say so. The sender may have sent again, or t
 **Level:** Newcomer
 
 <!-- chapters: 33-interpreting-a-trace -->
+<!-- exercise: 33-interpreting-a-trace -->
 
 A TCP header shows a window of 512. Can you read that as "the receiver will accept 512 more bytes"?
 
@@ -894,13 +942,14 @@ Not in general. With window scaling, the receiver of the window multiplies the 1
 **Level:** Newcomer
 
 <!-- chapters: 23-shaping-the-program -->
+<!-- exercise: 23-shaping-the-program -->
 
 Netscope's workspace has four crates. What does each one do, and which ones can send network traffic?
 
 <details>
 <summary>Answer</summary>
 
-`netscope-core` holds the data model and the pure analysis rules, such as sessions, timings, drafts and reassembly. `netscope-import` reads HAR and PCAP files into core types. `netscope-net` performs the one reviewed HTTP exchange. `netscope-tui` draws the terminal, handles keys and builds the `netscope` command. Only `netscope-net` sends traffic. Core depends on no terminal or network crate, so its rules can be tested without either.
+`netscope-core` holds the data model and the pure analysis rules, such as sessions, timings, drafts and reassembly. `netscope-import` reads HAR and PCAP files into core types. `netscope-net` performs the one reviewed HTTP exchange. `netscope` draws the terminal, handles keys and builds the `netscope` command. Only `netscope-net` sends traffic. Core depends on no terminal or network crate, so its rules can be tested without either.
 
 **Learn more:** [Make dependencies point toward the data rules](../chapters/23-shaping-the-program.md#make-dependencies-point-toward-the-data-rules) · [Keep a file format away from a screen's decisions](../chapters/23-shaping-the-program.md#keep-a-file-format-away-from-a-screens-decisions)
 
@@ -911,6 +960,7 @@ Netscope's workspace has four crates. What does each one do, and which ones can 
 **Level:** Newcomer
 
 <!-- chapters: 23-shaping-the-program, 12-grouping-requests -->
+<!-- exercise: 23-shaping-the-program -->
 
 Netscope builds host summaries and redirect and retry candidates when it loads a capture. Why is that a sound choice here, and when would it stop being one?
 
@@ -928,6 +978,7 @@ A loaded capture never changes while you browse it, so answers computed once sta
 **Level:** Newcomer
 
 <!-- chapters: 04-quality-and-tests -->
+<!-- exercise: 04-quality-and-tests -->
 
 The program compiles and draws every row. Why does Netscope still need a test that feeds in a `-1` timing, and why are most tests built on small invented captures?
 

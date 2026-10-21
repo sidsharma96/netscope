@@ -96,66 +96,9 @@ The [redirect contract](../contracts/m2-redirect-suggestions.md) defines exact c
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### What `match` guarantees
-
-**Level:** Newcomer
-
-
-Why does Netscope use `match` to choose a label for a timing, and what happens if someone adds a new `Timing` variant later?
-
-<details>
-<summary>Answer</summary>
-
-`match` compares a value against patterns and runs the arm that fits. Rust requires the arms to cover every variant. If a new variant is added, every `match` that lists the existing variants stops compiling until someone decides how to show the new case. The display cannot quietly fall back to a misleading label. The same idea keeps "search unavailable" and "search found nothing" apart in the redirect analysis.
-
-**Learn more:** [Handle the alternatives with match](../chapters/09-options-results-and-matching.md#handle-the-alternatives-with-match) · [Give different outcomes different Rust values](../chapters/13-following-redirects.md#give-different-outcomes-different-rust-values)
-
-</details>
-
-### Does Netscope say which request followed a redirect?
-
-**Level:** Practitioner
-
-
-Netscope shows redirect and retry relationships between requests in a HAR. Does it claim that request B is the redirect follow-up or retry of request A? What does it report instead, and why?
-
-<details>
-<summary>Answer</summary>
-
-It never claims a cause. `RedirectEvidence` and `RetryEvidence` each have three variants. `NotApplicable` means the source status is outside the analysis. `Unavailable(reason)` means the search could not run, for example because there is no usable `Location` header. `Candidates` lists up to 20 request IDs, with a `more` flag when further matches exist.
-
-A HAR does not record which request caused another. Two identical GETs after a 503 could be a user reload, another tab or a client retry. Netscope therefore reports requests that are consistent with the relationship and leaves the choice to you. Keeping three variants also separates "the search could not run" from "the search ran and found nothing", which an empty list alone could not express.
-
-**Learn more:** [Two plausible requests are still two requests](../chapters/13-following-redirects.md#two-plausible-requests-are-still-two-requests) · [Give different outcomes different Rust values](../chapters/13-following-redirects.md#give-different-outcomes-different-rust-values) · [`RedirectEvidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/redirects.rs#L7-L21) · [`RetryEvidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L7-L19)
-
-</details>
-
-### The worst case for redirect and retry matching
-
-**Level:** Expert
-
-
-What is the worst-case time complexity of retry and redirect analysis for a capture with n entries? Which input triggers it, and what bounds it in practice?
-
-<details>
-<summary>Answer</summary>
-
-Building each index is O(n log n). For each source, `partition_point` finds the first possible candidate in O(log k), and a forward scan follows. The scan stops at the 30-second window or after 20 accepted candidates.
-
-For retries, a candidate with the same URL and method but a different header, cookie, or query list is skipped with `continue` and does not count toward the cap of 20. Take n GET requests to one URL, all inside 30 seconds, all with a retryable status such as 503, each with a changing request-ID header. Every source scans every later request and accepts none, so the work is O(n²) list comparisons. Redirect matching has the same shape, but only a method mismatch is skipped without counting, so it reaches O(n²) only when many same-URL requests use a method the status does not allow.
-
-Both analyses run once, eagerly, inside `Session::new`. The import limit of 10,000 entries bounds the adversarial case at roughly 5 × 10^7 comparisons.
-
-**Learn more:** [Why is binary search valid in redirect and retry matching?](../chapters/34-defending-the-design.md#why-is-binary-search-valid-in-redirect-and-retry-matching) · [Decide when to look for a repeat](../chapters/14-recognizing-repeats.md#decide-when-to-look-for-a-repeat) · [`partition_point`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L68) · [`headers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/retries.rs#L80-L85) · [`analyze`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L235-L236)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Redirect candidates
-
-**Level:** Newcomer
-
 
 Request #0 got a 302 to `/books`, and requests #1 and #2 both ask for `/books` shortly afterwards. Does Netscope say which one the browser followed?
 
@@ -170,20 +113,23 @@ No. A HAR does not record which request caused another. Netscope lists both as p
 
 </details>
 
-### Which redirect candidates are accepted?
-
-**Level:** Practitioner
-
-
-How is the redirect target derived, and which candidate methods are accepted for 301 and 302, for 303, and for 307 and 308? What makes the analysis return "Unavailable" instead of a list of candidates?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-Only statuses 301, 302, 303, 307 and 308 are considered. The response must have exactly one `Location` header. With none, the result is "No Location header recorded; redirectURL metadata is not used", because HAR's `redirectURL` field is deliberately ignored. With more than one, no target is chosen. The value is trimmed of spaces and tabs and rejected if empty or if it contains whitespace, controls or backslashes. It is resolved against the source URL with `Url::join` and must give an HTTP or HTTPS URL; the fragment is removed.
+<a id="what-match-guarantees"></a>
 
-For 303, a candidate must be GET or HEAD. For 301 and 302, it must use the same method, or GET when the source was POST, matching historical browser behaviour. For 307 and 308 the method must be the same. Candidates must have the same normalised URL, start after the source ends and within 30 seconds, and at most 20 are kept. Headers are not compared. A candidate URL with odd characters is simply left out of the index; only a bad source URL or target makes the result "Unavailable".
+[What `match` guarantees](../questions/newcomer.md#what-match-guarantees)
 
-**Learn more:** [Read the instruction before finding a follow-up](../chapters/13-following-redirects.md#read-the-instruction-before-finding-a-follow-up) · [Evidence and matching](../contracts/m2-redirect-suggestions.md#evidence-and-matching) · [`method_matches`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/redirects.rs#L23-L32) · [`analyze`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/redirects.rs#L34-L118)
+<a id="does-netscope-say-which-request-followed-a-redirect"></a>
+
+[Does Netscope say which request followed a redirect?](../questions/practitioner.md#does-netscope-say-which-request-followed-a-redirect)
+
+<a id="which-redirect-candidates-are-accepted"></a>
+
+[Which redirect candidates are accepted?](../questions/practitioner.md#which-redirect-candidates-are-accepted)
+
+<a id="the-worst-case-for-redirect-and-retry-matching"></a>
+
+[The worst case for redirect and retry matching](../questions/expert.md#the-worst-case-for-redirect-and-retry-matching)
 
 </details>

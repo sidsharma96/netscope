@@ -92,12 +92,9 @@ The parser [`parse_sse`](https://github.com/sidsharma96/netscope/blob/main/crate
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Events inside one SSE response
-
-**Level:** Newcomer
-
 
 A captured `text/event-stream` body contains several `data:` lines. What marks the end of one event, and can Netscope tell you when each event arrived?
 
@@ -110,60 +107,19 @@ A blank line ends an event. Consecutive `data` lines before it are joined with n
 
 </details>
 
-### What does Netscope inspect in SSE and WebSocket captures?
-
-**Level:** Practitioner
-
-
-For server-sent events and WebSocket, what does Netscope actually inspect in a HAR, and what does it explicitly not claim?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-For a response whose MIME type is `text/event-stream` (letter case and parameters ignored), Netscope parses the retained response text into events. The view states "Order only · event arrival times and actual browser delivery are not recorded", because a HAR keeps the text but not when each event arrived. The last-event-ID buffer starts empty, since earlier connection state is unknown, and a final blank line does not prove the capture is complete.
+<a id="what-does-netscope-inspect-in-sse-and-websocket-captures"></a>
 
-For WebSocket, Netscope inspects only the classic HTTP/1.1 upgrade headers and reports a summary with notes. It does not recover frames or messages, does not verify the `Sec-WebSocket-Accept` digest, and does not check extensions or origin policy. A handshake reported over another HTTP version gets "Outside classic HTTP/1.1 upgrade inspection". Separately, live SSE replay can observe a real stream with local timing.
+[What does Netscope inspect in SSE and WebSocket captures?](../questions/practitioner.md#what-does-netscope-inspect-in-sse-and-websocket-captures)
 
-**Learn more:** [A blank line gives a boundary meaning](../chapters/25-reading-event-streams.md#a-blank-line-gives-a-boundary-meaning) · [The exporter can stop at the agreement](../chapters/26-switching-protocols.md#the-exporter-can-stop-at-the-agreement) · [`inspect_sse`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/sse.rs#L55-L73) · [`websocket_evidence`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/websocket.rs#L28-L47)
+<a id="how-does-the-offline-sse-parser-read-text"></a>
 
-</details>
+[How does the offline SSE parser read text?](../questions/practitioner.md#how-does-the-offline-sse-parser-read-text)
 
-### How live SSE stamps, decodes, and publishes events
+<a id="how-live-sse-stamps-decodes-and-publishes-events"></a>
 
-**Level:** Expert
-
-
-During a live SSE observation, how are per-event times produced? What happens when a UTF-8 character is split across two reads, or when invalid bytes arrive? How does the screen see progress, and what does the parsing approach cost?
-
-<details>
-<summary>Answer</summary>
-
-Before the body is read, the response must have status 200, exactly one `text/event-stream` Content-Type, and no content encoding other than identity. Each body frame is then appended to a buffer capped at 64 KiB.
-
-`observe` finds the longest valid UTF-8 prefix. If the error is an incomplete final character, it waits for more bytes. If the bytes are invalid, it publishes the valid prefix and stops with an error. A stream that ends inside a character is also an error.
-
-The whole valid prefix is parsed again with `parse_sse` on every frame. `observed.resize(count, elapsed)` gives every event completed by this frame the time since Send at which the frame arrived. Several events in one frame share a time, and the time is arrival here, not the server's send time. The 100th event or the 64 KiB limit ends the observation without waiting for the server to close.
-
-Progress goes through a `watch` channel with `send_replace`, which keeps only the newest snapshot. The screen ignores snapshots for a stale Send ID. Reparsing is O(n) per frame, so the total is quadratic in the number of frames, bounded by 64 KiB.
-
-**Learn more:** [Bytes can stop in the middle of a character](../chapters/27-observing-live-events.md#bytes-can-stop-in-the-middle-of-a-character) · [Why does live SSE reparse its whole prefix on every read?](../chapters/34-defending-the-design.md#why-does-live-sse-reparse-its-whole-prefix-on-every-read) · [`observe`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L51-L85) · [`validate_response`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L108)
-
-</details>
-
-### How does the offline SSE parser read text?
-
-**Level:** Practitioner
-
-
-Describe how `parse_sse` handles line endings, a byte-order mark, multi-line data, the `id` and `retry` fields, a final block without a blank line, and its limits.
-
-<details>
-<summary>Answer</summary>
-
-The parser examines at most 64 KiB, cut back to a character boundary, and records a text limit if that cut anything. It ignores one leading byte-order mark. A line ends at CR, LF or CRLF. A line starting with `:` is a comment and is counted. Any other line splits at its first colon, and one leading space is removed from the value. Each `data` line appends its value and a newline. A blank line dispatches an event if data is present, removing only the final newline, with the type defaulting to `message`; the event type resets at every blank line.
-
-An `id` value sets the last-ID buffer unless it contains a NUL character, and each event records the buffer's value at its boundary. A `retry` value is kept only if it is all ASCII digits, and it is stored as the digit string, so a huge number cannot overflow. Unknown fields are counted as ignored. A final block with no blank line is returned as `pending` and produces no event. Parsing stops at the 101st event with an event limit.
-
-**Learn more:** [A blank line gives a boundary meaning](../chapters/25-reading-event-streams.md#a-blank-line-gives-a-boundary-meaning) · [A file can stop before an event does](../chapters/25-reading-event-streams.md#a-file-can-stop-before-an-event-does) · [Retained text rules](../contracts/m5-captured-sse.md#retained-text-rules) · [`parse_sse`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/sse.rs#L76-L149)
+[How live SSE stamps, decodes, and publishes events](../questions/expert.md#how-live-sse-stamps-decodes-and-publishes-events)
 
 </details>

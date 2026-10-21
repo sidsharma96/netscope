@@ -1,55 +1,53 @@
 # What does a connection proposal tell us?
 
-A page receives text describing how a call might exchange audio. The text contains an address, a media description and fields related to establishing a connection. Does that mean audio flowed successfully? No: a proposal and the conversation it proposes are different observations.
+A browser is preparing an audio call. Before it can send sound, it exchanges information about the proposed session. You find that description in a recording. It names media and connection details, but the recording contains no audio. What can you conclude?
 
-Signaling is information applications exchange to arrange communication. [SDP](../GLOSSARY.md#sdp), the Session Description Protocol, supplies a text format for describing aspects of a session. It does not itself transmit the audio or establish that the proposed addresses were reachable. Signaling can travel through HTTP, WebSocket or an application-specific channel; its transport is not a universal WebRTC requirement. WebRTC is a collection of browser facilities and protocols for real-time communication.
+Signaling is the information exchanged to arrange communication. A proposal can tell us what the participants wanted to set up. Establishing a usable connection and sending sound require further steps, each with its own evidence.
 
 ## Recognize a description without inventing its outcome
 
-An SDP description has named line fields. A version line begins with `v=`, an origin line with `o=`, and a media description with `m=`. In relevant applications, `a=` attribute lines may include an [ICE](../GLOSSARY.md#ice) username fragment or a [DTLS](../GLOSSARY.md#dtls) fingerprint. ICE is a process for checking possible connectivity paths. DTLS is the datagram form of Transport Layer Security. A DTLS fingerprint describes an expected certificate identity for a secure datagram connection; seeing its text does not perform that identity check.
+The Session Description Protocol, or SDP, is a text format for describing a media session. Its lines have short field names. A line beginning `m=` describes media; `o=` identifies the description's origin. The [SDP specification](https://www.rfc-editor.org/rfc/rfc8866) defines what those fields mean.
 
-The following illustration separates a description, a connectivity check and media. Its arrows show relationships, not an observed packet sequence.
+For example, a description can propose an audio stream and list formats the sender can use. Reading that proposal tells you something about the planned call. It does not establish that the other participant accepted it or that sound arrived.
+
+The diagram shows the different questions an investigation would need to answer. Its arrows show a possible progression, not an exchange recovered from a capture.
 
 ```text
-session description -> candidate connection information
-                            |
-                     connectivity checks
-                            |
-                     possible secure media
+What is proposed?          Can the peers connect?          Did sound arrive?
+Session description  ──→   Connection checks        ──→    Media exchange
+
+Finding the description answers only the first question.
 ```
 
-Reading the first box cannot establish that the lower steps succeeded. Even a successful connectivity check would not prove what audio or video content later flowed. The [SDP specification](https://www.rfc-editor.org/rfc/rfc8866), [ICE specification](https://www.rfc-editor.org/rfc/rfc8445), and [fingerprint rules](https://www.rfc-editor.org/rfc/rfc8122) define different parts of that arrangement.
+Connection checks have their own name. Interactive Connectivity Establishment, or ICE, tests possible paths between participants. A username fragment in the description helps identify the checks. Seeing that field means the description includes information for checking a path; it does not report a successful check. The [ICE specification](https://www.rfc-editor.org/rfc/rfc8445) explains that process.
 
-Netscope recognizes a limited, visible rule: a complete, uncompressed `application/sdp` body whose first line is `v=0` and which contains origin, session-name, timing and media fields. It reports SDP-like text. ICE-username and fingerprint markers produce a more specific explanation, but do not turn that rule into full SDP validation or proof of WebRTC. The supplied description is illustrative and its fingerprint is synthetic.
+A secure connection also needs to check the other participant's certificate. A certificate contains a public key used in establishing identity. A fingerprint is a value calculated from the certificate's bytes so that a later certificate can be compared with the one described. Copying the fingerprint into a recording does not perform the comparison. In browser calls you may see it associated with DTLS, the version of TLS used with individual network messages. The [fingerprint specification](https://www.rfc-editor.org/rfc/rfc8122) describes the comparison and why the session description itself must be trusted.
 
-The rule does not search arbitrary compressed bytes or pretend to decrypt TLS. It also does not extract SDP from every possible JSON object wrapping that text. A field absent from the supported representation remains unknown, rather than proving that the application used no signaling.
+Netscope recognises a limited set of fields in a complete, uncompressed body labelled `application/sdp`. It reports SDP-like text and notes relevant connection markers. It does not validate the whole proposal, check certificate identities, or establish that a call succeeded. The [stream reference](../contracts/m8-streams.md) records its recognition rules.
 
 ## A datagram has its own boundary
 
-[UDP](../GLOSSARY.md#udp) sends [datagrams](../GLOSSARY.md#datagram), individual messages with recorded lengths. It does not supply TCP's ordered byte-stream mechanism. Joining two UDP payloads because their endpoints match would manufacture a message that neither datagram contained. Netscope checks each complete supported datagram separately.
+UDP carries individual messages called datagrams. Unlike TCP's ordered stream, each datagram already has a boundary. Joining two payloads simply because they have the same source and destination would create a message neither datagram contained.
 
-[STUN](../GLOSSARY.md#stun) is a protocol used in several connectivity-related situations. Netscope recognizes a candidate from its header signature, declared aligned length and bounded attribute framing. An attribute is a typed part of the message after its header. This verifies only a narrow structure; it does not validate authentication or infer successful ICE. A STUN-shaped request can be recorded without any response. The [STUN standard](https://www.rfc-editor.org/rfc/rfc8489#section-6) defines the complete protocol.
+Some connection checks use messages from a protocol called STUN. Netscope examines a supported datagram's header and declared lengths to see whether it has the expected STUN structure. A matching request can be recorded without its response. Recognising that structure therefore does not show that a path worked or that audio followed. The [STUN standard](https://www.rfc-editor.org/rfc/rfc8489#section-6) supplies the full message format.
 
-This is another reason to give an analysis more than a yes/no result. “Recognized candidate,” “cut datagram,” “unsupported application format” and “successful connection” answer different questions. The last one needs evidence the current recognizer does not provide.
+This gives the inspector several possible answers: a recognised candidate, an incomplete datagram, or an unsupported format. None of those is an answer about whether a person heard the call.
 
 ## Keep the observation's owner clear
 
-The packet owns the original bytes. DNS/STUN recognition borrows its checked UDP payload for a short inspection. SDP recognition instead examines application bytes produced after supported HTTP framing is removed. These inputs have different provenance even if both analyses return human-readable descriptions.
+A packet owns its stored bytes. Datagram inspection can borrow the checked payload directly because those bytes already form the message it needs to examine. Reading through that borrow neither copies the packet nor takes ownership away from it.
 
-Owning a derived HTTP body is reasonable because removing chunk boundaries creates a new sequence of bytes. Borrowing a UDP payload is reasonable because it is already one contiguous range in an owned record. The choice follows what data exists, rather than a rule that everything should always be copied or always borrowed.
+An SDP description carried in chunked HTTP takes a different route. Removing the chunk separators produces a new sequence containing just the application body. That derived body needs its own storage. The choice between borrowing and owning follows the representation we need, rather than a rule that one is always preferable.
 
-Try finding an ICE username and a fingerprint in the supplied stream. State the recognition rule, then list which outcomes remain unobserved. Inspect the separate STUN candidate too. The [local walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams), datagram recognition [`inspect_datagram`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L113), and wire-body recognition [`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140) keep the source and consequence of each observation visible.
+The [packet walkthrough](../DEVELOPMENT.md#inspect-packets-and-streams) includes an invented description and a separate STUN candidate. [`inspect_datagram`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L113) reads supported datagrams; [`inspect_http`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/wire_http.rs#L140) examines the HTTP body. These separate paths preserve where each observation came from.
 
 <!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### SDP and STUN
-
-**Level:** Newcomer
-
 
 Netscope reports SDP-like text with an ICE username fragment and a STUN candidate in the same capture. Did the call's audio flow?
 
@@ -62,42 +60,15 @@ The capture does not show that. SDP is a text description that proposes a sessio
 
 </details>
 
-### What stops a DNS compression loop
-
-**Level:** Expert
-
-
-How does the DNS name reader avoid compression-pointer loops and unbounded work? When is a UDP datagram treated as DNS or STUN, and what is out of scope?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-The name reader requires each compression pointer to target an offset earlier than the pointer itself. That rule blocks forward jumps, but it does not stop a loop. A one-byte label at offset 12 followed by a pointer at offset 14 that targets 12 satisfies the rule and repeats forever under it alone. What ends that loop is the 255-byte name limit: each pass adds a label of at least 2 encoded bytes, so the name fails after 127 passes. A chain of pointers with no labels cannot loop, because every target is earlier than its pointer, and a separate count stops it after 127 jumps with "DNS name traversal limit". Rejection of label types 0x40 and 0x80 and checked reads for every slice bound the rest of the work. Because labels and jumps are counted separately, a legal name of 127 one-byte labels is accepted.
+<a id="a-dns-answer-with-several-addresses"></a>
 
-The header is limited to 16 questions and 32 answers, and a nonzero opcode is rejected. DNS is tried only when the UDP source or destination port is 53, and only for datagrams retained in full. STUN is recognised by two zero leading bits, the magic cookie 0x2112A442, a declared length that is a multiple of 4 and equals the payload minus 20, and at most 64 attributes.
+[A DNS answer with several addresses](../questions/newcomer.md#a-dns-answer-with-several-addresses)
 
-DNS over TCP, mDNS on port 5353, DoH, DoT, the authority and additional sections, and EDNS are out of scope.
+<a id="what-stops-a-dns-compression-loop"></a>
 
-**Common wrong answer.** "Pointers must point backwards, so loops are impossible." A backward pointer can still return to a label that leads back to the same pointer; the 255-byte name limit is what terminates it.
-
-**Learn more:** [Can a malicious DNS packet hang the parser?](../chapters/34-defending-the-design.md#can-a-malicious-dns-packet-hang-the-parser) · [A datagram has its own boundary](../chapters/32-reading-signaling.md#a-datagram-has-its-own-boundary) · [`name`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L7-L56) · [`inspect_datagram`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/datagrams.rs#L113-L126)
-
-</details>
-
-### A DNS answer with several addresses
-
-**Level:** Newcomer
-
-
-A DNS response in a PCAP lists three addresses for one name. Does that show a load balancer, and which address did the client use?
-
-<details>
-<summary>Answer</summary>
-
-Neither. The answer records the addresses the resolver returned. It does not say how they were chosen, which one the client tried, or whether it retried another. Netscope shows the supported UDP questions and A and AAAA answer fields only. It labels them as answer fields, not proof of resolver choice or load balancing.
-
-**Common wrong answer.** "Several addresses mean load balancing." The answer alone does not establish a balancing algorithm.
-
-**Learn more:** [Several addresses do not explain how one was selected](../chapters/33-interpreting-a-trace.md#several-addresses-do-not-explain-how-one-was-selected) · [Keep the observation's owner clear](../chapters/32-reading-signaling.md#keep-the-observations-owner-clear)
+[What stops a DNS compression loop](../questions/expert.md#what-stops-a-dns-compression-loop)
 
 </details>

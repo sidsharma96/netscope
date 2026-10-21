@@ -54,12 +54,9 @@ Try predicting a split `é`, two events in one read, and cancellation after a da
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### Times in a live SSE observation
-
-**Level:** Newcomer
-
 
 During live SSE, Netscope shows a time beside each event. Where does that clock start, and what does the time measure?
 
@@ -72,42 +69,15 @@ The clock starts when you accept Send, so connection setup, TLS and waiting for 
 
 </details>
 
-### Why does live SSE refuse your Accept header?
-
-**Level:** Practitioner
-
-
-Live SSE observation is a separate mode from ordinary replay. Which requests may use it, why does it reject a selected `Accept` header instead of replacing it, and which responses does it accept before reading the body?
-
 <details>
-<summary>Answer</summary>
+<summary>Further questions for later study</summary>
 
-`validate_stream` first runs the ordinary replay validation, then requires GET and refuses any selected or added `Accept` header with "Live SSE manages Accept; remove the selected Accept header first". The client sets `Accept: text/event-stream` itself. Silently replacing your header would mean the request sent differs from the request you reviewed, so Netscope asks you to remove it instead.
+<a id="why-does-live-sse-refuse-your-accept-header"></a>
 
-Once headers arrive, `validate_response` requires status 200, exactly one `Content-Type` whose media type is `text/event-stream`, and no content encoding other than `identity`, because live SSE does not decompress. Only then does it start reading body bytes. The whole observation shares one 30-second deadline that starts when you press Send and is never extended by progress, and it also stops at 64 KiB or 100 events.
+[Why does live SSE refuse your Accept header?](../questions/practitioner.md#why-does-live-sse-refuse-your-accept-header)
 
-**Learn more:** [Explicit network boundary](../contracts/m6-live-sse.md#explicit-network-boundary) · [Stopping is part of the observation](../chapters/27-observing-live-events.md#stopping-is-part-of-the-observation) · [`validate_stream`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L24-L37) · [`validate_response`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L108-L134)
+<a id="how-live-sse-stamps-decodes-and-publishes-events"></a>
 
-</details>
-
-### How live SSE stamps, decodes, and publishes events
-
-**Level:** Expert
-
-
-During a live SSE observation, how are per-event times produced? What happens when a UTF-8 character is split across two reads, or when invalid bytes arrive? How does the screen see progress, and what does the parsing approach cost?
-
-<details>
-<summary>Answer</summary>
-
-Before the body is read, the response must have status 200, exactly one `text/event-stream` Content-Type, and no content encoding other than identity. Each body frame is then appended to a buffer capped at 64 KiB.
-
-`observe` finds the longest valid UTF-8 prefix. If the error is an incomplete final character, it waits for more bytes. If the bytes are invalid, it publishes the valid prefix and stops with an error. A stream that ends inside a character is also an error.
-
-The whole valid prefix is parsed again with `parse_sse` on every frame. `observed.resize(count, elapsed)` gives every event completed by this frame the time since Send at which the frame arrived. Several events in one frame share a time, and the time is arrival here, not the server's send time. The 100th event or the 64 KiB limit ends the observation without waiting for the server to close.
-
-Progress goes through a `watch` channel with `send_replace`, which keeps only the newest snapshot. The screen ignores snapshots for a stale Send ID. Reparsing is O(n) per frame, so the total is quadratic in the number of frames, bounded by 64 KiB.
-
-**Learn more:** [Bytes can stop in the middle of a character](../chapters/27-observing-live-events.md#bytes-can-stop-in-the-middle-of-a-character) · [Why does live SSE reparse its whole prefix on every read?](../chapters/34-defending-the-design.md#why-does-live-sse-reparse-its-whole-prefix-on-every-read) · [`observe`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L51-L85) · [`validate_response`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/streaming.rs#L108)
+[How live SSE stamps, decodes, and publishes events](../questions/expert.md#how-live-sse-stamps-decodes-and-publishes-events)
 
 </details>

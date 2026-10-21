@@ -143,6 +143,12 @@ for level in sync_questions.LEVELS:
         for tag in tags:
             if tag not in sync_questions.TEACHING:
                 fail(f'Question tags an unknown or non-teaching chapter {tag!r}: {where}')
+        exercises = sync_questions.exercise_tags(block)
+        if len(exercises) != len(set(exercises)):
+            fail(f'Duplicate exercise chapter: {where}')
+        for tag in exercises:
+            if tag not in tags:
+                fail(f'Exercise chapter must also be a topic tag: {where}: {tag}')
         learn = block.split('**Learn more:**')[-1]
         if not any(not href.startswith('http') for _, _, href in links(learn)):
             fail(f'Learn more needs a link to the teaching section: {where}')
@@ -160,6 +166,8 @@ for slug in sync_questions.TEACHING:
     if path.read_text() != sync_questions.expected(path, bank):
         fail(f'Check-your-understanding section is stale; run scripts/sync_questions.py: {rel(path)}')
     chosen = len(sync_questions.selection(slug, bank))
+    if chosen > sync_questions.MAX_QUESTIONS:
+        fail(f'{rel(path)} has too many selected exercises; review its focus')
     if chosen < sync_questions.MIN_QUESTIONS:
         fail(f'{rel(path)} has {chosen} tagged questions; it needs {sync_questions.MIN_QUESTIONS}')
 print(f'checked {len(sync_questions.TEACHING)} chapter question sections')

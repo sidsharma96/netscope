@@ -33,7 +33,7 @@ partial replay "cat" ──────────→ Three shared bytes match
 
 Even when a complete replay matches every available captured byte, Netscope says that the stored bytes match. A capture's retained text is not proof that the exporter kept the entire original response. A preview adds another boundary: the screen may show only the beginning of a large stored representation. The comparison examines the available bytes beyond that preview too, so a difference after the visible excerpt is still reported.
 
-A text export can also differ from the bytes the browser received. In our controlled trial, the same UTF-8 bytes produced different exported text in two browsers when the response omitted its charset, the name of its character encoding. Comparing that text with a new raw response can report a difference even when the server sent identical bytes. Netscope preserves the exporter representation; guessing a repair would hide the evidence. The [campaign record](../COMPATIBILITY_CAMPAIGN.md) separates wire hashes, exported text and live observations.
+A text export can also differ from the bytes the browser received. In our controlled trial, the same UTF-8 bytes produced different exported text in two browsers when the response omitted its charset, the name of its character encoding. Comparing that text with a new raw response can report a difference even when the server sent identical bytes. Netscope preserves the exporter representation; guessing a repair would hide the evidence. The [compatibility record](../COMPATIBILITY_CAMPAIGN.md) documents the browser difference and how it was checked.
 
 ## Ask a smaller question about a partial body
 
@@ -95,48 +95,9 @@ The [comparison rules](../contracts/m3-response-comparison.md) record the exact 
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Readable text with a gzip header
-
-**Level:** Newcomer
-
-
-A captured response has `Content-Encoding: gzip`, but its body in the HAR is plain readable text. Is the file broken?
-
-<details>
-<summary>Answer</summary>
-
-No. The browser received compressed bytes, decompressed them, and saved the readable result. The header still describes the response as it arrived. Netscope does not apply gzip again, because the browser already did that step. Base64 in a HAR is a separate storage encoding, and Netscope decodes it once. For the same reason, replay comparison refuses to judge body bytes when either side reports a non-identity content encoding.
-
-**Learn more:** [Why the body can be larger than the download](../chapters/15-reading-protocol-labels.md#why-the-body-can-be-larger-than-the-download) · [Bytes need a common meaning](../chapters/18-comparing-responses.md#bytes-need-a-common-meaning)
-
-</details>
-
-### What "Stored bytes match" does not prove
-
-**Level:** Expert
-
-
-After a replay, how is the captured body compared with the replayed body? When does the comparison refuse to answer, and what does "Stored bytes match" fail to prove?
-
-<details>
-<summary>Answer</summary>
-
-`compare_body` refuses in three cases. The replay has no status because no headers arrived. The captured body was not recorded or could not be decoded. Or either side names a Content-Encoding other than identity. The last case matters most: a browser usually stores the decoded text in the HAR, while replay keeps the encoded bytes, so there is no common representation to compare.
-
-Otherwise it finds the first differing byte across the shared prefix. If the replay did not complete (cancelled, timed out, size-limited, or failed), the answer is about a prefix only: a difference offset, a matching prefix length, or no overlap. If it completed, the answer is a differing byte, one body empty and the other not, different lengths with a matching shared prefix, or equal. The captured side is the HAR text as UTF-8 bytes, or the decoded base64 bytes.
-
-Equality does not prove the capture was complete, since HAR bodies are often cut or omitted. It does not prove the server state was the same, or that the browser's text matches the bytes that crossed the wire, since the browser may have changed the character encoding. The label says "capture completeness unproven".
-
-**Learn more:** [Bytes need a common meaning](../chapters/18-comparing-responses.md#bytes-need-a-common-meaning) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L60-L91) · [`encoded`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L55-L58)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### What "stored bytes match" means
-
-**Level:** Newcomer
-
 
 After a complete replay, the comparison says "stored bytes match". Does that mean the server sent the same response as before?
 
@@ -148,5 +109,18 @@ Not necessarily. It means every byte the capture retained equals the replay's by
 **Common wrong answer.** "The responses are identical." The comparison speaks only about the bytes both sides have.
 
 **Learn more:** [Absence is different from emptiness](../chapters/18-comparing-responses.md#absence-is-different-from-emptiness) · [Ask a smaller question about a partial body](../chapters/18-comparing-responses.md#ask-a-smaller-question-about-a-partial-body) · [`compare_body`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/comparison.rs#L60)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="readable-text-with-a-gzip-header"></a>
+
+[Readable text with a gzip header](../questions/newcomer.md#readable-text-with-a-gzip-header)
+
+<a id="what-stored-bytes-match-does-not-prove"></a>
+
+[What "Stored bytes match" does not prove](../questions/expert.md#what-stored-bytes-match-does-not-prove)
 
 </details>

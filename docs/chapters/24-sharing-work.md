@@ -72,9 +72,7 @@ If an atomic flag were instead used to announce that other shared data was ready
 
 Netscope gives each send a number so a completion can be checked against the active operation. But only the terminal thread allocates those numbers. The current implementation therefore uses an ordinary counter owned by the application, not the atomic counter in the illustration. An editor can be closed and replaced while the application remains alive, so the counter belongs to that longer-lived owner. Starting the sequence again in each editor could let an old result carry the same number as a newer send.
 
-The counter also needs an end-of-range rule. Its next value is an `Option<u64>`: either a number remains available, or the sequence is exhausted. Accepting Send reserves the current number and uses checked addition to prepare the next. Checked addition returns no value if the result would exceed the integer's range. The largest number can consequently be used once; a later Send stays in Review with an explanation and queues no work. It does not wrap back to an earlier number.
-
-These IDs only distinguish operations within one application instance. They are not persistent request identities, and separate instances may allocate the same numbers because they own separate workers and results. If allocation later moves to several threads, we must reconsider how those threads coordinate it. The [decision record](../ARCHITECTURE.md#operation-identity) explains the change from the earlier global atomic and the tests protecting this ownership rule.
+The counter must also stop when it runs out of numbers. Reusing an old number could let an old result look current, so checked addition detects exhaustion and prevents another send. These numbers distinguish operations within one running application. If several threads later needed to allocate them, we would have to reconsider the coordination rule.
 
 ## Change a value only if the assumption still holds
 
@@ -116,68 +114,9 @@ The worker [`Worker`](https://github.com/sidsharma96/netscope/blob/main/crates/n
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Waiting without freezing the screen
-
-**Level:** Newcomer
-
-
-A server accepts your request and then sends nothing. How can Netscope still react when you press Esc?
-
-<details>
-<summary>Answer</summary>
-
-Each Send runs on its own worker thread, so the terminal thread keeps reading keys. Inside the worker, a Tokio runtime drives the exchange as a future, a value representing unfinished work. A pending socket read lets the runtime also watch a cancellation signal and a deadline. Esc sends that signal. The worker stops waiting, drops the connection, and returns whatever bytes it already received.
-
-**Learn more:** [Waiting does not need to occupy the terminal](../chapters/17-waiting-for-a-response.md#waiting-does-not-need-to-occupy-the-terminal) · [A future holds unfinished work](../chapters/17-waiting-for-a-response.md#a-future-holds-unfinished-work) · [`Worker`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L336)
-
-</details>
-
-### How does a synchronous terminal meet an async client?
-
-**Level:** Practitioner
-
-
-The terminal loop is synchronous, while the HTTP client is async (tokio and hyper). How do the two meet? Describe the threads, runtimes and channels involved.
-
-<details>
-<summary>Answer</summary>
-
-Each Send creates a `Worker`, which spawns a dedicated OS thread named `netscope-replay`. That thread builds a current-thread tokio runtime and blocks on the exchange inside it. Three channels connect the worker to the terminal. A `tokio::sync::oneshot` carries cancellation from the terminal to the worker. A `std::sync::mpsc::sync_channel(1)` carries the single final `ReplayResult` back. For live SSE only, a `tokio::sync::watch` carries the newest cumulative snapshot, replacing the previous one instead of queueing every update.
-
-The terminal loop waits at most 50 ms for a key, and on every pass it calls `progress` and `poll`, which use non-blocking reads. At most one worker runs at a time. Dropping a `Worker` sends cancellation and joins its thread. The terminal therefore stays synchronous and needs no async runtime of its own, and each replay gets a small runtime that is torn down when it finishes.
-
-**Learn more:** [Why keep a separate worker at all?](../chapters/17-waiting-for-a-response.md#why-keep-a-separate-worker-at-all) · [Hand the value over when responsibility changes](../chapters/24-sharing-work.md#hand-the-value-over-when-responsibility-changes) · [Why give each send its own thread and runtime?](../chapters/34-defending-the-design.md#why-give-each-send-its-own-thread-and-runtime) · [`start_mode`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L362-L428) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L445-L454)
-
-</details>
-
-### Races in the replay screen
-
-**Level:** Expert
-
-
-What happens when (a) a result arrives in the same loop iteration as an Esc key, (b) a result for an earlier Send arrives, (c) the worker thread panics, and (d) the user presses q while a request is in flight?
-
-<details>
-<summary>Answer</summary>
-
-(a) Completion is accepted before a later cancellation. At the top of each loop pass the terminal loop polls the worker first and sends the cancel signal only when no result is waiting. When a key arrives, it polls again before handling the key. If the cancel flag was already set when the result is accepted, `complete` returns to the draft and keeps the result. The message depends on the outcome: "Operation stopped; o opens its retained result" for `Cancelled`, and "Finished before Esc took effect; o opens its retained result" for any other outcome.
-
-(b) Each Send gets a `u64` ID from a counter owned by `App`, which outlives editors. `complete` and `progress` ignore a result whose ID is not the running one. When the counter would overflow, sending is disabled with "Send IDs exhausted" instead of wrapping.
-
-(c) A panic drops the worker's end of the `sync_channel`, so `try_recv` reports `Disconnected`. `poll` then returns a prebuilt fallback result with `Failed("Worker stopped without a result")`, exactly once.
-
-(d) `q` outside text editing sets `quit`. The loop ends, the `Worker` is dropped, and its `Drop` sends cancel and joins the thread. The terminal guard then restores the screen.
-
-**Learn more:** [How do cancellation and the deadline decide the outcome?](../chapters/34-defending-the-design.md#how-do-cancellation-and-the-deadline-decide-the-outcome) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`poll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L178-L187) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`fallback`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L444-L454)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Handing over a result
-
-**Level:** Newcomer
-
 
 Why does the worker send its finished result through a channel instead of sharing a growing response body with the terminal under a lock?
 
@@ -190,22 +129,36 @@ Only one part of the program needs to change the body at a time. The worker owns
 
 </details>
 
-### Esc pressed just after the worker finished
+### Operation numbers
 
-**Level:** Expert
-
-
-A replay completes normally, but the user presses Esc at almost the same moment. Under what ordering can Esc arrive after the worker finished, and what does the screen say then?
+Each Send gets an operation number. Why, and why is it an ordinary counter rather than an atomic one?
 
 <details>
 <summary>Answer</summary>
 
-The terminal loop polls the worker before it handles a key, so most late Esc presses arrive after the result has been accepted. The window is smaller. The key path polls and finds nothing yet. The worker then sends its Complete result. The loop handles Esc, which only sets the editor's cancel flag. On the next pass, the loop polls first, finds the result, and calls `complete`.
+The number lets the terminal accept a result only for the operation it is currently waiting on, so a late result from an older send cannot replace a newer one. Only the terminal thread hands out these numbers, so no other thread competes for them and an atomic counter is unnecessary. The application owns the counter, so closing an editor does not restart the sequence. When the numbers run out, sending is refused instead of wrapping back to an old number.
 
-`complete` returns to the draft, because the user asked to leave the running view, and keeps the result, which opens with `o`. It chooses the message from the result's outcome, not from the cancel flag. No cancel signal was ever sent and the outcome is Complete, so the message is "Finished before Esc took effect; o opens its retained result". Only a `Cancelled` outcome produces "Operation stopped". The view test `esc_after_the_worker_finished_does_not_claim_a_stop` drives this order.
+**Learn more:** [Update one counter without losing an increment](../chapters/24-sharing-work.md#update-one-counter-without-losing-an-increment) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`next_send_id`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L221)
 
-**Common wrong answer.** "The screen says the operation stopped." That was true of earlier versions, which chose the message from the cancel flag.
+</details>
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="waiting-without-freezing-the-screen"></a>
+
+[Waiting without freezing the screen](../questions/newcomer.md#waiting-without-freezing-the-screen)
+
+<a id="how-does-a-synchronous-terminal-meet-an-async-client"></a>
+
+[How does a synchronous terminal meet an async client?](../questions/practitioner.md#how-does-a-synchronous-terminal-meet-an-async-client)
+
+<a id="races-in-the-replay-screen"></a>
+
+[Races in the replay screen](../questions/expert.md#races-in-the-replay-screen)
+
+<a id="esc-pressed-just-after-the-worker-finished"></a>
+
+[Esc pressed just after the worker finished](../questions/expert.md#esc-pressed-just-after-the-worker-finished)
 
 </details>

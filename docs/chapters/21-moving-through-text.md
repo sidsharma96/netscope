@@ -8,7 +8,7 @@ An editor needs to decide which unit a key operates on. Otherwise, correcting a 
 
 The previous text lesson used a precomposed é, stored as two [UTF-8](../GLOSSARY.md#utf-8) bytes. Another spelling uses an ordinary e followed by a combining acute accent. Those are two [Unicode scalar values](../GLOSSARY.md#unicode-scalar-value): individual values that Rust's char type can represent. Together they form a [grapheme cluster](../GLOSSARY.md#grapheme-cluster), a group of text elements treated as one unit for this editor's movement and deletion.
 
-The drawing compares the spellings. The byte values are illustrative hexadecimal values, not a network measurement. The visual result depends on the font, but the stored sequences are different.
+The drawing compares the spellings. The hexadecimal values show how these two spellings are stored. The visual result depends on the font, but the stored sequences are different.
 
 ```text
 Visible example         é                         é
@@ -84,48 +84,9 @@ The same movement works in URLs, header fields, saved names, and paths. The [key
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Counting the bytes in café
-
-**Level:** Newcomer
-
-
-You POST the plain-text body `café`. What Content-Length does Netscope send, and why?
-
-<details>
-<summary>Answer</summary>
-
-Five. Content-Length counts bytes, not letters. Rust stores text as UTF-8, where `c`, `a` and `f` each take one byte and the precomposed `é` takes two. Netscope computes the length from the reviewed body bytes and never reuses a captured Content-Length, since an edited body would make it wrong. A JSON body such as `{"title":"café"}` also counts its braces, quotes and colon.
-
-**Common wrong answer.** "Four, one per character."
-
-**Learn more:** [Text already has a byte representation](../chapters/19-submitting-text.md#text-already-has-a-byte-representation) · [A length describes the bytes we actually send](../chapters/19-submitting-text.md#a-length-describes-the-bytes-we-actually-send)
-
-</details>
-
-### Where does the cursor go after an edit?
-
-**Level:** Practitioner
-
-
-The replay editor stores its cursor as a byte position in a Rust `String`. Why is a byte position safe there, how do the arrow keys move it, and what happens after an insertion joins two characters into one?
-
-<details>
-<summary>Answer</summary>
-
-A Rust `String` is UTF-8, so a character can take one to four bytes, and one visible character (a grapheme) can combine several code points, such as `e` followed by a combining accent, or an emoji sequence joined by zero-width joiners. The cursor stores a byte offset, but it only ever rests on a grapheme boundary. Left moves to the last boundary before the cursor, and right moves to the next boundary after it, using the `unicode-segmentation` crate's extended grapheme rules.
-
-Insertion, backspace and delete can change where the boundaries are. Inserting a joiner between two emoji, for example, can merge them into one grapheme. After every edit, `settle` moves the cursor forward to the next valid boundary, so it never sits inside a character. Backspace removes the whole previous grapheme, not one byte. Insertion is refused if it would take the text past the 16 KiB body limit.
-
-**Learn more:** [One visible letter can have two parts](../chapters/21-moving-through-text.md#one-visible-letter-can-have-two-parts) · [Editing can change the boundaries](../chapters/21-moving-through-text.md#editing-can-change-the-boundaries) · [`Cursor`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/text_edit.rs#L5-L26) · [`settle`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/text_edit.rs#L27-L34)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Moving the cursor by one character
-
-**Level:** Newcomer
-
 
 The text `é` can be stored as `e` followed by a combining accent. If you press Left once after it, where should the cursor go?
 
@@ -140,9 +101,6 @@ Before the `e`, past the whole visible letter. The two Unicode values form one g
 
 ### Bytes, characters and terminal columns
 
-**Level:** Newcomer
-
-
 Why can't Netscope use a string's byte length to decide where to wrap a header on screen?
 
 <details>
@@ -151,5 +109,18 @@ Why can't Netscope use a string's byte length to decide where to wrap a header o
 Bytes, visible characters and terminal columns are different lengths. `A` takes one byte and one column. `界` takes three bytes and usually two columns. A combining mark takes bytes but no column. Netscope groups text into graphemes and measures their width with a Unicode width library before wrapping. Control characters are first shown as visible escapes, which take several columns.
 
 **Learn more:** [A line of text has more than one length](../chapters/11-drawing-and-navigation.md#a-line-of-text-has-more-than-one-length) · [Storage positions are not screen columns](../chapters/21-moving-through-text.md#storage-positions-are-not-screen-columns)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="counting-the-bytes-in-café"></a>
+
+[Counting the bytes in café](../questions/newcomer.md#counting-the-bytes-in-café)
+
+<a id="where-does-the-cursor-go-after-an-edit"></a>
+
+[Where does the cursor go after an edit?](../questions/practitioner.md#where-does-the-cursor-go-after-an-edit)
 
 </details>

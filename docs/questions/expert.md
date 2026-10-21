@@ -231,7 +231,7 @@ A HAR contains a 101 response whose `Sec-WebSocket-Accept` value is wrong for th
 
 It shows "Recorded 101 with expected classic upgrade header shape".
 
-`websocket_evidence` checks only that exactly one non-empty `Sec-WebSocket-Accept` header is present. It does not compute the expected value, which is the base64 of SHA-1 over the key followed by a fixed GUID. A wrong value passes. The other checks are about shape: HTTP/1.1 on both sides, GET, Upgrade containing `websocket` and Connection containing `Upgrade` in both directions, one non-empty key, a version of exactly `13`, and a selected subprotocol that is one exact offered value.
+`websocket_evidence` checks only that exactly one non-empty `Sec-WebSocket-Accept` header is present. It does not compute the expected value, which is the encoded result of a specified calculation over the client’s key and a fixed protocol value. The WebSocket specification defines that calculation; Netscope does not perform it. A wrong value passes. The other checks are about shape: HTTP/1.1 on both sides, GET, Upgrade containing `websocket` and Connection containing `Upgrade` in both directions, one non-empty key, a version of exactly `13`, and a selected subprotocol that is one exact offered value.
 
 The function's documentation says that challenge digests, extensions, origin policy, and later frames are not validated. The summary describes recorded header shape. It does not claim the handshake was valid.
 
@@ -254,7 +254,7 @@ Operating systems and tools such as Wireshark pick "first copy wins" or "last co
 
 Neither policy. The first observed value fills a position. A later copy that agrees increments `repeated_bytes`. A later copy that disagrees turns the position into `Conflict`, and a conflict is permanent. The contiguous prefix stops at a conflict, so no HTTP analysis uses a disputed byte.
 
-Segments are processed in record order, and capture timestamps are never read during reassembly. Positions come from sequence numbers only. Because of that, the state of each position and every agreed value are the same whatever order the records are in. Record order does change three things: the anchor of an epoch without a SYN, which segments survive the span budgets, and the repeat count at a conflicted position.
+Segments are processed in record order, and capture timestamps are never read during reassembly. Positions come from sequence numbers only. Record order still matters: it affects connection grouping, the anchor when no SYN was recorded, which segments fit the span limits, and the count of agreeing overlaps before a conflict. The possible keep-alive exclusion also depends on the last position placed so far. Reordering a capture is therefore not guaranteed to preserve the analysis.
 
 The defence is that a capture cannot tell which copy the receiver accepted. Checksums are not verified, receiver state is unknown, and real stacks disagree. An intrusion detector that picks a different copy from the target can be evaded. Marking the conflict keeps the ambiguity visible instead of hiding it behind a guess.
 
@@ -394,7 +394,7 @@ Gap: a response to HEAD is misframed, and port reuse without a captured SYN merg
 
 Scope: WebSocket support covers handshake header shape only, and SSE in a HAR has no timing. Scope: the import and reassembly budgets mean a large capture is analysed in part, and the views say so.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L254)
+**Learn more:** [Known gaps and pitfalls](../LIMITATIONS.md) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L254)
 
 </details>
 
@@ -438,7 +438,7 @@ The terminal loop polls the worker before it handles a key, so most late Esc pre
 
 **Common wrong answer.** "The screen says the operation stopped." That was true of earlier versions, which chose the message from the cancel flag.
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
+**Learn more:** [Known gaps and pitfalls](../LIMITATIONS.md) · [A late result must not change a newer decision](../chapters/17-waiting-for-a-response.md#a-late-result-must-not-change-a-newer-decision) · [`complete`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/replay_view.rs#L174) · [`cancellation_requested`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L185-L187)
 
 </details>
 
@@ -469,16 +469,18 @@ The budgets exist because sequence numbers come from the file, and a dense array
 
 <!-- chapters: 33-interpreting-a-trace, 30-putting-bytes-in-order -->
 
-A client sends a TCP keep-alive probe that carries one garbage byte at SND.NXT - 1, and later a server sends an RST segment with a short diagnostic text payload. How does Netscope's reassembly treat each, and what would you change?
+A client sends a TCP keep-alive probe carrying one byte at the position immediately before its next sequence number. Later a server sends an RST segment with a short diagnostic text payload. How does Netscope's reassembly treat each, and what uncertainty remains?
 
 <details>
 <summary>Answer</summary>
 
-A keep-alive probe repeats the last byte already sent. RFC 1122 allows it to carry one garbage byte, and Linux sends none, so this depends on the sender's stack. Without special handling, that byte would land on a position that already holds the real last byte, the values would differ, and the position would become `Conflict`, cutting the HTTP prefix one byte early. `reassemble` recognises the case: a one-byte segment with no SYN, FIN or RST, whose byte lands on the last position placed so far in file order and differs from it, is skipped and counted in `ignored_probes`. A differing one-byte segment anywhere else is still a conflict, so the rule cannot hide an injected byte in the middle of the stream.
+TCP keep-alive probes can carry a byte that is not application data. Treating it as ordinary data could create a conflict with the last byte already sent. Netscope skips a differing one-byte segment with no SYN, FIN or RST when its byte lands on the last position placed so far in file order. It counts that exclusion in `ignored_probes`.
+
+That position is the last one observed so far, not necessarily the end of the complete stream. A genuine conflicting byte fitting the same pattern can also be excluded, including one followed by more data later in the recording. The rule therefore cannot establish that all excluded segments were probes. An explicit uncertain state could preserve this distinction for the reader; choosing it would also require deciding whether HTTP interpretation can pass that position.
 
 An RST segment sets `reset_observed`, which already rules out an observed end. Its declared payload length is treated as zero, so the diagnostic text never enters the stream or extends the span, and the flow carries the note "Reset segment payload not placed in the stream".
 
-**Common wrong answer.** "Both create a conflict, so the prefix ends early." Earlier versions did that; both cases are now handled before the overlap rule.
+**Common wrong answer.** "Both create a conflict, so the prefix ends early." These cases are handled before the overlap rule; that does not make the keep-alive classification certain.
 
 **Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [Repeated bytes are visible; their cause may not be](../chapters/33-interpreting-a-trace.md#repeated-bytes-are-visible-their-cause-may-not-be) · [`declared`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L147-L156) · [`ignored_probes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L203-L216) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L223-L230)
 
@@ -502,5 +504,59 @@ Browsers avoid this with Happy Eyeballs (RFC 8305): they start an IPv6 attempt, 
 The change would be to race address families as RFC 8305 describes, inside the same deadline. Reporting which stage failed would also help, because today the result records only total elapsed time, not separate DNS, connect, and TLS durations.
 
 **Learn more:** [How does replay use TLS, and what is missing?](../chapters/34-defending-the-design.md#how-does-replay-use-tls-and-what-is-missing) · [Keep one deadline for the whole request](../chapters/17-waiting-for-a-response.md#keep-one-deadline-for-the-whole-request) · [`TcpStream::connect`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L231-L233) · [`TIME_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-net/src/lib.rs#L30)
+
+</details>
+
+### A capture that keeps growing
+
+**Level:** Expert
+
+<!-- chapters: 34-defending-the-design -->
+<!-- exercise: 34-defending-the-design -->
+
+Netscope now has to accept new requests while the user inspects older ones. Which assumptions behind its stored summaries, search results, and ownership would you revisit?
+
+<details>
+<summary>Answer</summary>
+
+The current session is fixed after import, so derived counts and ID lists can be reused. Arriving requests would make those values stale. The design needs a way to update them, keep IDs stable, coordinate writes with readers, and bound retained history. One possible arrangement is an owner that accepts new records and publishes snapshots to the interface. Another is protected shared state. The choice depends on how quickly updates must appear and how much copying or waiting is acceptable. Adding a lock alone does not define those rules.
+
+**Learn more:** [Capstone discussion](../chapters/34-defending-the-design.md#reconsider-the-design-when-the-requirements-change)
+
+</details>
+
+### Cancelling after a server accepts a request
+
+**Level:** Expert
+
+<!-- chapters: 34-defending-the-design -->
+<!-- exercise: 34-defending-the-design -->
+
+A POST reached the server, but its response has not arrived. The user cancels. Explain what the client can stop, what data it can retain, and what it cannot promise about the server.
+
+<details>
+<summary>Answer</summary>
+
+The client can stop waiting and dispose of the exchange. Response bytes already retained can survive because their owner is outside the cancelled exchange. The server may already have processed the POST and can continue working after the client closes its connection. Cancellation therefore cannot promise that no change occurred remotely. A result still belongs to its original operation number; it must not overwrite a later send.
+
+**Learn more:** [Capstone discussion](../chapters/34-defending-the-design.md#explain-cancellation-from-both-sides-of-the-connection)
+
+</details>
+
+### A stream that looks complete
+
+**Level:** Expert
+
+<!-- chapters: 34-defending-the-design -->
+<!-- exercise: 34-defending-the-design -->
+
+A packet analysis has no missing byte positions. Is that enough to call its displayed HTTP messages a correct conversation? Give a case where more context matters.
+
+<details>
+<summary>Answer</summary>
+
+No. A continuous sequence removes one obstacle to reading, but does not supply the request context for a response. A HEAD response has no ordinary body even when Content-Length describes a representation. Netscope analyses directions separately, so it can treat that length as body bytes and consume the beginning of a later response. Capture completeness and correct application interpretation are separate questions. The keep-alive exclusion also needs disclosure when claiming that all disagreements were detected.
+
+**Learn more:** [Capstone discussion](../chapters/34-defending-the-design.md#follow-a-packet-gap-into-the-application)
 
 </details>

@@ -55,21 +55,11 @@ The overview and inspector alternatives therefore still have a purpose even when
 
 Choosing Headers or Body answers another question: which information about this request do you want to examine? That section choice belongs to view state too. An enum can name the available sections, while the captured header and body values stay in the session. Changing sections begins at the top of the newly chosen content, so a scroll position from a long body cannot hide a shorter summary.
 
-The optional journey adds explanations without replacing the recorded values. Its arrows illustrate HTTP direction, and its stage descriptions explain what a reported measurement means. They do not recover handshake messages missing from HAR. Keeping that learning view separate leaves routine inspection compact while making an explanation available when a field is unfamiliar.
-
-Suppose a capture reports a 70 ms total, a 5 ms wait, and no duration for finding an address or connecting. The journey keeps those values together. It shows the known-stage sum beside the total, but does not turn their 65 ms difference into a new DNS or connection measurement. Subtraction can expose a discrepancy; it cannot explain its cause. The bars have a labelled duration scale, so a small known interval does not appear to account for the whole reported total.
-
-Selecting Wait changes the explanation beside the stage list. Page Down can move through that explanation while Wait stays selected. Selecting another stage begins its explanation at the top. This is the same distinction between selection and scroll position that we needed for requests: one value identifies what we are reading, while another records our place within its text. Keeping them separate lets a smaller window require more scrolling without changing the selected measurement.
+The journey view adds an explanation of a selected timing stage. Its selected stage and its explanation's scroll position are separate values too: scrolling a long explanation should not select a different measurement. The same state model supports a smaller window without changing the captured values.
 
 ## What should a moving indicator mean?
 
-You send a request and the screen stays unchanged for a few seconds. Has the program stopped, or is it still waiting? A small moving indicator can answer that narrow question: the operation is still active. It cannot tell us how much work remains. The server may reply immediately, send a long body, or keep an event stream open.
-
-Netscope therefore moves an indicator only during an active send or stream. Recorded requests stay still. Imagine replaying a capture whose connection time was never recorded: animating a connection step would make a missing observation look like a measured event. Keeping the stored evidence still avoids that implication. A stationary indicator is also available for readers who prefer reduced motion; the words describing the operation still convey its state.
-
-The movement needs time, but drawing does not need to ask a clock for it. The terminal loop measures elapsed time and supplies it as another piece of view state. Drawing then chooses one of four symbols. Supply the same state twice and the same symbol appears twice. A test can advance the supplied time deliberately and check the next symbol without waiting in real time.
-
-This separates two responsibilities. The network operation determines whether work is active or complete. The display decides how to communicate that state. Advancing the animation cannot send another request, invent an event, or make an incomplete result complete.
+A moving indicator can show that a send is still active. It cannot tell us how much remains: a server might reply now or keep a response open. Netscope animates active work and leaves recorded requests still. Drawing receives elapsed time from the terminal loop, which lets a test choose a particular moment and reproduce the same display. The [usage guide](../UI_LAYOUT.md) explains the reduced-motion option.
 
 ## Borrow data, change selection
 
@@ -85,48 +75,19 @@ The drawing function also receives a mutable frame. A frame represents the termi
 
 ## Move through a list that does not fit
 
-Suppose the capture contains ten thousand requests and the window has room for fifteen rows. Pressing Down thousands of times would keep the rules simple but make the program tedious to use. Page Down moves the selection by the number of rows the current view can display. Home selects the first request; End selects the last. Page Up moves back toward the beginning.
+Suppose a capture contains a hundred requests and the window shows fifteen. Selection identifies the request you want; the scroll offset identifies the first visible row. After a selection moves, the program changes the offset only as far as needed to keep that row visible.
 
-Selection and scrolling still answer different questions. Selection identifies the request you want. The scroll offset identifies the first row visible in the window. After moving the selection, the program adjusts that offset only as far as needed to keep the selected row visible. Near the end, it also avoids leaving an unnecessary blank region below the last request.
+Page Down advances by the number of rows that fit. Near the end of the list, it stops at the last request. Moving upward must also stop at the beginning: subtracting fifteen from row three must produce row zero. Rust's saturating subtraction expresses that rule by stopping at zero when an unsigned result would otherwise go below it.
 
-A host filter changes the list these movements refer to. If a host has one hundred requests, End selects its hundredth request, even if the complete capture has thousands more. Returning to all requests restores the earlier position in that complete list. The selected row is a position within the current list; its request ID identifies the original captured entry. Keeping those two numbers separate prevents opening the wrong request after filtering.
-
-The inspector uses the same keys to move through wrapped lines rather than requests. Its page size is different because the screen reserves a different amount of space for headings and controls. Resizing changes how many rows fit, so the next page movement uses the new size. An empty list has no selection to move, and a temporarily unusable window preserves the previous position.
-
-There is also an arithmetic boundary to respect. Moving up fifteen rows from row three must stop at the beginning. Rust's unsigned integers represent zero and positive values; they cannot represent a negative row. Saturating subtraction stops at zero instead of producing a negative result. Movement toward the end is bounded by the list's last valid position. These rules make a page key predictable even when less than a full page remains.
+Filtering changes the rows available for navigation, but their request IDs still refer to the original capture. Resizing changes how many rows fit without changing those IDs. Keeping identity, selection, and scroll position separate gives each action a clear responsibility.
 
 ## Find a request without changing the capture
 
-Suppose a page loads a hundred requests and you want the ones whose URLs contain `/books`. A search should narrow what you see while leaving every recorded request available. If you open a result, its details must belong to that original request, even though it now occupies a different row.
+Searching for `/books` narrows the list to matching URLs. The program keeps a list of matching request IDs, so opening a result still reads the original request. Clearing the search makes the other requests visible again; importing the file again is unnecessary.
 
-In the request list, `/` opens a small text editor. Enter applies the text; Esc discards the edit. The search looks for an exact, case-sensitive substring anywhere in the captured URL, including its query string. A substring is a consecutive piece of text: `books` matches `/books?page=2`, but `Books` does not. Punctuation is ordinary text, so a dot means a dot rather than “any character.” Encoded text stays encoded: `%20` and a space are different searches.
+A row's position can change after filtering. To retain the same selection, remember its request ID and find that ID in the new results. If it is absent, select the first result. If the results are empty, there is no selection. `Option` lets us represent that last case without pretending that row zero exists.
 
-A host filter and a URL search both have to match. The following illustration starts with three captured requests. The arrows mean “keep the IDs that pass this condition”; they do not move or remove the recorded requests.
-
-```text
-Captured URLs                            Original ID
-https://a.test/books                     0
-https://b.test/books                     1
-https://a.test/cover                     2
-
-All IDs [0, 1, 2]
-       │ host is a.test
-       ▼
-       [0, 2]
-       │ URL contains books
-       ▼
-       [0]
-```
-
-The result contains ID 0. Clearing just the search reveals IDs 0 and 2 again because the host condition still applies. Pressing `a` clears both conditions. The host summaries continue to describe the complete capture, so narrowing the request list does not silently change the meaning of those counts.
-
-Remembering selection requires one more distinction. A row number describes a place in the current list; an ID describes a captured request. Before applying a query, the program remembers the selected ID. It then finds that ID's position in the new results. If it is absent, the first result becomes selected. If there are no results, selection becomes `None`, the absence introduced earlier, and Enter opens nothing. Clearing search recovers a usable list without inventing a request.
-
-The application stores a vector of matching IDs, rather than copying request bodies or headers. It builds that vector when the applied query or host condition changes. Drawing can then read the same result list repeatedly. Searching every time the terminal redraws would save this extra vector, but would repeat a scan even when neither the capture nor the query had changed. The stored vector costs space for one ID per result and requires every filter change to rebuild it. That tradeoff fits a capture which stays fixed while you browse.
-
-Edits remain separate from the applied query until Enter. You can type `q`, `h`, or `/` into the search without triggering their browsing shortcuts. Left and Right move between complete displayed characters; Home and End move to either end; Ctrl+u clears the edit. The editor accepts up to 1024 UTF-8 bytes. This is a bound on stored text, so a character that uses several bytes consumes several bytes of that allowance.
-
-Try selecting a request whose URL contains `books`, then apply that search. Predict its new row and original ID before opening it. Next apply a word absent from the capture. Explain why the empty result can be drawn safely and why clearing it does not require importing the file again.
+The capture stays unchanged while you browse, so the application rebuilds this result list when a filter changes and reuses it when drawing. That costs storage for IDs but avoids repeating the search on every redraw. The [usage guide](../UI_LAYOUT.md) gives the search controls and matching rules.
 
 ## A line of text has more than one length
 
@@ -168,94 +129,15 @@ Finally, explain why drawing takes a shared reference to the session but a mutab
 
 The view code [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66) contains state changes, and the workspace renderer [`sections`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/workspace_view.rs#L133) composes the list and sections. Their tests [`navigation_retains_overview_selection_and_scroll`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/tests/views.rs#L333) exercise navigation and fixed screen buffers. The terminal code [`run_app`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L158) manages input and cleanup, with a separate restoration check [`check`](https://github.com/sidsharma96/netscope/blob/main/scripts/check_terminal.py#L20).
 
-The [first version walkthrough](06-first-milestone.md) provides the command to run the sample. The [verification record](../VERIFICATION.md) describes completed checks and their limits. [Ratatui's documentation](https://docs.rs/ratatui/0.29.0/ratatui/) is the implementation reference for frames and drawing.
+The [first version walkthrough](06-first-milestone.md) provides the command to run the sample. [Ratatui's documentation](https://docs.rs/ratatui/0.29.0/ratatui/) is the implementation reference for frames and drawing.
 
 <!-- check-your-understanding: generated by scripts/sync_questions.py from docs/questions; edit the bank, not this section -->
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Why `mut` is needed
-
-**Level:** Newcomer
-
-
-Why does `let selected = 0_usize; selected += 1;` fail, and what does adding `mut` tell a reader?
-
-<details>
-<summary>Answer</summary>
-
-Rust variables cannot be changed unless they are declared with `mut`. Writing `let mut selected` allows `+=` to store a new value. The keyword also tells the reader that this value is meant to change. In Netscope that separates values that describe the capture, which stay fixed, from view state such as the selected row, which changes as you press keys.
-
-**Learn more:** [Make changes explicit](../chapters/07-values-and-functions.md#make-changes-explicit) · [Separate the capture from your place in it](../chapters/11-drawing-and-navigation.md#separate-the-capture-from-your-place-in-it)
-
-</details>
-
-### Hostile text and the terminal
-
-**Level:** Expert
-
-
-Captured URLs, headers, and filenames are controlled by whoever made the file. How does Netscope keep them from sending escape sequences to the terminal, what does it miss, and how is the terminal restored after an error or a panic?
-
-<details>
-<summary>Answer</summary>
-
-`terminal_text` replaces every character for which `char::is_control` is true with its escaped form, so ESC becomes `\u{1b}`. The views and the non-interactive summary pass captured strings and filenames through it. Binary bodies are shown as hex, and previews are cut on character boundaries.
-
-`is_control` covers only Unicode category Cc: U+0000 to U+001F and U+007F to U+009F. That includes ESC, so a captured value cannot start a terminal command. Format characters in category Cf pass through unchanged. The right-to-left override U+202E, the bidi isolates, and the zero-width space can make a URL display differently from its bytes.
-
-The `Restore` guard enables raw mode and marks the alternate screen as entered before writing the escape that enters it, so a partial failure still triggers cleanup. Its `restore` runs on the normal path, and its `Drop` runs on an error return or during a panic unwind. A panic hook on the interface thread leaves the alternate screen and disables raw mode before the panic message is printed, so the message stays visible on the normal screen.
-
-**Common wrong answer.** "All dangerous Unicode is escaped." Only Cc controls are; bidi and zero-width characters are a listed gap.
-
-**Learn more:** [Hostile input files](../chapters/34-defending-the-design.md#hostile-input-files) · [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [`terminal_text`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L285-L296) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L42-L82)
-
-</details>
-
-### Why the view stores request IDs
-
-**Level:** Newcomer
-
-
-The screen must remember which request you selected across many redraws. Why does Netscope store a request ID for this instead of a reference to the request?
-
-<details>
-<summary>Answer</summary>
-
-A reference is suited to short access, such as reading during one draw. Remembering a selection lasts across many key presses and redraws. An ID is a plain number the view state can own, and the program looks the request up in the session whenever it needs it. The lookup returns an `Option`, so an ID with no matching request becomes a visible absence instead of a crash.
-
-**Learn more:** [Why store IDs?](../chapters/03-storing-requests.md#why-store-ids) · [`Session::request`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L264)
-
-</details>
-
-### Searching for API
-
-**Level:** Expert
-
-
-A user presses `/` and searches for `API` to find `https://example.com/api/books`. Will it match? What does the search look at, when does it run, and how does it combine with the host filter?
-
-<details>
-<summary>Answer</summary>
-
-It will not match. The search is a case-sensitive substring test, `str::contains`, on the raw recorded URL string. It does not look at headers or bodies, and it does no normalisation or pattern matching.
-
-The query is applied when Enter is pressed, not on each keystroke. The query is limited to 1024 bytes. It filters the current host filter's chronological list, or every request when no host filter is set. The matches are rebuilt as a list of request IDs, and the previously selected request stays selected if it still matches. Otherwise the first row is selected. Pressing `a` clears both the query and the host filter.
-
-Each Enter costs O(n × m) for n requests and a query of length m. The captured requests are never moved or copied; only the list of matching IDs changes.
-
-**Common wrong answer.** "The search is case-insensitive and also looks at headers." It is neither.
-
-**Learn more:** [Find a request without changing the capture](../chapters/11-drawing-and-navigation.md#find-a-request-without-changing-the-capture) · [URL search](../contracts/m4-url-search.md) · [`rebuild_search`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L164-L177)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Selection, scroll and focus
-
-**Level:** Newcomer
-
 
 In a wide window the request list and its details are both visible. Pressing Down could select the next request or scroll the body. What decides which one happens?
 
@@ -265,5 +147,47 @@ In a wide window the request list and its details are both visible. Pressing Dow
 Focus decides. Focus is the pane that receives movement keys, and selection is the request whose details are shown. They are separate values in the view state. Tab moves focus between the list and the details, and Enter focuses the selected request's details. The bright border marks focus and the filled row marks selection. Scroll position is a third value that records your place within the text.
 
 **Learn more:** [Which pane should a key change?](../chapters/11-drawing-and-navigation.md#which-pane-should-a-key-change) · [`App`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/view.rs#L66)
+
+</details>
+
+### Leaving the terminal usable
+
+Netscope switches the terminal into raw mode and an alternate screen. How does it restore the terminal if drawing fails partway through?
+
+<details>
+<summary>Answer</summary>
+
+A guard value owns the cleanup. When setup changes the terminal, the guard records those changes. A normal exit restores them explicitly and reports any error. If the function returns early after an error, the guard's `Drop` implementation runs when it leaves scope and attempts the same restoration. A separate pseudo-terminal check runs the real program and inspects the terminal modes after it exits.
+
+**Learn more:** [Leave the terminal usable](../chapters/11-drawing-and-navigation.md#leave-the-terminal-usable) · [Check the rule and the visible result](../chapters/04-quality-and-tests.md#check-the-rule-and-the-visible-result) · [`Restore`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-tui/src/terminal.rs#L42)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="why-mut-is-needed"></a>
+
+[Why `mut` is needed](../questions/newcomer.md#why-mut-is-needed)
+
+<a id="why-the-view-stores-request-ids"></a>
+
+[Why the view stores request IDs](../questions/newcomer.md#why-the-view-stores-request-ids)
+
+<a id="searching-for-a-url"></a>
+
+[Searching for a URL](../questions/newcomer.md#searching-for-a-url)
+
+<a id="bytes-characters-and-terminal-columns"></a>
+
+[Bytes, characters and terminal columns](../questions/newcomer.md#bytes-characters-and-terminal-columns)
+
+<a id="hostile-text-and-the-terminal"></a>
+
+[Hostile text and the terminal](../questions/expert.md#hostile-text-and-the-terminal)
+
+<a id="searching-for-api"></a>
+
+[Searching for API](../questions/expert.md#searching-for-api)
 
 </details>

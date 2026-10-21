@@ -61,6 +61,8 @@ def anchors(text):
         count = seen.get(base, 0)
         result.add(base if count == 0 else f'{base}-{count}')
         seen[base] = count + 1
+    # Explicit IDs preserve links when a lesson's headings change.
+    result.update(re.findall(r'<a\s+id=["\']([^"\']+)["\']', without_code(text)))
     return result
 
 

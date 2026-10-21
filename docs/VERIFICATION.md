@@ -1,5 +1,15 @@
 # Documentation verification
 
+## Learning-book editorial review
+
+Reviewed the reading path in stages: the README and introduction, chapter exercises, repeated interface explanations, the capstone, and the usage and signaling guides. Each stage included reading the revised explanation without source code, checking its technical claims against the implementation, and running the documentation checks. The capstone now asks readers to follow concrete situations through constraints, alternatives, and consequences. Publication instructions and current implementation limitations have separate contributor pages.
+
+The review corrected premature exercise prerequisites, a stale timing variant name, package naming, and an overstatement about detecting conflicting stream bytes. Exercises now require explicit editorial selection instead of automatic rotation through difficulty levels. Regression tests cover that selection, generated answers, repeatable regeneration, and preserved heading aliases.
+
+The workspace check passed formatting, compilation, Clippy, tests, Rust examples, build, and the existing offline browser-fixture campaign. Documentation tests were rerun after the final lesson correction. The mdBook build and built-site checks passed after excluding the copied build configuration, as the deployment workflow does. Previous Markdown heading links were compared with both the revised sources and rendered HTML. Browser review checked the introduction and capstone answer disclosures. These checks establish the recorded behavior; comprehension still needs feedback from readers.
+
+## Initial reading interface
+
 Verified October 9, 2026. These checks concern the reading interface and its sources. No Rust application tests were run.
 
 - `python3 scripts/check_docs.py` passed. The generated reader matches Markdown sources, has five chapters, has unique anchors, and resolves its local links.

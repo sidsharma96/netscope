@@ -1,22 +1,20 @@
 # Inspect your first capture
 
-The first useful version of Netscope answers a small set of questions about a recording. What requests does it contain? What did one request send and receive? Which measurements are present, and which are missing?
+Opening a recording gives you a few questions to investigate. What requests does it contain? What did one request send and receive? Which measurements are present, and which are missing?
 
 Use the supplied synthetic capture for this walkthrough. It contains invented traffic to example.test, including repeated headers and a short response body. You do not need a recording from a logged-in browser session.
 
 ## Open the sample
 
-From the project directory, run:
+After [installing Netscope](../INSTALLATION.md), [download the sample capture](https://raw.githubusercontent.com/sidsharma96/netscope/main/tests/fixtures/har/single-request.har). Save it as `single-request.har`, open a terminal in that folder, and run:
 
 ```sh
-cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har
+netscope single-request.har
 ```
 
-[Cargo](../GLOSSARY.md#cargo) is Rust's build tool. This command builds and starts the terminal application, then passes it the sample file. The [development guide](../DEVELOPMENT.md) covers toolchain and dependency setup if this is your first run on another machine.
+You should see one request for `https://example.test/api/books`, status 200, and a reported total of 45 milliseconds. Status 200 reports a successful response. A marker and filled row identify the selected request. In a wide window, its summary appears beside the list; in a narrower window, Enter opens its details.
 
-In an interactive terminal, you should see one request for `https://example.test/api/books`, [status](../GLOSSARY.md#status-code) 200, and a reported total of 45 ms. A marker and filled row identify the selection. On a window at least 100 columns wide, its summary appears beside the list. At narrower supported widths, Enter opens the details on their own screen. The narrow list's bar shows recorded start and total; it does not identify a particular network connection.
-
-If you redirect the output to a file or pipe, the program prints a text summary instead of opening the interactive screen.
+If you already have the repository, the same sample is at `tests/fixtures/har/single-request.har`. A file path starts from your terminal's current folder. Redirecting output to a file produces a text summary instead of the interactive view.
 
 ## Read one request
 
@@ -52,6 +50,4 @@ Then explain how missing timing information can survive the journey from file to
 
 ## Exact rules and completed checks
 
-The [M1 contract](../contracts/m1-har-inspection.md) records accepted input, size limits, screen behaviour, and acceptance cases. M1 means the first milestone. The [verification record](../VERIFICATION.md) distinguishes checks that have run from work still awaiting review.
-
-The older HTML mockups remain design history. The written contract describes the current application. The [replay chapters](16-preparing-a-request.md) explain the separate decision to send a new request.
+The [usage guide](../UI_LAYOUT.md) collects the controls. The [input reference](../contracts/m1-har-inspection.md) lists accepted fields and limits. Continue with [understanding a request](01-start-here.md) to begin the learning sequence, or [preparing a request](16-preparing-a-request.md) to study how an editable draft stays separate from the capture.

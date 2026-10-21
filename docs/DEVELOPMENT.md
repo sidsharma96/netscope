@@ -6,13 +6,11 @@ Run from the repository root:
 python3 scripts/check.py
 ```
 
-This checks rustfmt, every workspace target, Clippy, Rust tests and rustdoc examples, the binary build, and the generated book. All Rust commands use `--locked --offline`. The first toolchain installation still requires internet access. The importer uses serde/serde_json, chrono (without a system clock), URL parsing, and base64 decoding. The UI uses pinned Ratatui/Crossterm versions and Unicode width/segmentation helpers. When adding a justified dependency, update the lockfile deliberately and fetch it before offline verification.
+This checks rustfmt, every workspace target, Clippy, Rust tests and rustdoc examples, the binary build, and the generated book. All Rust commands use `--locked --offline`. The first toolchain installation still requires internet access. When adding a justified dependency, update the lockfile deliberately and fetch it before offline verification.
 
 ## Current implementation
 
-The core crate owns sessions, requests, representations, stable view orders, timing validation, and safe previews. The importer validates the M1 HAR profile. Run cargo run -p netscope --locked --offline -- tests/fixtures/har/single-request.har in a terminal for interactive inspection; redirected output produces a chronological summary. Host summaries are derived once when a session is built. The Hosts screen opens chronological lists filtered by URL host. The network crate sends reviewed GET or POST requests using Hyper, Tokio, and rustls. Its [transport decision](contracts/replay-transport.md) records limits and cancellation behaviour.
-
-Core timing tests exercise timing distinctions, valid precision, and invalid numbers. Rustdoc also checks chapter examples, including an intentional compiler rejection. The pure tests do not depend on elapsed time, network, random input, or terminal state; the separate pseudo-terminal check is described below. Importer tests consume the synthetic fixtures and mutate fixed values to cover malformed input, body states, warnings, identity, and limits. Binary integration tests verify exit codes and escaped output.
+The [architecture notes](ARCHITECTURE.md) describe package responsibilities and alternatives. Use the [local walkthroughs](#try-a-local-send) below to exercise the application, and the [behavior references](contracts/overview.md) to check exact acceptance rules. [Known limitations](LIMITATIONS.md) identify weaknesses that should not be mistaken for guarantees.
 
 ## Lint policy
 
@@ -45,7 +43,7 @@ mdbook serve docs                   # optional: preview at http://localhost:3000
 
 `check_docs.py` checks the Markdown, so it needs neither mdBook nor a network connection. It confirms that every page is in `SUMMARY.md`, that relative links and heading anchors resolve inside `docs/`, that each code link names a symbol found near its line anchor, and that the question bank follows its format. Links to files outside `docs/` must be absolute GitHub links, because the hosted site holds only `docs/`. Do not link to `docs/README.md` from another page: mdBook publishes it as the site's front page, `index.html`.
 
-The question bank in `docs/questions/` is the single source for questions. Each question carries a `<!-- chapters: ... -->` tag, and `sync_questions.py` copies up to five tagged questions into the generated "Check your understanding" section at the end of each teaching chapter. Edit the bank, never the generated section.
+The question bank in `docs/questions/` is the single source for questions. Each question carries a `<!-- chapters: ... -->` topic tag. A separate `<!-- exercise: ... -->` tag selects it for a chapter only after an editor has checked its prerequisites. Chapter endings contain one to three selected exercises; other tagged questions remain links under optional further study. The generator preserves their old heading links. Edit the bank, never the generated section.
 
 Pushing documentation changes to main runs `.github/workflows/docs.yml`, which repeats these checks, builds the site and deploys it to Cloudflare Pages (project `netscope-docs`) when the deployment secrets are configured.
 
@@ -182,7 +180,7 @@ Enter opens recorded layers; Esc returns to the same list selection. Press s for
 
 Epoch #0 has a repeated request prefix; #2 has a gap and stops HTTP interpretation; #3 has a conflicting overlap; #4 retains only three of six declared payload bytes; #5 wraps sequence space. Packet #20 contains DNS answers and #21 a STUN candidate. Their fields do not prove load balancing or successful connectivity. Press p to return to packet records. q/Ctrl+C exits; small terminals show a resize message and retain navigation state. Redirected output prints the same scoped evidence, escaped and with display cuts labelled.
 
-Classic PCAP only: Ethernet with bounded VLAN tags, BSD loopback (link type 0, macOS `lo0`), Linux cooked SLL and SLL2 (113 and 276, `-i any`) or selected raw IP, IPv4/IPv6 base plus direct TCP/UDP. Wireshark's default PCAPNG is rejected. To record your own traffic, use `tcpdump -i <interface> -w capture.pcap`, or save as pcap from Wireshark; [defending the design](chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) lists the other pitfalls. PCAPNG, IPv6 extension chains, fragmented IP transport and encrypted applications need broader support. All budgets and exclusions are in [M7](contracts/m7-packets.md) and [M8](contracts/m8-streams.md). TCP/HTTP results do not become HAR sessions or replay drafts. Response framing is conditional because methods/opposite directions are not paired.
+Classic PCAP only: Ethernet with bounded VLAN tags, BSD loopback (link type 0, macOS `lo0`), Linux cooked SLL and SLL2 (113 and 276, `-i any`) or selected raw IP, IPv4/IPv6 base plus direct TCP/UDP. Wireshark's default PCAPNG is rejected. To record your own traffic, use `tcpdump -i <interface> -w capture.pcap`, or save as pcap from Wireshark; [defending the design](INSTALLATION.md#packet-inspection) lists the other pitfalls. PCAPNG, IPv6 extension chains, fragmented IP transport and encrypted applications need broader support. All budgets and exclusions are in [M7](contracts/m7-packets.md) and [M8](contracts/m8-streams.md). TCP/HTTP results do not become HAR sessions or replay drafts. Response framing is conditional because methods/opposite directions are not paired.
 
 `python3 scripts/check_packet_terminal.py` checks layer/stream navigation, chunks/SDP, gap refusal, resize and restoration with a real POSIX PTY. The installation check also runs it against the installed release binary outside the checkout. `python3 scripts/build_packet_fixtures.py` regenerates frozen examples; compare SHA256SUMS and review changes deliberately. No packet-capture privileges are needed. `tcpdump -nn -vv -r tests/fixtures/pcap/streams.pcap` is an optional independent reader check, not part of the deterministic Rust suite or a required install dependency.
 
@@ -198,3 +196,15 @@ Press b to switch text/hex, [ and ] to page through selected bytes, and h to ope
 
 
 Replay navigation uses four draft fields (Method, URL, Headers, Body), followed by Review request. Enter opens the selected field; in Headers, Enter toggles captured fields or removes added fields, a adds a field, and Esc returns. Review starts on Summary; Left/Right or Tab switches Summary / Headers / Body. Enter or s sends from review. Existing m, t and b shortcuts remain available in the draft.
+
+## Installation checks
+
+
+```sh
+python3 scripts/check_install.py
+```
+
+This needs Python 3.11 or newer. It installs a release binary into a temporary root with `--locked --offline`, runs it from a separate directory through a temporary PATH setting, and checks help, version, both file modes, malformed and empty captures, and failure exit codes. On POSIX systems it also runs navigation/search, small-window recovery, local GET/POST replay, cancellation, and save/reopen against the installed release binary. An injected drawing-error check uses a separate development probe. It cleans up that installation and does not alter your normal Cargo installation. Cargo's build cache remains reusable. The GitHub workflow runs the same check on Linux; consult the verification record for actual observed results.
+
+
+Publishing is covered separately in [publishing a release](PUBLISHING.md).

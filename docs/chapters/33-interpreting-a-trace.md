@@ -44,12 +44,9 @@ Return to the opening trace. Can you identify an agreeing overlap, a DNS answer 
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
+Try these questions using the explanation above, then open the answers.
 
 ### A DNS answer with several addresses
-
-**Level:** Newcomer
-
 
 A DNS response in a PCAP lists three addresses for one name. Does that show a load balancer, and which address did the client use?
 
@@ -64,50 +61,7 @@ Neither. The answer records the addresses the resolver returned. It does not say
 
 </details>
 
-### What limits bound reassembly?
-
-**Level:** Practitioner
-
-
-What are the flow, per-stream and total budgets in TCP reassembly? What happens to a packet or segment when each is exceeded, and what are the time and memory costs?
-
-<details>
-<summary>Answer</summary>
-
-`FLOW_LIMIT` allows 128 directed epochs, `STREAM_LIMIT` allows a 256 KiB sequence span per epoch, and `TOTAL_STREAM_LIMIT` allows 8 MiB of spans in total. When a packet would need a 129th epoch, it is counted in `unassigned_packets`, and its key is removed from the active map, so later packets in that direction are unassigned too. A segment that would stretch its epoch past 256 KiB, push the total past 8 MiB, or start before the SYN anchor is skipped and counted in `skipped_segments`, and its FIN and RST flags are not recorded. An epoch with any skipped segment never reports an observed end.
-
-Grouping costs O(P log F) for P packets and F epochs. Placing bytes costs time proportional to the payload bytes examined. Memory is about two bytes per retained position (the byte and its state), so at most around 16 MiB for 8 MiB of span, plus the packet bytes themselves. The PCAP limits of 20,000 packets and 32 MiB apply before any of this.
-
-**Learn more:** [How are memory and time bounded in reassembly?](../chapters/34-defending-the-design.md#how-are-memory-and-time-bounded-in-reassembly) · [Sequence observations](../contracts/m8-streams.md#sequence-observations) · [`FLOW_LIMIT`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L6-L10) · [`unassigned_packets`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L102-L107) · [`skipped`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L165-L173)
-
-</details>
-
-### Which copy wins when segments overlap
-
-**Level:** Expert
-
-
-Operating systems and tools such as Wireshark pick "first copy wins" or "last copy wins" for overlapping TCP segments. Which policy does Netscope use? Does it sort segments by capture timestamp before placing them? Defend the choice.
-
-<details>
-<summary>Answer</summary>
-
-Neither policy. The first observed value fills a position. A later copy that agrees increments `repeated_bytes`. A later copy that disagrees turns the position into `Conflict`, and a conflict is permanent. The contiguous prefix stops at a conflict, so no HTTP analysis uses a disputed byte.
-
-Segments are processed in record order, and capture timestamps are never read during reassembly. Positions come from sequence numbers only. Because of that, the state of each position and every agreed value are the same whatever order the records are in. Record order does change three things: the anchor of an epoch without a SYN, which segments survive the span budgets, and the repeat count at a conflicted position.
-
-The defence is that a capture cannot tell which copy the receiver accepted. Checksums are not verified, receiver state is unknown, and real stacks disagree. An intrusion detector that picks a different copy from the target can be evaded. Marking the conflict keeps the ambiguity visible instead of hiding it behind a guess.
-
-**Common wrong answer.** "Netscope sorts by timestamp and keeps the first copy, as most stacks do." It neither sorts by time nor picks a winner.
-
-**Learn more:** [What happens when two segments disagree about the same byte?](../chapters/34-defending-the-design.md#what-happens-when-two-segments-disagree-about-the-same-byte) · [`ByteState::Conflict`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L223-L230)
-
-</details>
-
 ### Repeated bytes in a trace
-
-**Level:** Newcomer
-
 
 Two TCP segments carry the same sequence range with the same bytes. Is that a retransmission after packet loss?
 
@@ -122,24 +76,36 @@ It might be, but the trace does not say so. The sender may have sent again, or t
 
 </details>
 
-### Limitations to disclose for incident work
+### The TCP window field
 
-**Level:** Expert
-
-
-A security engineer is evaluating Netscope for incident work. Name the five most important limitations you would disclose, and say for each whether it is a deliberate scope choice or a gap.
+A TCP header shows a window of 512. Can you read that as "the receiver will accept 512 more bytes"?
 
 <details>
 <summary>Answer</summary>
 
-Any five of these, each labelled correctly, make a good answer.
+Not in general. With window scaling, the receiver of the window multiplies the 16-bit field by 2 to the power of a shift count from 0 to 14. Each side announces its shift only in its SYN segment. A capture that starts after the handshake cannot know the shift, and Netscope does not parse TCP options at all. It shows the raw field and claims no byte capacity. The window is also not the sender's congestion window.
 
-Scope: only classic PCAP is read. PCAPNG is rejected, and link types outside 0, 1, 101, 113, 228, 229 and 276 show "Link type unsupported". Scope: TLS is neither parsed nor decrypted, so HTTPS in a packet capture is opaque. Scope: IPv4 fragments are not reassembled, IPv6 extension headers are not walked, and checksums are not verified. Scope: wire HTTP is HTTP/1.1 with GET and POST requests only, and the two directions are not paired.
+**Learn more:** [Repeated bytes are visible; their cause may not be](../chapters/33-interpreting-a-trace.md#repeated-bytes-are-visible-their-cause-may-not-be) · [Sender congestion state is not a header field](../chapters/33-interpreting-a-trace.md#sender-congestion-state-is-not-a-header-field)
 
-Gap: a response to HEAD is misframed, and port reuse without a captured SYN merges into the old epoch. Gap: replay trusts only the bundled root certificates and ignores proxies. Gap: saved drafts keep URL query tokens and unlisted secret headers, and the parent directory is not synced. Gap: terminal escaping misses bidi and zero-width characters. Gap: retry matching can be quadratic, and it misses real retries that change one header.
+</details>
 
-Scope: WebSocket support covers handshake header shape only, and SSE in a HAR has no timing. Scope: the import and reassembly budgets mean a large capture is analysed in part, and the views say so.
+<details>
+<summary>Further questions for later study</summary>
 
-**Learn more:** [Known gaps and pitfalls](../chapters/34-defending-the-design.md#known-gaps-and-pitfalls) · [Put the limit next to the conclusion](../chapters/33-interpreting-a-trace.md#put-the-limit-next-to-the-conclusion) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L254)
+<a id="what-limits-bound-reassembly"></a>
+
+[What limits bound reassembly?](../questions/practitioner.md#what-limits-bound-reassembly)
+
+<a id="which-copy-wins-when-segments-overlap"></a>
+
+[Which copy wins when segments overlap](../questions/expert.md#which-copy-wins-when-segments-overlap)
+
+<a id="limitations-to-disclose-for-incident-work"></a>
+
+[Limitations to disclose for incident work](../questions/expert.md#limitations-to-disclose-for-incident-work)
+
+<a id="a-keep-alive-probe-that-looks-like-an-attack"></a>
+
+[A keep-alive probe that looks like an attack](../questions/expert.md#a-keep-alive-probe-that-looks-like-an-attack)
 
 </details>

@@ -8,7 +8,7 @@ These questions ask how Netscope works and why it takes each approach instead of
 
 <!-- chapters: 23-shaping-the-program, 04-quality-and-tests -->
 
-The workspace has four crates: `netscope-core`, `netscope-import`, `netscope-net` and `netscope-tui`. What does each one own, which way do the dependencies point, and why does the core crate contain no file access, no network access and no async runtime?
+The workspace has four crates: `netscope-core`, `netscope-import`, `netscope-net` and `netscope`. What does each one own, which way do the dependencies point, and why does the core crate contain no file access, no network access and no async runtime?
 
 <details>
 <summary>Answer</summary>
@@ -97,7 +97,7 @@ Only classic PCAP version 2.4 is supported, in either byte order and with micros
 
 Errors in the file's framing fail the import: a snap length of 0 or above 256 KiB, a file over 32 MiB, a captured length above the snap length or original length, or a timestamp fraction out of range. Two framing problems keep what was read instead: a truncated final record is dropped with a note, and the records after the 20,000th are left unread with a note. Errors inside a packet do not fail the import. The packet keeps its bytes and gets a reason in its layer list, such as "Link type unsupported; packet bytes retained". An 802.11 capture (link type 105) therefore opens, but every packet carries that reason.
 
-**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L188) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L255)
+**Learn more:** [A boundary belongs to a particular layer](../chapters/29-reading-packet-bytes.md#a-boundary-belongs-to-a-particular-layer) · [Why refuse PCAPNG and other link types?](../INSTALLATION.md#packet-inspection) · [`import_pcap`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L69-L188) · [`layers`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/pcap.rs#L189-L255)
 
 </details>
 
@@ -310,7 +310,7 @@ Walk through how `reassemble` decides which directed epoch a TCP segment belongs
 
 A segment's position is `sequence.wrapping_sub(anchor)` reinterpreted as a signed 32-bit number. Wrapping subtraction followed by the signed cast gives the correct signed distance across the 2^32 wrap, as long as the distance stays below 2^31 either way, which the 256 KiB span limit guarantees. Segments that carry no payload and no FIN or RST join the epoch but add no positions.
 
-**Learn more:** [Sequence numbers eventually wrap](../chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap) · [How TCP numbers its bytes](../chapters/34-defending-the-design.md#how-tcp-numbers-its-bytes) · [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L89-L126) · [`start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L141-L146)
+**Learn more:** [Sequence numbers eventually wrap](../chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap) · [How TCP numbers its bytes](../chapters/30-putting-bytes-in-order.md#sequence-numbers-eventually-wrap) · [`reassemble`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L89-L126) · [`start`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/reassembly.rs#L141-L146)
 
 </details>
 

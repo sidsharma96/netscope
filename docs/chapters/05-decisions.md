@@ -56,4 +56,10 @@ Receipt's local prose guide, [pstack technical writing](https://github.com/curso
 
 [Oxide](https://oxide.computer/) and [Modal's GPU glossary](https://modal.com/gpu-glossary/perf/memory-bound) informed the reading interface. These are design references, not affiliated brands.
 
-The audience and visual direction were agreed on October 9, 2026. The reader-led structure was reaffirmed after the interactive viewer was built. Markdown chapters remain the text source; the [development guide](../DEVELOPMENT.md) describes regeneration, and the [verification record](../VERIFICATION.md) records completed checks. Implementation requirements belong in the milestone contracts. The original project specification remains a local reference excluded from Git.
+Markdown chapters are the text source. The [development guide](../DEVELOPMENT.md) explains how to build and check them.
+
+## Review each revision before continuing
+
+After each coherent set of edits, read the revised pages in learning order without source code beside them. Explain the reader's starting question, the new idea, and one result the reader can now predict. Check that the examples and exercises require only concepts introduced by that point. Remove repeated explanations and implementation history that interrupt that sequence.
+
+Then check factual claims against the implementation and run the documentation checks. Review changed Rust examples with the documentation tests as well. A passing command establishes only what it checks; report editorial findings separately. If the prose needs repair, revise it and repeat this review before starting the next part.

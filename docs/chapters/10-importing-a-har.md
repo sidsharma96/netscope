@@ -96,7 +96,7 @@ Now change the second request so only its base64 body is malformed. Explain why 
 
 ## Follow the implementation when ready
 
-The importer [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138) implements these field checks, and the session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197) holds the accepted data. The importer tests [`known_field_failures_have_fixed_paths_and_do_not_leak_values`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/tests/har.rs#L80) demonstrate both rejected captures and recoverable body warnings. The [browser compatibility reference](../HAR_COMPATIBILITY.md) records which native exports we have tested. The [verification record](../VERIFICATION.md) records the checks performed.
+The importer [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138) implements these field checks, and the session model [`Session`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/session.rs#L197) holds the accepted data. The importer tests [`known_field_failures_have_fixed_paths_and_do_not_leak_values`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/tests/har.rs#L80) demonstrate both rejected captures and recoverable body warnings. The [browser compatibility reference](../HAR_COMPATIBILITY.md) records which native exports we have tested.
 
 For parser details, consult [Chrono's timestamp API](https://docs.rs/chrono/latest/chrono/struct.DateTime.html), the [URL parser](https://docs.rs/url/latest/url/struct.Url.html), and the [base64 library](https://docs.rs/base64/latest/base64/). These are references for implementation work, not prerequisites for the explanation above.
 
@@ -104,82 +104,9 @@ For parser details, consult [Chrono's timestamp API](https://docs.rs/chrono/late
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### What a HAR file is
-
-**Level:** Newcomer
-
-
-What is a HAR file, and who decides what goes into it?
-
-<details>
-<summary>Answer</summary>
-
-A HAR (HTTP Archive) file is a JSON document that a browser or another capture tool exports. It lists HTTP requests and their responses, with headers, bodies when the tool kept them, and reported timings. The exporter decides what to record, so a HAR can omit a body or a timing. Netscope reads the file and keeps those gaps visible. It does not fill them in.
-
-**Learn more:** [Reading structure comes before understanding meaning](../chapters/10-importing-a-har.md#reading-structure-comes-before-understanding-meaning) · [What a capture can tell us](../chapters/02-reading-a-capture.md#what-a-capture-can-tell-us)
-
-</details>
-
-### Is HAR import streaming or all-or-nothing?
-
-**Level:** Practitioner
-
-
-Describe the path from a HAR file to a `Session`. Is it streaming or whole-file? Does a bad entry fail the whole import or only that entry? Which budgets apply, and what may an error message contain?
-
-<details>
-<summary>Answer</summary>
-
-The importer reads the whole file into memory, but it reads through `take(limit + 1)`, so the 32 MiB input budget is enforced while reading instead of after. It parses the bytes into a JSON tree that rejects duplicate keys, checks that `log.version` is `"1.2"` and that the creator is present, checks the entry count against 10,000, and then parses every entry. Any invalid field that Netscope consumes fails the whole import. There is no partial session. `Session::new` then builds the orders and indexes.
-
-The third budget is 2 MiB of decoded bytes per response body. Recoverable oddities do not fail the import. An undecodable body, a missing MIME type or timings that do not add up become per-request warnings. An error carries a field path such as `log.entries[3].response.status` and a fixed reason. Captured values never appear in error messages, so a hostile file cannot put its own text into one.
-
-**Common wrong answer.** "Bad entries are skipped and the rest load." A structural or field error rejects the file, because a list with silent gaps would misrepresent the capture.
-
-**Learn more:** [Decide when a failure blocks the request](../chapters/10-importing-a-har.md#decide-when-a-failure-blocks-the-request) · [Put a limit on the work](../chapters/10-importing-a-har.md#put-a-limit-on-the-work) · [Resource and error policy](../contracts/m1-har-inspection.md#resource-and-error-policy) · [`Limits`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L19-L27) · [`import_reader`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L121-L134) · [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138-L180)
-
-</details>
-
-### The question-mark operator
-
-**Level:** Newcomer
-
-
-What does `?` do after a call that returns a `Result`, and why does Netscope not call `unwrap` there instead?
-
-<details>
-<summary>Answer</summary>
-
-If the result is `Ok`, `?` takes out the value and execution continues. If it is `Err`, `?` returns that error from the current function at once. The importer uses this to stop at the first invalid required field. `unwrap` would panic on `Err` and end the program, which is wrong for an expected problem such as a bad file. The workspace lints deny `unwrap` and `expect` for this reason.
-
-**Learn more:** [Stop when the next step cannot proceed](../chapters/09-options-results-and-matching.md#stop-when-the-next-step-cannot-proceed) · [Use linting for recurring code concerns](../chapters/04-quality-and-tests.md#use-linting-for-recurring-code-concerns) · [`unsafe_code`](https://github.com/sidsharma96/netscope/blob/main/Cargo.toml#L16)
-
-</details>
-
-### When do timing stages disagree with the total?
-
-**Level:** Practitioner
-
-
-How does the importer decide to warn "Timing stages differ from reported total"? Which fields are added, which are left out and why, what tolerance applies, and how is a `blocked` value between -1 and 0 treated?
-
-<details>
-<summary>Answer</summary>
-
-The importer adds `send`, `wait` and `receive`, then adds `blocked`, `dns` and `connect` only when each one is a measured `Milliseconds` value. Missing, not-applicable and nonstandard values contribute nothing, so no duration is invented. `ssl` is left out because HAR defines the TLS time as part of `connect`, and adding it again would count it twice. If the sum is not finite, or differs from the entry's `time` by more than 0.01 ms, the request gets a warning, not an error.
-
-A second check warns when `ssl` is a duration but `connect` is not a duration at least as large. A `blocked` value strictly between -1 and 0 becomes `ExporterNegative` with its own warning, because some exporters write small negative values there. Any other negative value apart from -1 is an import error, and only `blocked` gets this tolerance.
-
-**Learn more:** [Some timings contain other timings](../chapters/02-reading-a-capture.md#some-timings-contain-other-timings) · [Timing rules](../contracts/m1-har-inspection.md#timing-rules) · [`optional_timing`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L352-L372) · [`sum`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L507-L524)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### When an import fails
-
-**Level:** Newcomer
-
 
 A HAR has three entries. The second has an invalid required wait time. In a second file, only the second entry's base64 body is malformed. What does Netscope show in each case?
 
@@ -189,5 +116,30 @@ A HAR has three entries. The second has an invalid required wait time. In a seco
 In the first file the import fails. Netscope reports an error that names the field's location, and it shows no request list, not even the valid first entry. In the second file the import succeeds. The broken body is kept in its encoded form with a warning, and the request's method, URL, headers and timings stay inspectable. A required field decides whether the capture is accepted, while a body problem is recoverable.
 
 **Learn more:** [Decide when a failure blocks the request](../chapters/10-importing-a-har.md#decide-when-a-failure-blocks-the-request) · [Build a complete session before displaying it](../chapters/10-importing-a-har.md#build-a-complete-session-before-displaying-it) · [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="what-a-har-file-is"></a>
+
+[What a HAR file is](../questions/newcomer.md#what-a-har-file-is)
+
+<a id="the-question-mark-operator"></a>
+
+[The question-mark operator](../questions/newcomer.md#the-question-mark-operator)
+
+<a id="is-har-import-streaming-or-all-or-nothing"></a>
+
+[Is HAR import streaming or all-or-nothing?](../questions/practitioner.md#is-har-import-streaming-or-all-or-nothing)
+
+<a id="when-do-timing-stages-disagree-with-the-total"></a>
+
+[When do timing stages disagree with the total?](../questions/practitioner.md#when-do-timing-stages-disagree-with-the-total)
+
+<a id="why-not-parse-har-into-a-plain-json-value"></a>
+
+[Why not parse HAR into a plain JSON value?](../questions/practitioner.md#why-not-parse-har-into-a-plain-json-value)
 
 </details>

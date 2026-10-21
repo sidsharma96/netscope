@@ -101,50 +101,9 @@ Read the timing conversion [`Timing::from_optional_har`](https://github.com/sids
 
 ## Check your understanding
 
-These questions come from the question bank ([newcomer](../questions/newcomer.md), [practitioner](../questions/practitioner.md), [expert](../questions/expert.md)). Answer each one before you open its answer.
-
-### Missing, minus one, and zero
-
-**Level:** Newcomer
-
-
-A HAR's DNS timing can be absent, `-1`, or `0`. What does each one mean, and how does Netscope keep them apart?
-
-<details>
-<summary>Answer</summary>
-
-An absent field means the exporter recorded nothing. HAR 1.2 defines `-1` for an optional timing as "does not apply to the current request", for example DNS on a connection the browser had already opened. A `0` is a reported duration of zero at the exporter's precision. Netscope stores these as different variants of its `Timing` enum: `Missing`, `Unavailable` (shown as `Not applicable (-1)`), and `Milliseconds(0.0)`. None of them is turned into another.
-
-**Common wrong answer.** "`-1` means the value is unknown, so treat it like zero." It means the stage did not happen for this request, and adding it as zero would invent a measurement.
-
-**Learn more:** [Missing time is different from zero](../chapters/02-reading-a-capture.md#missing-time-is-different-from-zero) · [A present number still needs a meaning](../chapters/09-options-results-and-matching.md#a-present-number-still-needs-a-meaning) · [`Timing`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/lib.rs#L11)
-
-</details>
-
-### Why is a timing an enum?
-
-**Level:** Practitioner
-
-
-HAR timings are numbers. Why does Netscope model an optional timing as an enum instead of `Option<f64>`, or instead of storing 0 when the value is absent? Name the variants and say what each one means.
-
-<details>
-<summary>Answer</summary>
-
-`Timing` has four variants. `Missing` means the exporter left the field out. `NotApplicable` means the exporter wrote `-1`, which HAR 1.2 defines as "does not apply to this request", for example DNS on a reused connection. `Milliseconds(f64)` holds a finite, non-negative duration. `ExporterNegative(f64)` keeps a nonstandard negative value that some exporters write for `blocked`, without treating it as a duration.
-
-Storing 0 for an absent value would invent a measurement: a reader could not tell "took no time" from "was not recorded". `Option<f64>` is better but still merges two different facts, an absent field and a field that does not apply. With four variants, every later calculation has to say what it does with each case, and the compiler checks that it does. The required `send`, `wait` and `receive` fields are plain `f64` values, because the importer rejects an entry that lacks them.
-
-**Common wrong answer.** "-1 means the value is unknown." HAR uses -1 for a phase that did not happen for this request, which is a different claim from "unknown".
-
-**Learn more:** [Missing time is different from zero](../chapters/02-reading-a-capture.md#missing-time-is-different-from-zero) · [Why keep -1, missing, zero and nonstandard values apart?](../chapters/34-defending-the-design.md#why-keep--1-missing-zero-and-nonstandard-values-apart) · [`Timing`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/lib.rs#L11-L22) · [`from_optional_har`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-core/src/lib.rs#L52-L61)
-
-</details>
+Try these questions using the explanation above, then open the answers.
 
 ### Option and Result
-
-**Level:** Newcomer
-
 
 What is the difference between `Option` and `Result`? Give one place where each appears in Netscope.
 
@@ -157,30 +116,7 @@ What is the difference between `Option` and `Result`? Give one place where each 
 
 </details>
 
-### Is HAR import streaming or all-or-nothing?
-
-**Level:** Practitioner
-
-
-Describe the path from a HAR file to a `Session`. Is it streaming or whole-file? Does a bad entry fail the whole import or only that entry? Which budgets apply, and what may an error message contain?
-
-<details>
-<summary>Answer</summary>
-
-The importer reads the whole file into memory, but it reads through `take(limit + 1)`, so the 32 MiB input budget is enforced while reading instead of after. It parses the bytes into a JSON tree that rejects duplicate keys, checks that `log.version` is `"1.2"` and that the creator is present, checks the entry count against 10,000, and then parses every entry. Any invalid field that Netscope consumes fails the whole import. There is no partial session. `Session::new` then builds the orders and indexes.
-
-The third budget is 2 MiB of decoded bytes per response body. Recoverable oddities do not fail the import. An undecodable body, a missing MIME type or timings that do not add up become per-request warnings. An error carries a field path such as `log.entries[3].response.status` and a fixed reason. Captured values never appear in error messages, so a hostile file cannot put its own text into one.
-
-**Common wrong answer.** "Bad entries are skipped and the rest load." A structural or field error rejects the file, because a list with silent gaps would misrepresent the capture.
-
-**Learn more:** [Decide when a failure blocks the request](../chapters/10-importing-a-har.md#decide-when-a-failure-blocks-the-request) · [Put a limit on the work](../chapters/10-importing-a-har.md#put-a-limit-on-the-work) · [Resource and error policy](../contracts/m1-har-inspection.md#resource-and-error-policy) · [`Limits`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L19-L27) · [`import_reader`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L121-L134) · [`import_bytes`](https://github.com/sidsharma96/netscope/blob/main/crates/netscope-import/src/lib.rs#L138-L180)
-
-</details>
-
 ### What `match` guarantees
-
-**Level:** Newcomer
-
 
 Why does Netscope use `match` to choose a label for a timing, and what happens if someone adds a new `Timing` variant later?
 
@@ -190,5 +126,35 @@ Why does Netscope use `match` to choose a label for a timing, and what happens i
 `match` compares a value against patterns and runs the arm that fits. Rust requires the arms to cover every variant. If a new variant is added, every `match` that lists the existing variants stops compiling until someone decides how to show the new case. The display cannot quietly fall back to a misleading label. The same idea keeps "search unavailable" and "search found nothing" apart in the redirect analysis.
 
 **Learn more:** [Handle the alternatives with match](../chapters/09-options-results-and-matching.md#handle-the-alternatives-with-match) · [Give different outcomes different Rust values](../chapters/13-following-redirects.md#give-different-outcomes-different-rust-values)
+
+</details>
+
+### The question-mark operator
+
+What does `?` do after a call that returns a `Result`, and why does Netscope not call `unwrap` there instead?
+
+<details>
+<summary>Answer</summary>
+
+If the result is `Ok`, `?` takes out the value and execution continues. If it is `Err`, `?` returns that error from the current function at once. The importer uses this to stop at the first invalid required field. `unwrap` would panic on `Err` and end the program, which is wrong for an expected problem such as a bad file. The workspace lints deny `unwrap` and `expect` for this reason.
+
+**Learn more:** [Stop when the next step cannot proceed](../chapters/09-options-results-and-matching.md#stop-when-the-next-step-cannot-proceed) · [Use linting for recurring code concerns](../chapters/04-quality-and-tests.md#use-linting-for-recurring-code-concerns) · [`unsafe_code`](https://github.com/sidsharma96/netscope/blob/main/Cargo.toml#L16)
+
+</details>
+
+<details>
+<summary>Further questions for later study</summary>
+
+<a id="missing-minus-one-and-zero"></a>
+
+[Missing, minus one, and zero](../questions/newcomer.md#missing-minus-one-and-zero)
+
+<a id="why-is-a-timing-an-enum"></a>
+
+[Why is a timing an enum?](../questions/practitioner.md#why-is-a-timing-an-enum)
+
+<a id="is-har-import-streaming-or-all-or-nothing"></a>
+
+[Is HAR import streaming or all-or-nothing?](../questions/practitioner.md#is-har-import-streaming-or-all-or-nothing)
 
 </details>
