@@ -15,7 +15,7 @@ ratatui = { version = "=0.29.0", default-features = false, features = ["crosster
 crossterm = "=0.28.1"
 unicode-width = "=0.2.0"
 unicode-segmentation = "1.12"
-netscope-net = { version = "0.1.0", path = "../netscope-net" }
+netscope-net = { version = "0.2.0", path = "../netscope-net" }
 
 [[bin]]
 name = "netscope"

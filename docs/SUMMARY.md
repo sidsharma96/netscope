@@ -97,7 +97,7 @@
 # Historical records
 
 - [Milestone status](MILESTONES.md)
-- [Release readiness: 0.1.0](RELEASE_READINESS.md)
+- [Release readiness: 0.2.0](RELEASE_READINESS.md)
 - [Verification ledger](VERIFICATION.md)
 
 # Appendices

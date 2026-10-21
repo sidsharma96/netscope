@@ -1,12 +1,16 @@
 # Release notes
 
-## Unreleased
+## 0.2.0 — October 20, 2026
+
+This source release completes the agreed M1–M8 scope and includes the interface and book refinements below. Install from tag `v0.2.0` using Cargo. There are no crates.io packages or prebuilt executables; Windows interactive behavior remains unverified.
+
+- Organize replay into Method, URL, Headers and Body fields, with Summary / Headers / Body review sections. Keep explicit send confirmation, masked header values and concise beginner guidance.
+- Make stream inspection follow selected exact ranges, including gaps and conflicts, with text/hex previews and expanded help. Declutter replay and packet guidance at compact terminal sizes.
+- Support BSD loopback and Linux cooked SLL/SLL2 in classic PCAP, alongside Ethernet/VLAN and selected raw-IP inputs. PCAPNG and encrypted-application decoding remain outside scope.
 
 - Add packet/stream learning panes for TCP flags, ACK direction, sequence positions and byte-coverage maps, with a separate complete recorded report. Extend the beginner book with worked acknowledgement and range examples.
 
-
 - Clarify inspection for beginners with full section names, reading prompts, host outcome bars, packet direction guides and numbered replay steps. Add a deterministic active-operation indicator with reduced-motion support.
-
 
 - Publish the book with mdBook 0.5.4 from `docs/SUMMARY.md`, grouped into parts, with search, a reading-path front page, a glossary and a three-level question bank whose answers link to the teaching sections. Teaching chapters end with generated questions. The custom HTML reader and its builder are retired; the documentation checks now run on the Markdown and also verify heading anchors and question format. A workflow builds the site and deploys it to Cloudflare Pages.
 

@@ -416,3 +416,13 @@ The real PTY loopback check passed for GET, POST, saved POST, cancellation, quit
 ### Replay decluttering — 2026-10-19
 
 Removed repeated stage instructions, per-row key hints and duplicate panel-title controls. Field explanations remain visible without a second bordered panel. The TUI suite, workspace Clippy, documentation checks and mdBook build pass; fixed terminal buffers were refreshed. Draft and review were also captured from the running binary at 80×24 and 120×34 for visual inspection. This pass changes presentation only.
+
+## October 20, 2026 — v0.2.0 release closing pass
+
+Prepared the existing M1–M8 scope as version 0.2.0 across the workspace packages and lockfile, without adding features or changing runtime behavior. Reviewed navigation, selection, help, edit/review/send boundaries and compact-screen reference buffers across request, host, journey, packet, stream and replay views. Corrected stale public guidance about supported classic-PCAP link types, replay pane placement, header/review navigation and reachable stream ranges. README, installation, milestone status, layout reference and release notes now describe this release; historical verification entries and the v0.1.0 tag remain unchanged.
+
+On macOS arm64 with Rust 1.92.0, Python 3.14.2 and mdBook 0.5.4, `python3 scripts/check.py` passed formatting, all-target compilation, warnings-denied workspace Clippy, workspace tests and Rust examples, build, 240 frozen browser checks across 120 scenarios, and documentation checks. `mdbook build docs` passed. The browser campaign was replayed offline; this was not a new native-browser recording run or an external-service test.
+
+`python3 scripts/check_install.py` passed an isolated optimized 0.2.0 installation and version verification outside the checkout, CLI/file/error cases, navigation/search and small-window recovery, reviewed GET/POST and saved POST, comparison, cancellation/q/Ctrl+c, save/reopen, retained/live SSE, packet/stream evidence and terminal restoration. The separate `python3 scripts/check_terminal.py` also passed the injected drawing-error restoration probe and workspace workflows at 80×24 and 100×30. Temporary installations were removed. The existing user installation was not replaced.
+
+The release commit must pass the hosted Linux Foundation checks before the v0.2.0 tag is created. Hosted results are attached to that commit in GitHub Actions and linked from the release notes; they are not inferred from local success. Distribution remains tagged source with Cargo installation. Windows interactive support, universal capture compatibility, fresh learner-comprehension testing and broader protocol features are not claimed.

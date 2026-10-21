@@ -1,6 +1,6 @@
 # Install and run Netscope
 
-Version 0.1.0 installs from a local checkout. Use `git checkout v0.1.0` in a clean checkout to select this release before installing. It is not published on crates.io. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
+Version 0.2.0 installs from a local checkout. Use `git checkout v0.2.0` in a clean checkout to select this release before installing. It is not published on crates.io. The checked development toolchain is Rust 1.92.0, selected by rust-toolchain.toml. Install Rust through [rustup](https://rustup.rs/) first; the initial toolchain and dependency downloads need internet access. Build tools for your platform may also be required.
 
 From the repository root:
 
@@ -46,12 +46,14 @@ This needs Python 3.11 or newer. It installs a release binary into a temporary r
 
 To remove a normal Cargo installation, use `cargo uninstall netscope-tui`. If you selected a custom installation root, supply that same `--root` to uninstall.
 
-## Packet inspection on unreleased main
+<a id="packet-inspection-on-unreleased-main"></a>
 
-The main checkout now includes M5–M8; the v0.1.0 tag remains its earlier snapshot. To run the current packet viewer without replacing an older installed binary:
+## Packet inspection
+
+Version 0.2.0 includes M5–M8. To run the current packet viewer without replacing an older installed binary:
 
 ```sh
 cargo run -p netscope-tui --locked --offline -- --pcap tests/fixtures/pcap/streams.pcap
 ```
 
-Use the normal source-install command from this checkout to install these unreleased features. --pcap selects the bounded classic-PCAP subset; it does not require capture privileges or libpcap/tcpdump to run. See [milestone status](MILESTONES.md) and the [packet walkthrough](DEVELOPMENT.md#inspect-packets-and-streams).
+Use the normal source-install command from this checkout to install this release. --pcap selects the bounded classic-PCAP subset; it does not require capture privileges or libpcap/tcpdump to run. See [milestone status](MILESTONES.md) and the [packet walkthrough](DEVELOPMENT.md#inspect-packets-and-streams).

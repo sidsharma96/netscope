@@ -1,6 +1,6 @@
 # Netscope milestone status
 
-Current main-branch implementation after October 13, 2026 work. Version 0.1.0 remains the earlier source release snapshot; later features are unreleased. The original local specification and concept-coverage matrix remain excluded from Git. They are historical records from October 9, 2026: this file is the current status, and [defending the design](chapters/34-defending-the-design.md) records the current coverage of TLS, keep-alive, and content negotiation. Contracts and the verification ledger supply exact scope and evidence; implementation checks do not substitute for learner feedback.
+Version 0.2.0 includes the M1–M8 implementation scopes and the subsequent interface and book refinements, reviewed October 20, 2026. Version 0.1.0 remains the earlier source release snapshot. The original local specification and concept-coverage matrix remain excluded from Git. They are historical records from October 9, 2026: this file is the current status, and [defending the design](chapters/34-defending-the-design.md) records the current coverage of TLS, keep-alive, and content negotiation. Contracts and the verification ledger supply exact scope and evidence; implementation checks do not substitute for learner feedback.
 
 | Milestone | Implemented scope | Reference |
 | --- | --- | --- |

@@ -51,7 +51,7 @@ Pushing documentation changes to main runs `.github/workflows/docs.yml`, which r
 
 ## CI and evidence
 
-The GitHub workflow is configured to run the same check script on Linux. The repository is on GitHub and has committed history; consult the verification record for dated local checks rather than assuming a hosted run passed. Record actual local outcomes and limitations in VERIFICATION.md. M1 remains incomplete until the contract's full acceptance cases and learning explanation are satisfied.
+The GitHub workflow is configured to run the same check script on Linux. The repository is on GitHub and has committed history; consult the verification record for dated local checks rather than assuming a hosted run passed. Record actual local outcomes and limitations in VERIFICATION.md. The current milestone status is recorded in [MILESTONES.md](MILESTONES.md); historical verification entries retain their original scope.
 
 ## Terminal verification
 

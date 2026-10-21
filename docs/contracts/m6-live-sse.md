@@ -1,6 +1,6 @@
 # M6: bounded live SSE and deeper HTTP/2 teaching
 
-Agreed scope implemented after reader approval on October 13, 2026. Changes are unreleased after v0.1.0.
+Agreed scope implemented after reader approval on October 13, 2026. Included in v0.2.0.
 
 ## Explicit network boundary
 
