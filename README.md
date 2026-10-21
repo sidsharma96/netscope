@@ -41,3 +41,8 @@ Netscope also inspects captured SSE and WebSocket upgrades and offers separately
 Inspect a classic packet file with `netscope --pcap tests/fixtures/pcap/streams.pcap`. Enter shows layers; s shows directed TCP streams with gaps, conflicts, plaintext chunk boundaries and available signaling. See the [packet walkthrough](docs/DEVELOPMENT.md#inspect-packets-and-streams), [supported subset](docs/contracts/m7-packets.md) and [milestone status](docs/MILESTONES.md). Encrypted applications are not decoded. Classic PCAP captures from macOS loopback (`lo0`) and Linux cooked SLL/SLL2 (`-i any`) are supported. PCAPNG is not supported; the [design defense](docs/chapters/34-defending-the-design.md#why-refuse-pcapng-and-other-link-types-and-what-must-a-user-do) explains how to record a readable capture.
 
 A [120-scenario native compatibility campaign](docs/COMPATIBILITY_CAMPAIGN.md) checks REST, GraphQL-shaped HTTP, SSE and WebSocket traffic from Chrome/Firefox, including HTTPS/H2 and WSS, with retained captures and explicit discrepancies. The normal suite rechecks it offline.
+
+
+## License
+
+Netscope's original code and documentation are available under either the [MIT license](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option. Third-party dependencies and any separately attributed material retain their own licenses. This licensing applies to the current source; the existing v0.2.0 tag is unchanged.
