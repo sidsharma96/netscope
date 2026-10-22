@@ -9,4 +9,6 @@ __pycache__/
 /netscope-views-redesign.html
 
 # Built documentation site
-/docs/book/
+
+# Learning docs are not published here; they are mirrored to a private repo.
+/docs/

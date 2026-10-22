@@ -156,7 +156,7 @@ for level in sync_questions.LEVELS:
             if '://' not in href and not href.startswith('../'):
                 fail(f'Question links must start with ../ so chapter copies resolve: {where}: {href}')
         if re.search(r'^```', block, re.MULTILINE):
-            fail(f'Question bank must not use fenced code (chapters are doctests): {where}')
+            fail(f'Question bank must not use fenced code (chapter examples are compiled): {where}')
 print('checked question bank: ' + ', '.join(f'{n} {level}' for level, n in counts.items()))
 
 # 5. Each teaching chapter ends with an up-to-date "Check your understanding".

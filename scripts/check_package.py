@@ -1,7 +1,6 @@
 """Build registry archives and check the files needed outside this checkout."""
 from pathlib import Path
 import argparse
-import re
 import subprocess
 import tarfile
 import tomllib
@@ -33,8 +32,6 @@ for manifest in sorted((ROOT / 'crates').glob('*/Cargo.toml')):
         assert packaged['package']['version'] == version
         for dep in packaged.get('dependencies', {}).values():
             assert 'path' not in dep, f'{name}: packaged dependency still has a local path'
-        for chapter in re.findall(r'include_str!\("../lessons/([^"]+)"\)', content('src/lib.rs').decode()):
-            assert content('lessons/' + chapter) == (ROOT / 'docs/chapters' / chapter).read_bytes()
         assert not any(p.startswith(('tests/', 'examples/')) for p in files)
         assert not any(p.startswith('.') and p != '.cargo_vcs_info.json' for p in files)
-    print(f'PASS: {prefix}; archive builds, licenses and lessons match, dependencies use registry versions')
+    print(f'PASS: {prefix}; archive builds, licenses match, dependencies use registry versions')

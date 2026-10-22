@@ -1,1 +1,0 @@
-../../../docs/chapters/25-reading-event-streams.md

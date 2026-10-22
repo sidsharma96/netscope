@@ -16,7 +16,7 @@ Chrome ran headlessly with a fresh temporary profile and an ephemeral remote-deb
 
 Firefox ran with a fresh temporary profile and Marionette system access. A Netmonitor toolbox was opened before navigation. After the page completed, the driver waited for the Network Monitor request store to contain all nine entries, obtained its HAR export connector, and called the bundled `HarExporter.fetchHarData` with those items, `includeResponseBodies: true`, and `forceExport: true`. An earlier call, made before the store settled, produced the retained three-entry snapshot. Both browser processes were closed after capture.
 
-These are native exporter outputs, not HAR files synthesized from browser protocol events. Temporary driver profiles are not repository fixtures. The [compatibility reference](../../../../docs/HAR_COMPATIBILITY.md) describes the covered scenarios and manual reproduction with the maintained local server helper. The helper has the same request sequence and content; it does not reproduce the original page source formatting or measurement values byte for byte.
+These are native exporter outputs, not HAR files synthesized from browser protocol events. Temporary driver profiles are not repository fixtures. The [compatibility reference](https://netscope-docs.sidsharma.dev/HAR_COMPATIBILITY.html) describes the covered scenarios and manual reproduction with the maintained local server helper. The helper has the same request sequence and content; it does not reproduce the original page source formatting or measurement values byte for byte.
 
 ## Source cross-checks
 
@@ -32,7 +32,7 @@ The local certificate was self-signed and generated for this experiment. Chrome'
 
 `https-server-observations.jsonl` is a separate server-side request log captured before the additional Node client validation. Session 1 handled Chrome and session 3 handled Firefox. Session 2 had no logged request during the failed Firefox attempt. Chrome also requested a DevTools discovery URL that its exported page log does not include. The observation file retains that server request. Session numbers are local evidence, not HAR connection identifiers, and the importer does not consume this log. The source helper generated the exact captured page and payloads.
 
-The [compatibility reference](../../../../docs/HAR_COMPATIBILITY.md) records compression sizes, timing differences, certificate limitations, and reproduction commands. SHA256SUMS includes both HAR files and the independent server observation file. Frozen timings are evidence of exporter behaviour, not performance baselines.
+The [compatibility reference](https://netscope-docs.sidsharma.dev/HAR_COMPATIBILITY.html) records compression sizes, timing differences, certificate limitations, and reproduction commands. SHA256SUMS includes both HAR files and the independent server observation file. Frozen timings are evidence of exporter behaviour, not performance baselines.
 
 ## SSE and WebSocket extension
 

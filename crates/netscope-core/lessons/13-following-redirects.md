@@ -1,1 +1,0 @@
-../../../docs/chapters/13-following-redirects.md

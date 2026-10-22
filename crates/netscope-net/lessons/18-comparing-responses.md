@@ -1,1 +1,0 @@
-../../../docs/chapters/18-comparing-responses.md

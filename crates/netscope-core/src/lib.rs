@@ -61,49 +61,21 @@ impl Timing {
     }
 }
 
-/// Beginner examples checked by rustdoc alongside the core API.
-#[doc = include_str!("../lessons/07-values-and-functions.md")]
-pub mod values_lesson {}
-
-/// Collection and ID examples, including an expected compiler rejection.
-#[doc = include_str!("../lessons/08-structs-vectors-and-ids.md")]
-pub mod collections_lesson {}
-
-/// Examples of the implemented optional timing constructor.
-#[doc = include_str!("../lessons/09-options-results-and-matching.md")]
-pub mod errors_lesson {}
-
 mod session;
 pub use session::*;
 
 mod hosts;
 pub use hosts::{HostSummary, StatusCounts};
 
-/// Beginner loop examples for counting requests and summing durations.
-#[doc = include_str!("../lessons/12-grouping-requests.md")]
-pub mod grouping_lesson {}
-
 mod redirects;
 pub use redirects::RedirectEvidence;
-
-/// Preserve the difference between an unavailable search and an empty result.
-#[doc = include_str!("../lessons/13-following-redirects.md")]
-pub mod redirects_lesson {}
 
 mod comparison;
 mod retries;
 pub use retries::RetryEvidence;
 
-/// Equality and Boolean expressions in a beginner request-comparison example.
-#[doc = include_str!("../lessons/14-recognizing-repeats.md")]
-pub mod retries_lesson {}
-
 mod protocol;
 pub use protocol::RecordedProtocol;
-
-/// Borrowed text and exact alternative patterns for recognizing a label.
-#[doc = include_str!("../lessons/15-reading-protocol-labels.md")]
-pub mod protocol_lesson {}
 
 mod replay;
 pub use replay::{
@@ -111,34 +83,14 @@ pub use replay::{
     validate_replay_header,
 };
 
-/// Independent owned text for an editable request draft.
-#[doc = include_str!("../lessons/16-preparing-a-request.md")]
-pub mod draft_lesson {}
-
-/// UTF-8 bytes borrowed from owned request text.
-#[doc = include_str!("../lessons/19-submitting-text.md")]
-pub mod submission_lesson {}
-
 mod saved;
 pub use saved::{SAVED_FILE_LIMIT, SavedDraft, sensitive_saved_header};
-
-/// Serialization reconstructs independently owned values.
-#[doc = include_str!("../lessons/20-remembering-a-request.md")]
-pub mod persistence_lesson {}
-
-/// Ownership and synchronization choices, with isolated atomic examples.
-#[doc = include_str!("../lessons/24-sharing-work.md")]
-pub mod sharing_lesson {}
 
 mod sse;
 pub use sse::{
     SSE_EVENT_LIMIT, SSE_TEXT_LIMIT, SseEvent, SseInspection, SseLimit, SseStream, inspect_sse,
     parse_sse,
 };
-
-/// Captured event boundaries and joined data in a beginner example.
-#[doc = include_str!("../lessons/25-reading-event-streams.md")]
-pub mod sse_lesson {}
 
 mod websocket;
 pub use websocket::{WebSocketEvidence, websocket_evidence};
@@ -153,15 +105,3 @@ pub mod wire_http;
 
 /// Bounded UDP application metadata recognition.
 pub mod datagrams;
-
-/// Learning checked slices and explicit wire byte order.
-#[doc = include_str!("../lessons/29-reading-packet-bytes.md")]
-pub mod packet_bytes_lesson {}
-
-/// Learning bounded sequence space and explicit wrapping arithmetic.
-#[doc = include_str!("../lessons/30-putting-bytes-in-order.md")]
-pub mod sequence_lesson {}
-
-/// Learning plaintext HTTP framing from actual delimiters.
-#[doc = include_str!("../lessons/31-finding-http-boundaries.md")]
-pub mod wire_framing_lesson {}

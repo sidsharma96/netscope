@@ -1,1 +1,0 @@
-../../../docs/chapters/24-sharing-work.md
