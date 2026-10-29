@@ -2,13 +2,15 @@
 
 The living book assumes no Rust knowledge. Apply these rules to all existing and future chapters, diagrams, exercises, and explanatory comments.
 
+Teaching chapters also follow `docs/BOOK-RULES.md`, the six rules every learning book shares. Its canonical copy lives in `../learning-docs`; the copy in `docs/` is overwritten on sync. Where these rules and that file disagree about a teaching chapter, `docs/BOOK-RULES.md` wins.
+
 - Let the reader's question determine the chapter's structure. Begin with a concrete situation and explain its behaviour before introducing the Rust mechanism or application symbols.
 - Use code to support the explanation. Do not turn a source file, function sequence, recent change, or test report into the outline of a teaching chapter.
 - Keep technical depth. Explain why a rule exists, what happens during execution, and what consequence the reader can predict. Simple language must not hide the mechanism.
 - Explain a technical term and new syntax at first use. Introduce only the concepts needed for the current example. Prefer a small example with a visible result over a dense fragment from production code.
 - Write connected prose with varied sentence lengths. Use familiar words, stable names, and concrete cause and effect. Avoid slogans, invented jargon, compressed notes, and repetitive chapter templates.
 - Use a diagram when it clarifies a relationship, change, or sequence. Introduce it and explain how to read it. Distinguish illustrative examples from recorded facts and implementation guarantees.
-- Put source links after the ideas they support. Keep detailed commands, current implementation inventories, test counts, and maintenance history in reference documents unless a lesson needs them.
+- Put source links after the ideas they support. Keep detailed commands, current implementation inventories, test counts, and maintenance history in reference documents unless a lesson needs them. A mistake that git or a log records is told in the lesson that teaches its mechanism (rule 3 of `docs/BOOK-RULES.md`); `WHAT_WENT_WRONG.md` links to it.
 - Keep comments brief and explanatory. State the reason, assumption, or consequence in ordinary language. Longer lessons belong in the book.
 
 Before editing a chapter, read `docs/chapters/05-decisions.md`. Review the draft without referring to source code: can a newcomer understand the problem, follow the example, and predict a result? Then check its factual claims against the implementation. A refactor alone does not justify reorganising a lesson.
