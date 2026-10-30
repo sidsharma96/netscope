@@ -2,7 +2,7 @@
 
 The living book assumes no Rust knowledge. Apply these rules to all existing and future chapters, diagrams, exercises, and explanatory comments.
 
-Teaching chapters also follow `docs/BOOK-RULES.md`, the six rules every learning book shares. Its canonical copy lives in `../learning-docs`; the copy in `docs/` is overwritten on sync. Where these rules and that file disagree about a teaching chapter, `docs/BOOK-RULES.md` wins.
+Teaching chapters also follow `docs/BOOK-RULES.md`, the seven rules every learning book shares. Its canonical copy lives in `../learning-docs`; the copy in `docs/` is overwritten on sync. Where these rules and that file disagree about a teaching chapter, `docs/BOOK-RULES.md` wins.
 
 - Let the reader's question determine the chapter's structure. Begin with a concrete situation and explain its behaviour before introducing the Rust mechanism or application symbols.
 - Use code to support the explanation. Do not turn a source file, function sequence, recent change, or test report into the outline of a teaching chapter.
@@ -20,6 +20,16 @@ Before editing a chapter, read `docs/chapters/05-decisions.md`. Review the draft
 Questions live only in `docs/questions/`. After editing them, run `python3 scripts/sync_questions.py` to regenerate each chapter's "Check your understanding" section; never edit that section by hand. Run `python3 scripts/check_docs.py` after documentation changes. When Rust examples change, also run `cargo test --workspace --doc --locked --offline`. These automated checks establish link and example correctness; they do not substitute for an editorial review.
 
 For material architecture choices, maintain `docs/ARCHITECTURE.md` with constraints, alternatives, consequences, evidence, and revisit conditions. Distinguish contemporaneous records from later assessments. Update the relevant reader-led lesson when the reasoning changes; do not invent historical deliberation or justify complexity merely because it exists.
+
+## Code excerpts in the book
+
+Every teaching chapter follows Rule 7 of `docs/BOOK-RULES.md`: show the real code the chapter is about, give one concrete input before it, walk the lines that matter after it, show what they produce, and go one level down or up. A reader with only the book should understand 95% of that code. A link adds to code on the page; it never replaces it.
+
+- Put `<!-- excerpt: crates/<crate>/src/<file>.rs#L<a>-L<b> @<commit> -->` on the line above each excerpt and fence it as ```` ```rs ````. Never fence an excerpt as ```` ```rust ````: `scripts/check_book_examples.py` compiles every `rust` block, so those stay for complete teaching examples. Code links stay on `/blob/main/` with the symbol in backticks, because `scripts/check_docs.py` checks the symbol is near that line.
+- Trim honestly. Replace each cut with a comment containing "…" that says what was cut. Every other line must appear, in order, in that range at that commit.
+- Show a walk-through once. When another chapter already walks the code in full, give one sentence and a link to its section. Pages that defend or map the design (`34-defending-the-design.md`) and the entry page link rather than repeat.
+- Quote recorded measurements only, never timings rerun on a busy machine. Never edit a chapter's generated "Check your understanding" section; change the bank and run `scripts/sync_questions.py`.
+- Check with `../learning-docs/check-excerpts.py netscope docs/chapters/<chapter>.md` as well as `scripts/check_docs.py`. `deploy.sh` runs both.
 
 ## Documentation is private
 
