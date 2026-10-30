@@ -27,15 +27,16 @@ MIN_QUESTIONS, MAX_QUESTIONS = 1, 3
 TEACHING = [
     '22-running-a-program', '02-reading-a-capture', '07-values-and-functions',
     '03-storing-requests', '08-structs-vectors-and-ids', '09-options-results-and-matching',
-    '10-importing-a-har', '11-drawing-and-navigation', '12-grouping-requests',
-    '13-following-redirects', '14-recognizing-repeats', '15-reading-protocol-labels',
-    '16-preparing-a-request', '17-waiting-for-a-response', '24-sharing-work',
+    '10-importing-a-har', '39-opening-large-captures', '37-keeping-your-place', '11-drawing-and-navigation', '38-leaving-the-terminal-usable', '12-grouping-requests', '40-counting-grouping-work',
+    '13-following-redirects', '14-recognizing-repeats', '41-finding-follow-ups-quickly', '15-reading-protocol-labels',
+    '16-preparing-a-request', '17-waiting-for-a-response', '24-sharing-work', '42-locks-and-atomics',
     '18-comparing-responses', '19-submitting-text', '21-moving-through-text',
     '25-reading-event-streams', '26-switching-protocols', '27-observing-live-events',
-    '28-sharing-a-connection', '29-reading-packet-bytes', '30-putting-bytes-in-order',
+    '28-sharing-a-connection', '29-reading-packet-bytes', '30-putting-bytes-in-order', '43-reading-a-coverage-map',
     '31-finding-http-boundaries', '32-reading-signaling', '33-interpreting-a-trace',
     '20-remembering-a-request', '23-shaping-the-program', '04-quality-and-tests',
     '34-defending-the-design',
+    '36-investigating-a-slow-operation',
 ]
 
 

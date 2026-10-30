@@ -168,15 +168,25 @@ pub fn import_bytes(bytes: &[u8], limits: Limits) -> Result<Session> {
     if entries.len() > limits.entries {
         return Err(error("log.entries", "entry limit exceeded"));
     }
+    let entries = take_entries(root)?;
     let mut requests = Vec::with_capacity(entries.len());
-    for (index, entry) in entries.iter().enumerate() {
+    for (index, entry) in entries.into_iter().enumerate() {
         requests.push(parse_entry(
-            entry,
+            &entry,
             &format!("log.entries[{index}]"),
             limits,
         )?);
     }
     Ok(Session::new(requests))
+}
+// Validation is complete before this move; each consumed entry can then be freed.
+fn take_entries(mut root: Value) -> Result<Vec<Value>> {
+    let entries = root
+        .get_mut("log")
+        .and_then(|log| log.get_mut("entries"))
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| error("log.entries", "expected array"))?;
+    Ok(std::mem::take(entries))
 }
 fn object<'a>(v: &'a Value, p: &str) -> Result<&'a Map<String, Value>> {
     v.as_object().ok_or_else(|| error(p, "expected object"))

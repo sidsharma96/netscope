@@ -821,7 +821,7 @@ pub(super) fn wrap(text: &str, width: usize) -> Vec<String> {
 pub(super) fn wrap_words(text: &str, width: usize) -> Vec<String> {
     let mut remaining = text;
     let mut lines = Vec::new();
-    while remaining.width() > width {
+    loop {
         let mut end = 0;
         let mut columns = 0;
         for grapheme in remaining.graphemes(true) {
@@ -831,7 +831,14 @@ pub(super) fn wrap_words(text: &str, width: usize) -> Vec<String> {
             columns += grapheme.width();
             end += grapheme.len();
         }
-        if let Some(space) = remaining[..end].rfind(' ')
+        if end == remaining.len() {
+            lines.push(remaining.into());
+            return lines;
+        }
+        if remaining[..end].contains(' ')
+            && let Some((space, _)) = remaining[..end]
+                .grapheme_indices(true)
+                .rfind(|(_, grapheme)| *grapheme == " ")
             && !remaining[..space].trim().is_empty()
         {
             end = space + 1;
@@ -839,8 +846,6 @@ pub(super) fn wrap_words(text: &str, width: usize) -> Vec<String> {
         lines.push(remaining[..end].into());
         remaining = &remaining[end..];
     }
-    lines.push(remaining.into());
-    lines
 }
 pub(super) fn wrapped_inspector(
     session: &Session,
@@ -1379,5 +1384,72 @@ mod operation_id_tests {
         assert!(editor.take_send().is_none());
         assert_eq!(editor.title(), "REVIEW");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod wrapping_tests {
+    use super::*;
+    fn reference(text: &str, width: usize) -> Vec<String> {
+        let mut remaining = text;
+        let mut lines = Vec::new();
+        while remaining.width() > width {
+            let mut end = 0;
+            let mut columns = 0;
+            for grapheme in remaining.graphemes(true) {
+                if columns + grapheme.width() > width && end > 0 {
+                    break;
+                }
+                columns += grapheme.width();
+                end += grapheme.len();
+            }
+            if let Some(space) = remaining[..end].rfind(' ')
+                && !remaining[..space].trim().is_empty()
+            {
+                end = space + 1;
+            }
+            lines.push(remaining[..end].into());
+            remaining = &remaining[end..];
+        }
+        lines.push(remaining.into());
+        lines
+    }
+    #[test]
+    fn wrapping_preserves_breaks_text_and_graphemes_at_every_width() {
+        for text in [
+            "",
+            "   ",
+            "abc def ghi",
+            "abc  def ",
+            "界 é👩‍💻界 ",
+            "x\\u{1b}[31m",
+            "oneverylongwordwithoutspaces",
+        ] {
+            for width in 1..=100 {
+                let lines = wrap_words(text, width);
+                assert_eq!(lines, reference(text, width), "{text:?}, {width}");
+                assert_eq!(lines.concat(), text);
+                for line in lines {
+                    assert!(line.width() <= width || line.graphemes(true).count() == 1);
+                }
+            }
+        }
+    }
+    #[test]
+    fn word_break_does_not_split_an_accent_attached_to_a_space() {
+        let text = "a \u{301}b c \u{301}d";
+        let boundaries: Vec<_> = text
+            .grapheme_indices(true)
+            .map(|(at, _)| at)
+            .chain([text.len()])
+            .collect();
+        for width in 1..=12 {
+            let mut end = 0;
+            for row in wrap_words(text, width) {
+                end += row.len();
+                assert!(boundaries.contains(&end), "split at {end}, width {width}");
+            }
+            assert_eq!(end, text.len());
+        }
     }
 }

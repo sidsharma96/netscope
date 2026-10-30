@@ -133,3 +133,49 @@ def check_workspace(width, height):
 
 check_workspace(100, 30)
 check_workspace(80, 24)
+
+
+def check_static_wait(width, height):
+    """A completed static frame must stay quiet, then wake for navigation."""
+    master, slave = pty.openpty()
+    process = None
+    try:
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', height, width, 0, 0))
+        process = subprocess.Popen([str(BINARY), capture], cwd=WORKING_DIRECTORY,
+                                   stdin=slave, stdout=slave, stderr=slave, start_new_session=True)
+        output = bytearray()
+        deadline = time.monotonic() + 5
+        while 'q quit' not in screen_text(output, width, height):
+            if time.monotonic() >= deadline:
+                raise AssertionError('static frame was not drawn')
+            if select.select([master], [], [], .05)[0]:
+                output.extend(os.read(master, 65536))
+        # Drain the tail of the first frame before checking for unwanted redraws.
+        while select.select([master], [], [], .2)[0]:
+            output.extend(os.read(master, 65536))
+            if time.monotonic() >= deadline:
+                raise AssertionError('static screen kept writing without an event')
+        assert not select.select([master], [], [], .2)[0], 'unexpected idle output'
+        os.write(master, b'h')
+        while 'NETSCOPE / HOSTS' not in screen_text(output, width, height):
+            if time.monotonic() >= deadline:
+                raise AssertionError('static screen did not wake for a key')
+            if select.select([master], [], [], .05)[0]:
+                output.extend(os.read(master, 65536))
+        os.write(master, b'q')
+        deadline = time.monotonic() + 5
+        while process.poll() is None and time.monotonic() < deadline:
+            if select.select([master], [], [], .05)[0]:
+                output.extend(os.read(master, 65536))
+        assert process.poll() == 0, 'static viewer did not exit'
+        print(f'PASS: static {width}x{height}; 0 idle bytes, navigation wakes the screen')
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+        os.close(slave)
+
+
+check_static_wait(80, 24)
+check_static_wait(120, 34)

@@ -13,6 +13,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doclinks import DOCS, ROOT, REPOSITORY, anchors, links, summary_pages, without_code  # noqa: E402
 import sync_questions  # noqa: E402
+import check_excerpts  # noqa: E402
 
 failures = []
 
@@ -193,6 +194,10 @@ if '--site' in sys.argv:
         if not out.is_file():
             fail(f'Built site is missing {out.relative_to(site)}')
     print(f'checked built site: {len(published)} files')
+
+excerpt_count, excerpt_errors = check_excerpts.check_book(ROOT, sources)
+failures.extend(excerpt_errors)
+print(f'checked {excerpt_count} current and historical source excerpts')
 
 if failures:
     print('\n'.join(f'FAIL: {message}' for message in failures))

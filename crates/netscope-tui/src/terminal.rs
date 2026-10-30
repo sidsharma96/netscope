@@ -167,13 +167,16 @@ fn run_app(
             Terminal::new(CrosstermBackend::new(io::stdout()))?;
         let mut worker: Option<(u64, netscope_net::Worker)> = None;
         let reduced_motion = std::env::var_os("NETSCOPE_REDUCE_MOTION").is_some();
+        let mut redraw = true;
         while !app.quit {
             if let Some(editor) = &mut app.replay {
                 if let Some((path, saved)) = editor.take_save() {
+                    redraw = true;
                     editor.saved(crate::saved_file::save(std::path::Path::new(&path), &saved));
                 }
                 if let Some((id, active)) = &mut worker {
                     if let Some(snapshot) = active.progress() {
+                        redraw = true;
                         editor.progress(*id, snapshot);
                     }
                     // Accept completed work before handling a later cancellation key.
@@ -181,6 +184,7 @@ fn run_app(
                         if let Some(snapshot) = active.progress() {
                             editor.progress(*id, snapshot);
                         }
+                        redraw = true;
                         editor.complete(*id, result);
                         worker = None;
                     } else if editor.cancellation_requested() {
@@ -190,6 +194,7 @@ fn run_app(
                 if worker.is_none()
                     && let Some((id, review)) = editor.take_send()
                 {
+                    redraw = true;
                     let started = editor
                         .started_at()
                         .ok_or_else(|| io::Error::other("Missing Send time"))?;
@@ -209,18 +214,23 @@ fn run_app(
                 let elapsed = editor
                     .started_at()
                     .map_or(std::time::Duration::ZERO, |at| at.elapsed());
-                editor.update_activity(elapsed, reduced_motion);
+                redraw |= editor.update_activity(elapsed, reduced_motion);
             }
-            let mut rendered = Ok(());
-            terminal.draw(|frame| {
-                rendered = render(frame, session, &mut app, filename);
-            })?;
-            rendered?;
-            if !event::poll(std::time::Duration::from_millis(50))? {
+            if redraw {
+                let mut rendered = Ok(());
+                terminal.draw(|frame| {
+                    rendered = render(frame, session, &mut app, filename);
+                })?;
+                rendered?;
+                redraw = false;
+            }
+            // Static screens sleep until input; an active worker still needs polling.
+            if worker.is_some() && !event::poll(std::time::Duration::from_millis(50))? {
                 continue;
             }
             match event::read()? {
                 Event::Key(key) => {
+                    redraw = true;
                     if let (Some(editor), Some((id, active))) = (&mut app.replay, &mut worker) {
                         if let Some(snapshot) = active.progress() {
                             editor.progress(*id, snapshot);
@@ -235,7 +245,10 @@ fn run_app(
                     }
                     app.handle_key(key, session);
                 }
-                Event::Resize(width, height) => app.resize(width, height, session),
+                Event::Resize(width, height) => {
+                    app.resize(width, height, session);
+                    redraw = true;
+                }
                 _ => {}
             }
         }

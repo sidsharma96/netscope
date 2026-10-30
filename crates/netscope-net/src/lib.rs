@@ -398,6 +398,7 @@ impl Worker {
                                     (started + STREAM_TIME_LIMIT).into(),
                                 )
                                 .await;
+                                capture.finish();
                                 result
                             } else {
                                 execute(

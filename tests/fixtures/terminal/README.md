@@ -5,7 +5,7 @@ These text files capture the complete Ratatui TestBackend cells for the syntheti
 Regenerate deliberately after reviewing an intended layout change, for example:
 
 ```sh
-cargo run -q -p netscope-tui --example screen_fixture --locked --offline -- 80 > tests/fixtures/terminal/overview-80x24.txt
+cargo run -q -p netscope --example screen_fixture --locked --offline -- 80 > tests/fixtures/terminal/overview-80x24.txt
 ```
 
 Use 100 for the larger overview and add inspector for the inspector view. These are text cell fixtures, not terminal-emulator screenshots. The separate pseudo-terminal check verifies terminal mode restoration.
@@ -24,4 +24,4 @@ The October 14 journey buffers use selectable stages beside a focused explanatio
 
 The October 18 guidance pass preserves full tab names in two rows, adds reading prompts and scroll position labels, and adds host outcome bars and packet direction guides. Replay fixtures use a fixed initial activity phase; a unit test advances supplied time and verifies stationary reduced motion and absence of extra sends or saves.
 
-Packet learning buffers add `packet-explained` and `stream-explained` at 80×24, 100×30 and 120×30. Regenerate through `NETSCOPE_UPDATE_PACKET_VIEWS=1 cargo test -p netscope-tui --test packets --locked --offline`. The existing layer/evidence buffers explicitly choose 2 Recorded report. These are synthetic offline fixtures.
+Packet learning buffers add `packet-explained` and `stream-explained` at 80×24, 100×30 and 120×30. Regenerate through `NETSCOPE_UPDATE_PACKET_VIEWS=1 cargo test -p netscope --test packets --locked --offline`. The existing layer/evidence buffers explicitly choose 2 Recorded report. These are synthetic offline fixtures.

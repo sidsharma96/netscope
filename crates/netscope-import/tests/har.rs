@@ -346,3 +346,27 @@ fn optional_stages_preserve_each_state_and_cookie_types_are_checked()
     fails(&v, "log.entries[0].request.cookies[0].expires");
     Ok(())
 }
+
+#[test]
+fn consuming_entries_preserves_late_errors_and_whole_json_validation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut data = fixture()?;
+    let valid = data["log"]["entries"][0].clone();
+    let mut invalid = valid.clone();
+    invalid["timings"]["wait"] = json!(-2);
+    data["log"]["entries"] = json!([valid, invalid]);
+    fails(&data, "log.entries[1].timings.wait");
+
+    // Duplicate keys in unused data are checked before any entry's field rules.
+    data["log"]["entries"][0]["timings"]["wait"] = json!(-2);
+    let text = format!(
+        r#"{{"log":{},"unused":{{"same":1,"same":2}}}}"#,
+        data["log"]
+    );
+    let error = import_bytes(text.as_bytes(), Limits::default())
+        .err()
+        .ok_or("duplicate accepted")?;
+    assert_eq!(error.path, "input");
+    assert_eq!(error.reason, "duplicate JSON object member");
+    Ok(())
+}

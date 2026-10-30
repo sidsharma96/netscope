@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-FENCE = re.compile(r'^```(rust[^\n]*|compile_fail)\n(.*?)^```', re.M | re.S)
+FENCE = re.compile(r'^```(rust[^\n]*|compile_fail[^\n]*)\n(.*?)^```', re.M | re.S)
 
 
 def check():
@@ -37,8 +37,11 @@ def check():
                 label = f'{page.relative_to(ROOT)}:{line}'
                 if not re.search(r'\bfn\s+main\s*\(', code):
                     code = 'fn main() {\n' + code + '\n}\n'
-                if kind == 'compile_fail':
-                    expected_failures.append((code, label))
+                if 'compile_fail' in {flag.strip() for flag in kind.split(',')}:
+                    errors = re.findall(r'\bE\d{4}\b', kind)
+                    if len(errors) != 1:
+                        raise ValueError(f'Compile failure needs one expected diagnostic: {label}')
+                    expected_failures.append((code, label, errors[0]))
                     continue
                 name = f'lesson_{len(examples):02d}'
                 (folder / f'src/bin/{name}.rs').write_text(code)
@@ -53,15 +56,15 @@ def check():
                 subprocess.run([str(Path(env['CARGO_TARGET_DIR']) / 'debug' / name)],
                                cwd=folder, check=True, timeout=15)
                 print(f'RAN: {label}', flush=True)
-        for code, label in expected_failures:
+        for code, label, error_code in expected_failures:
             source = folder / 'expected_failure.rs'
             source.write_text(code)
             result = subprocess.run(['rustc', '--edition=2024', str(source),
                                      '-o', str(folder / 'unexpected_success')],
                                     cwd=ROOT, capture_output=True, text=True)
-            if result.returncode == 0 or 'E0308' not in result.stderr:
-                raise RuntimeError(f'Expected ID type mismatch did not occur: {label}')
-            print(f'EXPECTED TYPE ERROR: {label}', flush=True)
+            if result.returncode == 0 or f'error[{error_code}]' not in result.stderr:
+                raise RuntimeError(f'Expected {error_code} did not occur: {label}\n{result.stderr}')
+            print(f'EXPECTED {error_code}: {label}', flush=True)
     print(f'PASS: {len(examples)} examples built; '
           f'{sum(not no_run for _, _, no_run in examples)} ran; '
           f'{len(expected_failures)} intentional compile failure(s)')
