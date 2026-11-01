@@ -50,18 +50,65 @@ fn a_legal_name_with_more_than_64_labels_is_read() {
     );
 }
 #[test]
+fn expanded_name_length_includes_the_terminal_zero() {
+    for (last_label, accepted) in [(61, true), (62, false)] {
+        let mut message = header(1, 0);
+        for length in [63, 63, 63, last_label] {
+            message.push(length);
+            message.extend(vec![b'a'; usize::from(length)]);
+        }
+        message.extend_from_slice(&[0, 0, 1, 0, 1]);
+        let lines = inspect_datagram(&dns_packet(&message));
+        if accepted {
+            assert!(lines.iter().any(|line| line.starts_with("Question ")));
+        } else {
+            assert_eq!(
+                lines,
+                ["DNS candidate unavailable: DNS name exceeds bounded label size"]
+            );
+        }
+    }
+    let mut root = header(1, 0);
+    root.extend_from_slice(&[0, 0, 1, 0, 1]);
+    assert!(inspect_datagram(&dns_packet(&root)).contains(&"Question  · type 1".into()));
+}
+#[test]
+fn compressed_name_length_counts_the_expanded_suffix_and_terminal_zero() {
+    for (prefix, accepted) in [(61, true), (62, false)] {
+        let mut message = header(1, 1);
+        for _ in 0..3 {
+            message.push(63);
+            message.extend([b'a'; 63]);
+        }
+        message.extend_from_slice(&[0, 0, 1, 0, 1]);
+        message.push(prefix);
+        message.extend(vec![b'b'; usize::from(prefix)]);
+        message.extend_from_slice(&[0xc0, 12, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 203, 0, 113, 9]);
+        let lines = inspect_datagram(&dns_packet(&message));
+        if accepted {
+            assert!(lines.iter().any(|line| line.ends_with("→ 203.0.113.9")));
+        } else {
+            assert_eq!(
+                lines,
+                ["DNS candidate unavailable: DNS name exceeds bounded label size"]
+            );
+        }
+    }
+}
+#[test]
 fn pointer_loops_and_long_pointer_chains_stop() {
     // A label at 12 followed by a pointer back to 12 repeats forever without a limit.
     let mut looped = header(1, 0);
     looped.extend_from_slice(&[1, b'a', 0xc0, 12, 0, 1, 0, 1]);
     let lines = inspect_datagram(&dns_packet(&looped)).join("\n");
     assert!(lines.contains("DNS candidate unavailable"), "{lines}");
-    // A root-name question at 12, then 300 pointers, each to the one before it.
-    // The answer owner enters the chain at its far end; it ends at the root but
-    // only after more jumps than any legal name needs.
-    let mut message = header(1, 1);
-    message.extend_from_slice(&[0, 0, 1, 0, 1]);
-    let mut previous = 12u16;
+    // Store a root and 300 backward pointers inside an earlier answer's raw data.
+    // The second answer actually enters at the far end of that chain.
+    let mut message = header(0, 2);
+    message.extend_from_slice(&[0, 0, 99, 0, 1, 0, 0, 0, 60]);
+    message.extend_from_slice(&601u16.to_be_bytes());
+    let mut previous = message.len() as u16;
+    message.push(0);
     for _ in 0..300 {
         let here = message.len() as u16;
         message.extend_from_slice(&(0xc000 | previous).to_be_bytes());
@@ -70,5 +117,5 @@ fn pointer_loops_and_long_pointer_chains_stop() {
     message.extend_from_slice(&(0xc000 | previous).to_be_bytes());
     message.extend_from_slice(&[0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 203, 0, 113, 9]);
     let lines = inspect_datagram(&dns_packet(&message)).join("\n");
-    assert!(lines.contains("DNS candidate unavailable"), "{lines}");
+    assert_eq!(lines, "DNS candidate unavailable: DNS name traversal limit");
 }

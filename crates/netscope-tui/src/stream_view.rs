@@ -130,7 +130,7 @@ impl StreamInspector {
                 selected.start,
                 selected.end.saturating_sub(1),
             ] {
-                let x = (offset * count / flow.states.len()) * scale;
+                let x = map_column(offset, flow.states.len(), width);
                 let label = offset.to_string();
                 let x = x.min(width.saturating_sub(label.len()));
                 if !occupied[x.saturating_sub(1)..(x + label.len() + 1).min(width)]
@@ -425,6 +425,14 @@ fn map_scale(len: usize, width: usize) -> usize {
         (width / len).clamp(1, 3)
     }
 }
+fn map_column(offset: usize, len: usize, width: usize) -> usize {
+    let cells = len.min(width);
+    if cells == 0 {
+        return 0;
+    }
+    let cell = ((offset + 1) * cells).div_ceil(len) - 1;
+    cell * map_scale(len, width)
+}
 fn concise(flow: &Reassembled, range: &Range<usize>) -> Vec<String> {
     let Some(state) = flow.states.get(range.start) else {
         return vec!["NO PAYLOAD BYTES".into(),"Control packets can exist without application data. Press 2 to inspect the recorded report.".into()];
@@ -549,6 +557,56 @@ mod tests {
             skipped_segments: 0,
             notes: vec![],
         }
+    }
+    #[test]
+    fn ruler_projection_matches_every_selected_coverage_group() -> std::io::Result<()> {
+        assert_eq!(map_column(0, 0, 80), 0);
+        for len in [1, 2, 3, 7, 79, 99, 100, 101, 157, 255, 256, 257] {
+            let states = vec![ByteState::Observed; len];
+            for width in [0, 1, 2, 3, 7, 39, 78, 79, 80, 118, 120, 256, 768] {
+                for offset in 0..len {
+                    if width == 0 {
+                        assert_eq!(map_column(offset, len, width), 0);
+                        continue;
+                    }
+                    let marks = coverage(&states, width, &(offset..offset + 1));
+                    let selected = marks
+                        .iter()
+                        .position(|mark| mark.style.bg == Some(SELECTED))
+                        .ok_or_else(|| std::io::Error::other("selection is not highlighted"))?;
+                    let column: usize = marks[..selected].iter().map(Span::width).sum();
+                    assert_eq!(
+                        map_column(offset, len, width),
+                        column,
+                        "length {len}, width {width}, offset {offset}"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+    #[test]
+    fn grouped_ruler_labels_start_at_the_selected_coverage_mark() -> std::io::Result<()> {
+        use ratatui::{Terminal, backend::TestBackend};
+        for (width, height, len) in [(80, 24, 100), (120, 34, 157)] {
+            let mut states = vec![ByteState::Observed; len];
+            states[26] = ByteState::Missing;
+            let flow = flow(states);
+            let mut ui = StreamInspector::new(&flow);
+            let mut terminal = Terminal::new(TestBackend::new(width, height))?;
+            terminal.draw(|frame| ui.draw(frame, frame.area(), &flow, 0))?;
+            let buffer = terminal.backend().buffer();
+            let columns = usize::from(width - 2);
+            let selected = (0..columns)
+                .find(|i| (i * len / columns..(i + 1) * len / columns).contains(&26))
+                .ok_or_else(|| std::io::Error::other("selected byte has no coverage mark"))?;
+            let x = 1 + selected as u16;
+            assert_eq!(buffer[(x, 4)].symbol(), "2", "width {width}");
+            assert_eq!(buffer[(x + 1, 4)].symbol(), "6", "width {width}");
+            assert_eq!(buffer[(x, 5)].bg, SELECTED, "width {width}");
+            assert_eq!(buffer[(x, 6)].symbol(), "▲", "width {width}");
+        }
+        Ok(())
     }
     #[test]
     fn map_never_hides_uncertainty_and_marks_selected_overlap() {

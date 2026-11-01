@@ -8,7 +8,7 @@ fn name(bytes: &[u8], at: usize) -> Result<(String, usize), &'static str> {
     let mut position = at;
     let mut consumed = None;
     let mut labels = vec![];
-    let mut size = 0;
+    let mut size = 1; // Every expanded name ends with a zero byte.
     let mut jumps = 0;
     // Labels are bounded by the 255-byte name size (at most 127 of them), so only
     // pointer jumps need their own count. Together the two limits end every loop.
